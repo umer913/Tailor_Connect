@@ -1,131 +1,200 @@
-import { Picker } from '@react-native-picker/picker';
-import React, { useState } from 'react';
+import { Picker } from "@react-native-picker/picker";
+import axios from "axios";
+import React, { useState } from "react";
 import {
-  ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View
-} from 'react-native';
-import { supabase } from '../../supabaseClient';
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const Signup = ({ navigation }) => {
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('customer');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [full_name, setFullName] = useState("");
+  const [cnic, setCnic] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("customer");
+  const [otp, setOtp] = useState("");
+  const [showOtp, setShowOtp] = useState(false);
+  const [error, setError] = useState("");
 
-  const validateInputs = () => {
-    if (!email.includes('@')) return 'Invalid email';
-    if (name.trim() === '') return 'Name cannot be empty';
-    if (password.length < 7) return 'Password must be at least 7 characters';
-    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password))
-      return 'Password must contain 1 uppercase letter and 1 number';
-    return null;
+   const handleSignup = async () => {
+    setError("");
+    if (!full_name || !email || !password || (role === "tailor" && !cnic)) {
+      setError("All fields are required");
+      return;
+    }
+
+    try {
+      await axios.post(
+        "http://localhost:3000/signup",
+        { full_name, email, password, cnic, role },
+        { headers: { "Content-Type": "application/json" } }
+      );
+      alert("OTP sent to your email!");
+      setShowOtp(true);
+    } catch (err) {
+      setError(err.response?.data?.error || "Signup failed");
+    }
   };
 
-  const handleSignup = async () => {
-    const validationError = validateInputs();
-    if (validationError) return setErrorMsg(validationError);
+  const handleVerifyOtp = async () => {
+    if (!otp) return setError("Enter OTP");
 
-    setLoading(true);
-    setErrorMsg('');
-
-    const { data, error } = await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      setErrorMsg(error.message);
-      setLoading(false);
-      return;
+    try {
+      await axios.post(
+        "http://localhost:3000/verify-otp",
+        { email, otp },
+        { headers: { "Content-Type": "application/json" } }
+      );
+      alert("Email verified successfully!");
+      navigation.navigate("Login");
+    } catch (err) {
+      setError(err.response?.data?.error || "Invalid OTP");
     }
-
-    const user = data?.user;
-    if (!user) {
-      setErrorMsg('No user returned from Supabase.');
-      setLoading(false);
-      return;
-    }
-
-    const verified = role === 'customer' ? true : false;
-
-    const { error: insertError } = await supabase.from('users').insert([
-      { auth_id: user.id, full_name: name, email, role, verified },
-    ]);
-
-    if (insertError) {
-      setErrorMsg(insertError.message);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(false);
-    Alert.alert('Signup Successful', 'You can now log in.');
-    navigation.navigate('Login');
   };
+
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#fff' }}>
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' }}>
-        Signup
-      </Text>
-
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        style={{ borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 10 }}
-      />
-
-      <TextInput
-        placeholder="Full Name"
-        value={name}
-        onChangeText={setName}
-        style={{ borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 10 }}
-      />
-
-      <TextInput
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        style={{ borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 10 }}
-      />
-
-      <Picker
-        selectedValue={role}
-        onValueChange={setRole}
-        style={{ borderWidth: 1, borderRadius: 8, marginBottom: 10 }}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Picker.Item label="Customer" value="customer" />
-        <Picker.Item label="Tailor" value="tailor" />
-        {/* admin not shown in picker */}
-      </Picker>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <View style={styles.card}>
+            <Image
+              source={require("../../assets/images/tailor.jpeg")}
+              style={styles.logo}
+            />
+            <Text style={styles.title}>
+              {showOtp ? "Enter Verification Code" : "Create Your Account"}
+            </Text>
 
-      {errorMsg ? (
-        <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{errorMsg}</Text>
-      ) : null}
-
-      <TouchableOpacity
-        onPress={handleSignup}
-        activeOpacity={0.8}
-        style={{
-          backgroundColor: loading ? '#999' : '#007BFF',
-          padding: 14,
-          borderRadius: 8,
-          alignItems: 'center',
-        }}
-        disabled={loading}
-      >
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: 'bold' }}>Signup</Text>}
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: 15 }}>
-        <Text style={{ textAlign: 'center', color: '#007bff' }}>
-          Already have an account? <Text style={{ fontWeight: 'bold' }}>Login</Text>
-        </Text>
-      </TouchableOpacity>
-    </View>
+            {!showOtp ? (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Full Name"
+                  value={full_name}
+                  onChangeText={setFullName}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={role}
+                    onValueChange={(itemValue) => setRole(itemValue)}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Customer" value="customer" />
+                    <Picker.Item label="Tailor" value="tailor" />
+                  </Picker>
+                </View>
+                {role === "tailor" && (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="CNIC"
+                    value={cnic}
+                    onChangeText={setCnic}
+                  />
+                )}
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                <TouchableOpacity style={styles.button} onPress={handleSignup}>
+                  <Text style={styles.buttonText}>Sign Up</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                  <Text style={styles.linkText}>
+                    Already have an account? Login
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter OTP"
+                  keyboardType="numeric"
+                  value={otp}
+                  onChangeText={setOtp}
+                />
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                <TouchableOpacity style={styles.button} onPress={handleVerifyOtp}>
+                  <Text style={styles.buttonText}>Verify OTP</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: "#cbe1f6ff" },
+  container: { flex: 1 },
+  scroll: { flexGrow: 1, justifyContent: "center", padding: 20 },
+  card: {
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderRadius: 16,
+    padding: 25,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 3,
+    alignItems: "center",
+  },
+  logo: { width: 160, height: 100, marginBottom: 25, borderRadius: 10 },
+  title: { fontSize: 24, fontWeight: "700", color: "#222", marginBottom: 20 },
+  input: {
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 15,
+    fontSize: 16,
+    backgroundColor: "#fff",
+  },
+  pickerContainer: {
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    marginBottom: 15,
+    backgroundColor: "#fff",
+  },
+  picker: { width: "100%" },
+  button: {
+    backgroundColor: "#6C63FF",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    width: "100%",
+    marginTop: 10,
+  },
+  buttonText: { color: "#fff", fontSize: 17, fontWeight: "600" },
+  errorText: { color: "red", marginBottom: 10, textAlign: "center", fontSize: 14 },
+  linkText: { marginTop: 20, fontSize: 15, color: "#555", fontWeight: "bold" },
+});
 
 export default Signup;
