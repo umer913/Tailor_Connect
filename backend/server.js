@@ -1,175 +1,219 @@
-import { createClient } from "@supabase/supabase-js";
-import cors from "cors"; //use to share resource between frontend and backend
-import dotenv from "dotenv";
-import express from "express"; //backend framework to create custom Api,s
-import nodemailer from "nodemailer";
+import { createClient } from "@supabase/supabase-js"; //this connects my js project with supabase for communication
+import cors from "cors"; //for cross sharing of resource on different ports//backend and frontend
+import dotenv from "dotenv"; //secret enviroment keys and variable are stored in .env which are not directly visible as we r not using in the code
+import express from "express"; //Nodejs Framework for creating apis,handle http request and response,parsing data
+import nodemailer from "nodemailer"; //node.js library to send otp messages
 
-dotenv.config();//reading envirment varibale(supabase keys)
+dotenv.config();
 
-const app = express();//activating middleware by backend and frontend
-app.use(cors());
-app.use(express.json());//let backend read all data which is in json format
+const app = express();//creating express instance to add routes,middleware 
+app.use(cors());//adding middleware for resource sharing
+app.use(express.json());//parsing json body when requested
 
-// Supabase connection
-const supabase = createClient(
-  process.env.SUPABASE_URL,//directly accesing varibales through global object of Node.js(process)
-  process.env.SUPABASE_SERVICE_KEY
-);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);//reading enviroment variables
 
 
-//  Login API
-app.post("/login", async (req, res) => {//when fetch is executed in Login page this function runs,post is use to respond the hhtp network request sent to the the server.
-  const { email, password } = req.body;//data is extrected from json frontend
-
-  const { data, error } = await supabase.auth.signInWithPassword({//supabase inbuilt auth validates crenditials 
-    email,
-    password,
-  });
-
-  if (error) {
-    return res.status(400).json({ error: error.message });//server sends response which is converted in json format
+function hashPassword(password) {
+  let hash = "";
+  for (let i = 0; i < password.length; i++) {
+    hash += password.charCodeAt(i) * 7; //converting every string into Assci code(number then multiplying it by 7)
   }
+  return hash; // string of numeric values
+}
+
+//function hashPassword(password) { return crypto.createHash("sha256").update(password).digest("hex"); }more secure hash-sha256
+
+function generateOTP() {
+  return Math.floor( Math.random() * 900000).toString(); //generates 6-digit OTP ,math.random selects any value between 0-1 decimals imcluded,math.floor eleminates decimals
+}
 
 
-  const { data: userData } = await supabase//data is fetch from datbase table
-    .from("profiles")
-    .select("role")
-    .eq("id", data.user.id)
-
-  res.json({//send this message and user details to backend
-    message: "Login successful",
-    user: data.user,
-    role: userData.role,
-  });
+const transporter = nodemailer.createTransport({//building connection with email service provider
+  service: "gmail",//sending on gmail server
+  auth: {
+    user: process.env.EMAIL_USER,//sending mail through this user
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
-
-//  Signup Api
-app.post("/signup", async (req, res) => {//when fetch is executed in signup page this function runs,post is use to respond the hhtp request sent to the the server.(req) is for request while (res) is for respond
-  const { email, password, full_name, cnic, role } = req.body;//data is extracted from json frontend
+// ---------------- LOGIN ----------------
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
 
   try {
-    // Create user in Supabase Authencation(it always needs admin level privlages)email is not verfied by default
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: false,
-    });
+    // Hash incoming password manually
+    const hashed = hashPassword(password);
 
-    if (authError) {
-      console.error("Auth Error:", authError.message);
-      return res.status(400).json({ error: authError.message });
-    }
+    // Fetch user
+    const { data: user, error } = await supabase
+      .from("profiles")
+      .select("id, email, password, full_name, role, verified")
+      .eq("email", email)
+      .single();
 
-   
-    await supabase.auth.admin.inviteUserByEmail(email);
-    const verifiedStatus = role === "customer";
+    if (error || !user) return res.status(400).json({ error: "Invalid email or password" });
+    if (!user.verified) return res.status(400).json({ error: "Email not verified" });
+    if (user.password !== hashed) return res.status(400).json({ error: "Invalid password" });
 
-    // Insert into profiles table
-    const { error: insertError } = await supabase.from("profiles").insert([
-      {
-        id: authData.user.id,
-        email,
-        full_name,
-        cnic,
-        role,
-        verified: verifiedStatus, // true for customer, false for tailor
-      },
-    ]);
+    const userData = {
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+    };
 
-    if (insertError) {
-      console.error("Insert Error:", insertError.message);
-      return res.status(400).json({ error: insertError.message });
-    }
-
-    //Success Message popup on frontend after signup 
-    res.json({
-      message:
-        role === "tailor"
-          ? "Signup successful! Verification email sent. Please wait for admin approval."
-          : "Signup successful! Verification email sent.",
-    });
+    res.json({ user: userData });
   } catch (err) {
-    console.error("Server Error:", err);
+    console.error(err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-// temporary in-memory storage for OTPs
-const otps = {};
+// ---------------- SIGNUP ----------------
+app.post("/signup", async (req, res) => {
+  const { email, password, full_name, cnic, role } = req.body;
 
-// ✅ Forgot Password: send OTP
+  try {
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .single();
+
+    if (existing) 
+    return res.status(400).json({ error: "User already exists" });
+
+    // Hash password manually
+    const hashed = hashPassword(password);
+
+    // Generate OTP
+    const otp = generateOTP();
+
+    // store new user in profilles table
+    const { error } = await supabase.from("profiles").insert([
+      {
+        email,
+        full_name,
+        cnic,
+        role,
+        password: hashed,
+        otp,
+        verified: false,//user is unverified as a default
+      },
+    ]);
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    // Send OTP via email
+    await transporter.sendMail({
+      from: `"TailorX" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Your OTP Verification Code",
+      text: `Hello ${full_name}, your OTP is: ${otp}`,
+    });
+
+    res.json({ message: "OTP sent to your email!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ---------------- VERIFY OTP ----------------
+app.post("/verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+
+  try {
+    const { data: user, error } = await supabase
+      .from("profiles")
+      .select("id, otp")
+      .eq("email", email)
+      .single();
+
+
+    if (user.otp !== otp) return res.status(400).json({ error: "Invalid OTP" });
+
+    await supabase.from("profiles").update({ verified: true, otp: null }).eq("email", email);
+
+    res.json({ message: "E mail verified successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+// ---------------- FORGOT PASSWORD ----------------
 app.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
-  // check if email exists in profiles
-  const { data: user, error } = await supabase
-    .from("profiles")
-    .select("id, email")
-    .eq("email", email)
-    .single();
+  try {
+    // check user exists
+    const { data: user, error } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("email", email)
+      .single();
 
-  if (error || !user) return res.status(400).json({ error: "Email not found" });
+    if (error || !user)
+      return res.status(400).json({ error: "User not found" });
 
-  // generate 6-digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000);
-  otps[email] = otp;
+    // generate OTP
+    const otp = generateOTP();
 
-  // setup mail transport
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS,
-    },
-  });
+    // save OTP in database
+    await supabase
+      .from("profiles")
+      .update({ otp })
+      .eq("email", email);
 
-  // send mail
-  await transporter.sendMail({
-    from: process.env.MAIL_USER,
-    to: email,
-    subject: "TailorX Password Reset OTP",
-    text: `Your password reset OTP is ${otp}. It will expire in 10 minutes.`,
-  });
+    // send OTP via email
+    await transporter.sendMail({
+      from: `"TailorX" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Password Reset OTP",
+      text: `Hello ${user.full_name}, your password reset OTP is: ${otp}`,
+    });
 
-  // expire OTP after 10 minutes
-  setTimeout(() => delete otps[email], 10 * 60 * 1000);
-
-  res.json({ message: "OTP sent to your email" });
+    res.json({ message: "OTP sent to your email!" });
+  } catch (err) {
+    console.error("Forgot Password Error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
-// ✅ Verify OTP and Reset Password
+// ---------------- RESET PASSWORD ----------------
 app.post("/reset-password", async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
-  if (!otps[email] || otps[email] != otp)
-    return res.status(400).json({ error: "Invalid or expired OTP" });
+  try {
+    // fetch user and OTP
+    const { data: user, error } = await supabase
+      .from("profiles")
+      .select("id, otp")
+      .eq("email", email)
+      .single();
 
-  // find user by email
-  const { data: user, error } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("email", email)
-    .single();
+    if (error || !user)
+      return res.status(400).json({ error: "User not found" });
 
-  if (error || !user) return res.status(400).json({ error: "User not found" });
+    if (user.otp !== otp)
+      return res.status(400).json({ error: "Invalid OTP" });
 
-  // update password in Supabase Auth
-  const { error: updateError } = await supabase.auth.admin.updateUserById(
-    user.id,
-    { password: newPassword }
-  );
+    // hash new password
+    const hashed = hashPassword(newPassword);
 
-  if (updateError)
-    return res.status(400).json({ error: updateError.message });
+    // update password & clear OTP
+    await supabase
+      .from("profiles")
+      .update({ password: hashed,verified:true, otp: null })
+      .eq("email", email);
 
-  // remove OTP
-  delete otps[email];
-
-  res.json({ message: "Password reset successfully" });
+    res.json({ message: "Password reset successfully!" });
+  } catch (err) {
+    console.error("Reset Password Error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
-
-// ✅ Start Server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 TailorX Server Running on port ${PORT}`));
+// ---------------- START SERVER ----------------
+const PORT = process.env.PORT;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

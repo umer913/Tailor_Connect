@@ -10,7 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -33,7 +33,7 @@ const Signup = ({ navigation }) => {
 
     try {
       await axios.post(
-        "http://localhost:3000/signup",
+        "http://UF-MacBook-Pro.local:3000/signup",
         { full_name, email, password, cnic, role },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -45,11 +45,12 @@ const Signup = ({ navigation }) => {
   };
 
   const handleVerifyOtp = async () => {
-    if (!otp) return setError("Enter OTP");
+    if (otp=='')
+     return setError("Enter OTP");
 
     try {
       await axios.post(
-        "http://localhost:3000/verify-otp",
+        "http://UF-MacBook-Pro.local:3000/verify-otp",
         { email, otp },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -77,15 +78,17 @@ const Signup = ({ navigation }) => {
               {showOtp ? "Enter Verification Code" : "Create Your Account"}
             </Text>
 
-            {!showOtp ? (
+            {showOtp=='' ? (
               <>
                 <TextInput
+                placeholderTextColor={'gray'}
                   style={styles.input}
                   placeholder="Full Name"
                   value={full_name}
                   onChangeText={setFullName}
                 />
                 <TextInput
+                 placeholderTextColor={'gray'}
                   style={styles.input}
                   placeholder="Email"
                   value={email}
@@ -93,6 +96,7 @@ const Signup = ({ navigation }) => {
                   autoCapitalize="none"
                 />
                 <TextInput
+                 placeholderTextColor={'gray'}
                   style={styles.input}
                   placeholder="Password"
                   secureTextEntry
@@ -101,16 +105,18 @@ const Signup = ({ navigation }) => {
                 />
                 <View style={styles.pickerContainer}>
                   <Picker
+                   
                     selectedValue={role}
                     onValueChange={(itemValue) => setRole(itemValue)}
                     style={styles.picker}
                   >
-                    <Picker.Item label="Customer" value="customer" />
-                    <Picker.Item label="Tailor" value="tailor" />
+                    <Picker.Item label="Customer" value="customer" color='gray' />
+                    <Picker.Item label="Tailor" value="tailor" color='gray'/>
                   </Picker>
                 </View>
                 {role === "tailor" && (
                   <TextInput
+                   placeholderTextColor={'gray'}
                     style={styles.input}
                     placeholder="CNIC"
                     value={cnic}
@@ -154,12 +160,12 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: "center", padding: 20 },
   card: {
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 25,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowColor: '#6C63FF',
+    shadowOpacity: 0.8,
+    shadowRadius: 28,
     elevation: 3,
     alignItems: "center",
   },

@@ -12,14 +12,14 @@ const Stack = createStackNavigator();
 
 const App = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Start">
+    <NavigationContainer  >
+      <Stack.Navigator screenOptions={{ gestureEnabled: false }} initialRouteName="Login">
         <Stack.Screen   options={{ headerShown: false }} name="Login" component={Login} />
         <Stack.Screen   options={{ headerShown: false }} name="Signup" component={Signup} />
         <Stack.Screen   options={{ headerShown: false }} name="CustomerDashboard" component={CustomerDashboard} />
         <Stack.Screen options={{ headerShown: false }} name="TailorDashboard" component={TailorDashboard} />
         <Stack.Screen   options={{ headerShown: false }} name="AdminDashboard" component={AdminDashboard} />
-         <Stack.Screen   options={{ headerShown: false }} name="Forgot" component={Forgot} />
+         <Stack.Screen   name="Forgot" component={Forgot} />
         <Stack.Screen   options={{ headerShown: false }} name="Start" component={Start} />
       </Stack.Navigator>
     </NavigationContainer>

@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons'; //for importing logos,icons from react Expo icon library
-import React, { useEffect, useState } from 'react'; //Runs function (effects) after render screen(useEffect).useref is to set values of animations which remains throughout rendering
+import React, { useEffect, useState } from 'react'; //Runs function (effects) after render screen(useEffect).
 import {
-  Animated, //react native library for animations
-  Easing, //control the motion of animation
+  Animated,
+  Easing,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -45,47 +45,54 @@ const Login = ({ navigation }) => {
     ]).start();
   }, []);//will run atleast 1 time after screen render
 
-   const handleLogin = async () => {
-    setError('');
-    if (!email || !password) {
-      setError('All fields are required');
+  const handleLogin = async () => {
+  setError("");
+  console.log("Login pressed ✅");
+
+  if (!email || !password) {
+    setError("All fields are required");
+    return;
+  }
+
+  try {
+    const response = await fetch("http://UF-MacBook-Pro.local:3000/Login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+    console.log("Response:", data);
+
+    if (!response.ok) {
+      // backend sends {error: "..."}
+      setError(data.error || "Login failed");
       return;
     }
 
-    try {
-      const response = await fetch("http://localhost:3000/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    const user = data.user;
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "Login failed");
-        return;
-      }
-
-      if (!data.user?.role) {
-        setError("Role not found.");
-        return;
-      }
-
-      if (data.user.role === "customer") {
-        navigation.navigate("CustomerDashboard");
-      } else if (data.user.role === "tailor") {
-        navigation.navigate("TailorDashboard");
-      } else if (data.user.role === "admin") {
-        navigation.navigate("AdminDashboard");
-      } else {
-        setError("Unknown role.");
-      }
-    } catch (err) {
-      setError("Network error: " + err.message);
+    if (!user || !user.role) {
+      setError("Role not found.");
+      return;
     }
-  };
 
+    // ✅ Role-based navigation
+    if (user.role === "customer") {
+      navigation.navigate("CustomerDashboard")
+    } else if (user.role === "tailor") {
+      navigation.navigate("TailorDashboard")
+    } else if (user.role === "admin") {
+      navigation.navigate("AdminDashboard")
+    } else {
+      setError("Unknown role.");
+    }
 
+  } catch (err) {
+    console.error("Login error:", err);
+    setError("Network error: " + err.message);
+  }
+};
 
 
   return (
@@ -114,7 +121,7 @@ const Login = ({ navigation }) => {
               value={email}
               onChangeText={setEmail}
               style={styles.input}
-              placeholderTextColor="#888"
+              placeholderTextColor={'gray'}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -126,7 +133,7 @@ const Login = ({ navigation }) => {
                 value={password}
                 onChangeText={setPassword}
                 style={[styles.passwordInput]}
-                placeholderTextColor="#888"
+                placeholderTextColor={'gray'}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <Ionicons

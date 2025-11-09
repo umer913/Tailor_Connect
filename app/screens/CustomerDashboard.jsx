@@ -6,6 +6,8 @@ const CustomerDashboard = ({ navigation }) => {
     
     navigation.navigate("Login"); 
   };
+
+  
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Welcome to Customer Dashboard</Text>
