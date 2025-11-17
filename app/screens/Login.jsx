@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'; //for importing logos,icons from react Expo icon library
+import axios from "axios";
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react'; //Runs function (effects) after render screen(useEffect).
 import {
   Animated,
@@ -41,7 +43,10 @@ const Login = ({ navigation }) => {
         }),
       ]),
       //after running parrel block button-aniamtion will run
-      Animated.timing(buttonAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.timing(buttonAnim, {
+          toValue: 1,
+          duration: 400, 
+          useNativeDriver: true }),
     ]).start();
   }, []);//will run atleast 1 time after screen render
 
@@ -53,50 +58,45 @@ const Login = ({ navigation }) => {
     setError("All fields are required");
     return;
   }
+  if (!email.includes("@")) {
+    setError("Please enter a valid email address");
+    return;
+  }
+
 
   try {
-    const response = await fetch("http://UF-MacBook-Pro.local:3000/Login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+    // sending a request to this server running on my Mac at port 3000
+    const response = await axios.post("http://UF-MacBook-Pro.local:3000/Login", {
+      email,
+      password,
     });
 
-    const data = await response.json();
+    const data = response.data;
     console.log("Response:", data);
 
-    if (!response.ok) {
-      // backend sends {error: "..."}
-      setError(data.error || "Login failed");
-      return;
-    }
-
-    const user = data.user;
-
-    if (!user || !user.role) {
-      setError("Role not found.");
-      return;
-    }
-
-    // ✅ Role-based navigation
-    if (user.role === "customer") {
-      navigation.navigate("CustomerDashboard")
-    } else if (user.role === "tailor") {
-      navigation.navigate("TailorDashboard")
-    } else if (user.role === "admin") {
-      navigation.navigate("AdminDashboard")
-    } else {
-      setError("Unknown role.");
-    }
+    // Role-based navigation
+    if (data.user.role === "customer") {
+      console.log("Navigating with email:", data.user.email);
+  navigation.navigate("CustomerDrawer", { email: data.user.email });
+} else if (data.user.role === "tailor") {
+  navigation.navigate("TailorDrawer", { email: data.user.email });
+    console.log("Navigating with email:", data.user.email);
+} else if (data.user.role === "admin") {
+  navigation.navigate("AdminDashboard", { email: data.user.email });
+} else {
+  setError("Unknown role.");
+}
 
   } catch (err) {
     console.error("Login error:", err);
-    setError("Network error: " + err.message);
+
+    setError(err.response?.data?.error || "Network error: " + err.message);
   }
 };
 
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#cbe1f6ff' }}>
+     <LinearGradient colors={['#a8edea', '#fed6e3']} style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -113,7 +113,7 @@ const Login = ({ navigation }) => {
               style={[styles.logo, { transform: [{ scale: logoScale }, { translateY: logoSlideAnim }] }]}
             />
 
-            <Text style={styles.title}>Welcome Back 👋</Text>
+            <Text style={styles.title}>Welcome Back </Text>
             <Text style={styles.subtitle}>Log in to continue to TailorX</Text>
 
             <TextInput
@@ -165,6 +165,7 @@ const Login = ({ navigation }) => {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </LinearGradient>
   );
 }
 export default Login;
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
     width: '100%',
     shadowColor: '#6C63FF',
     shadowOpacity: 0.7,
-    shadowRadius: 30,
+    shadowRadius: 50,
     alignItems: 'center',
     marginBottom:130,
   },

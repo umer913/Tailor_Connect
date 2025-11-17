@@ -36,41 +36,8 @@ const transporter = nodemailer.createTransport({//building connection with email
   },
 });
 
-// ---------------- LOGIN ----------------
-app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    // Hash incoming password manually
-    const hashed = hashPassword(password);
-
-    // Fetch user
-    const { data: user, error } = await supabase
-      .from("profiles")
-      .select("id, email, password, full_name, role, verified")
-      .eq("email", email)
-      .single();
-
-    if (error || !user) return res.status(400).json({ error: "Invalid email or password" });
-    if (!user.verified) return res.status(400).json({ error: "Email not verified" });
-    if (user.password !== hashed) return res.status(400).json({ error: "Invalid password" });
-
-    const userData = {
-      id: user.id,
-      email: user.email,
-      full_name: user.full_name,
-      role: user.role,
-    };
-
-    res.json({ user: userData });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
 // ---------------- SIGNUP ----------------
-app.post("/signup", async (req, res) => {
+app.post("/signup", async (req, res) => {//pausing function until fetching is completed
   const { email, password, full_name, cnic, role } = req.body;
 
   try {
@@ -141,6 +108,40 @@ app.post("/verify-otp", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+// ---------------- LOGIN ----------------
+app.post("/login", async (req, res) => { 
+  const { email, password } = req.body;
+
+  try {
+    // Hash incoming password 
+    const hashed = hashPassword(password);
+
+    // Fetch user
+    const { data: user, error } = await supabase
+      .from("profiles")
+      .select("id, email, password, full_name, role, verified")
+      .eq("email", email)
+      .single();
+
+    if (!user) return res.status(400).json({ error: "Invalid email or password" });
+    if (!user.verified) return res.status(400).json({ error: "Email not verified" });
+    if (user.password !== hashed) return res.status(400).json({ error: "Invalid password" });
+
+    const userData = {
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+    };
+
+    res.json({ user: userData });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // ---------------- FORGOT PASSWORD ----------------
 app.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
@@ -213,6 +214,69 @@ app.post("/reset-password", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+app.get("/get-profile", async (req, res) => {
+  const { email } = req.query;
+  try {
+    const { data: user, error } = await supabase
+      .from("profiles")
+      .select("full_name, cnic, phone_number, location") // ✅ field names in DB
+      .eq("email", email)
+      .single();
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ user });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+// ---------------- UPDATE PROFILE ----------------
+app.put("/update-profile", async (req, res) => {
+  const { email, full_name, cnic, phone_number, location, password } = req.body;
+
+  try {
+    // Update profile fields
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ full_name, cnic, phone_number, location })
+      .eq("email", email);
+
+    if (updateError) return res.status(400).json({ error: updateError.message });
+
+    // Update password if provided
+    if (password && password.trim() !== "") {
+      const hashed = hashPassword(password);
+      const { error: pwError } = await supabase
+        .from("profiles")
+        .update({ password: hashed })
+        .eq("email", email);
+
+      if (pwError) return res.status(400).json({ error: pwError.message });
+    }
+
+    res.json({ message: "Profile updated successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+// ---------------- BrowseTailor ----------------
+app.get("/get-tailors", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("role", "tailor")
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ tailors: data });
+  } catch (err) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+
 
 // ---------------- START SERVER ----------------
 const PORT = process.env.PORT;

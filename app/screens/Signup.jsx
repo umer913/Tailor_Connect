@@ -1,5 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   Image,
@@ -21,7 +23,9 @@ const Signup = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("customer");
   const [otp, setOtp] = useState("");
-  const [showOtp, setShowOtp] = useState(false);
+  const [showOtp, setShowOtp] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
    const handleSignup = async () => {
@@ -30,6 +34,21 @@ const Signup = ({ navigation }) => {
       setError("All fields are required");
       return;
     }
+
+    if (!email.includes("@")) {
+      setError("Please enter a valid email address");
+      return;
+    }
+    if (password.length < 7) {
+      setError("Password must be at least 7 characters");
+      return;
+    }
+  if (password !== confirmPassword) {
+  setError("Password and Confirm Password must match");
+  return;
+}
+
+    
 
     try {
       await axios.post(
@@ -63,6 +82,7 @@ const Signup = ({ navigation }) => {
 
 
   return (
+      <LinearGradient colors={['#a8edea', '#fed6e3']} style={{ flex: 1 }}>
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.container}
@@ -95,17 +115,50 @@ const Signup = ({ navigation }) => {
                   onChangeText={setEmail}
                   autoCapitalize="none"
                 />
-                <TextInput
-                 placeholderTextColor={'gray'}
-                  style={styles.input}
-                  placeholder="Password"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                />
+       <View style={styles.passwordWrapper}>
+  <TextInput
+    placeholderTextColor="gray"
+    style={styles.passwordInput}
+    placeholder="Password"
+    secureTextEntry={!showPassword}
+    value={password}
+    onChangeText={setPassword}
+  />
+
+  <TouchableOpacity
+    onPress={() => setShowPassword(!showPassword)}
+    style={styles.eyeIcon}
+  >
+    <Ionicons
+      name={showPassword ? "eye" : "eye-off"}
+      size={22}
+      color="gray"
+    />
+  </TouchableOpacity>
+</View>
+<View style={styles.passwordWrapper}>
+  <TextInput
+    placeholderTextColor="gray"
+    style={styles.passwordInput}
+    placeholder="Confirm Password"
+    secureTextEntry={!showPassword}
+    value={confirmPassword}
+    onChangeText={setConfirmPassword}
+  />
+  <TouchableOpacity
+    onPress={() => setShowPassword(!showPassword)}
+    style={styles.eyeIcon}
+  >
+    <Ionicons
+      name={showPassword ? "eye" : "eye-off"}
+      size={22}
+      color="gray"
+    />
+  </TouchableOpacity>
+</View>
+
                 <View style={styles.pickerContainer}>
                   <Picker
-                   
                     selectedValue={role}
                     onValueChange={(itemValue) => setRole(itemValue)}
                     style={styles.picker}
@@ -152,11 +205,12 @@ const Signup = ({ navigation }) => {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#cbe1f6ff" },
+  safeArea: { flex: 1 },
   container: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: "center", padding: 20 },
   card: {
@@ -165,11 +219,11 @@ const styles = StyleSheet.create({
     padding: 25,
     shadowColor: '#6C63FF',
     shadowOpacity: 0.8,
-    shadowRadius: 28,
+    shadowRadius: 35,
     elevation: 3,
     alignItems: "center",
   },
-  logo: { width: 160, height: 100, marginBottom: 25, borderRadius: 10 },
+  logo: { width: 160, height: 100, marginBottom: 65, borderRadius: 10 },
   title: { fontSize: 24, fontWeight: "700", color: "#222", marginBottom: 20 },
   input: {
     width: "100%",
@@ -181,15 +235,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#fff",
   },
+  passwordWrapper: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    marginBottom: 15,
+    paddingRight: 10, 
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 16,
+    color: "#000",
+  },
+  eyeIcon: {
+    paddingHorizontal: 8,
+  },
+  
   pickerContainer: {
     width: "100%",
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 10,
     marginBottom: 15,
-    backgroundColor: "#fff",
+    backgroundColor: "white",
+    height: 50,        
+    justifyContent: "center",
+    overflow: "hidden",
   },
-  picker: { width: "100%" },
+  
+  picker: {
+    width: "100%",
+  }
+,  
   button: {
     backgroundColor: "#6C63FF",
     paddingVertical: 12,

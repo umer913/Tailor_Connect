@@ -1,4 +1,5 @@
 import axios from "axios";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   Alert,
@@ -20,11 +21,11 @@ const Forgot = ({ navigation }) => {
 
   // ---------------- SEND OTP ----------------
   const handleSendOTP = async () => {
-    if (!email.trim()) return Alert.alert("Error", "Please enter your email");
+    if (!email) return Alert.alert("Error", "Please enter your email");
     try {
       const res = await axios.post("http://UF-MacBook-Pro.local:3000/forgot-password", { email });
       Alert.alert("Success", res.data.message || "OTP sent to your email");
-      setStep(2);
+      setStep(3);
     } catch (err) {
       Alert.alert("Error", err.response?.data?.error || "Failed to send OTP");
     }
@@ -32,7 +33,7 @@ const Forgot = ({ navigation }) => {
 
   // ---------------- RESET PASSWORD ----------------
   const handleResetPassword = async () => {
-    if (!otp.trim() || !newPassword.trim())
+    if (!otp.trim || !newPassword)
       return Alert.alert("Error", "Please enter all fields");
 
     try {
@@ -49,7 +50,8 @@ const Forgot = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#cbe1f6ff" }}>
+      <LinearGradient colors={['#a8edea', '#fed6e3']} style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1}}>
       <KeyboardAvoidingView
         style={{ flex: 1, justifyContent: "center", paddingHorizontal: 20 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -109,6 +111,7 @@ const Forgot = ({ navigation }) => {
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </LinearGradient>
   );
 };
 
