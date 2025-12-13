@@ -9,6 +9,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View
 } from 'react-native';
 
@@ -19,203 +20,387 @@ const TailorDashboard = ({ route, navigation }) => {
   const [form, setForm] = useState({});
   const [editMode, setEditMode] = useState(false);
 
+  // Controls profile card visibility state
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileVisible, setProfileVisible] = useState(false); // For animation mount control
 
   /* ---------------- ANIMATIONS ---------------- */
-  const [fadeAnim] = useState(new Animated.Value(0));     // screen fade
-  const [slideAnim] = useState(new Animated.Value(40));   // card slide
-  const [scaleAnim] = useState(new Animated.Value(0.3));  // image scale
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(40));
 
-
+  // Animate card fade and slide on showProfile toggle
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 5,
-        useNativeDriver: true
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true
-      })
-    ]).start();
-  }, []);
+    if (showProfile) {
+      setProfileVisible(true);
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 40, duration: 300, useNativeDriver: true }),
+      ]).start(() => setProfileVisible(false));
+    }
+  }, [showProfile]);
 
   /* ---------------- FETCH USER ---------------- */
   useEffect(() => {
-  const fetchProfile = async () => {
+    const fetchProfile = async () => {
+      try {
+        const { data } = await axios.get(
+          "http://UF-MacBook-Pro.local:3000/get-profile",
+          { params: { email } }
+        );
+
+        if (data.user) {
+          setProfile(data.user);
+          setForm({ ...data.user, password: "" });
+        }
+      } catch (err) {
+        console.log("Fetch Error:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  /* ---------------- SAVE PROFILE ---------------- */
+  const saveProfile = async () => {
+    const { cnic, phone_number, password } = form;
+
+    if (cnic?.length !== 13) return alert("CNIC must be 13 digits.");
+    if (phone_number?.length !== 11) return alert("Phone must be 11 digits.");
+    if (password && password.length < 7) return alert("Password must be at least 7 characters.");
+
     try {
-      const { data } = await axios.get(
-        "http://UF-MacBook-Pro.local:3000/get-profile",
-        { params: { email } }
+      const { data } = await axios.put(
+        "http://UF-MacBook-Pro.local:3000/update-profile",
+        { email, ...form }
       );
 
-      if (data.user) {
-        setProfile(data.user);
-        setForm({ ...data.user, password: "" });
-      }
+      if (data.error) return alert(data.error);
+
+      setProfile(form);
+      setEditMode(false);
+      setShowProfile(false);
     } catch (err) {
-      console.log("Fetch Error:", err);
+      console.log("Update Error:", err);
     }
   };
 
-  fetchProfile();
-}, []);
-
-  /* ---------------- SAVE PROFILE ---------------- */
-const saveProfile = async () => {
-  const { cnic, phone_number } = form;
-
-  if (cnic?.length !== 13) return alert("CNIC must be 13 digits.");
-  if (phone_number?.length !== 11) return alert("Phone must be 11 digits.");
-  const { password } = form;
-
-  // Only validate password if user entered something
-  if (password && password.length < 7) {
-    return alert("Password must be at least 7 characters.");
-  }
-  try {
-    const { data } = await axios.put(
-      "http://UF-MacBook-Pro.local:3000/update-profile",
-      { email, ...form }
-    );
-
-    if (data.error) return alert(data.error);
-
-    setProfile(form);
-    setEditMode(false);
-
-  } catch (err) {
-    console.log("Update Error:", err);
-  }
-};
-const change = (key, val) => setForm({ ...form, [key]: val });
+  const change = (key, val) => setForm({ ...form, [key]: val });
 
   return (
-    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-      <LinearGradient colors={['#a8edea', '#fed6e3']} style={styles.container}>
+    <View style={{ flex: 1 }}>
+      <LinearGradient colors={['#4c669f', '#3b5998', '#192f6a']} style={styles.container} pointerEvents={showProfile ? 'none' : 'auto'}>
 
-        {/* IMAGE WITH SCALE ANIMATION */}
-        <Animated.View style={[styles.imageCircle, { transform: [{ scale: scaleAnim }] }]}>
-          <Image
-            source={require('../../../assets/images/TailorX.png')}
-            style={{ height: 130, width: 130 }}
-            resizeMode="contain"
-          />
-        </Animated.View>
+        <View style={styles.greetingBox}>
+          <Text style={styles.greetingSmall}>Welcome back 👋</Text>
+          <Text style={styles.greetingName}>
+            {profile.full_name || "Tailor"}
+          </Text>
+       
+        </View>
 
-        {/* CARD WITH SLIDE-UP ANIMATION */}
-        <Animated.View style={[styles.card, { transform: [{ translateY: slideAnim }] }]}>
+        {/* ----------- TOP RIGHT BUTTONS ----------- */}
+        <View style={styles.topRightContainer}>
 
-          {!editMode ? (
-            <>
-              <Text style={styles.title}>My Profile</Text>
+          {/* Notification Button */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => alert("Notifications")}
+            disabled={showProfile}
+          >
+            <Ionicons name="notifications-outline" size={24} color="rgba(0, 0, 0, 1)" />
+          </TouchableOpacity>
 
-              <Item label="Full Name" value={profile.full_name} />
-              <Item label="CNIC" value={profile.cnic} />
-              <Item label="Phone Number" value={profile.phone_number} />
-              <Item label="Location" value={profile.location} />
+          {/* Profile Button */}
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setShowProfile(true)}
+            disabled={showProfile}
+          >
+            <Image
+              source={require('../../../assets/images/imTailor.png')}
+              style={{ height: 35, width: 35 }}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
 
-              <Button text="Edit Details" color="#4a90e2" onPress={() => setEditMode(true)} />
-            </>
-          ) : (
-            <>
-              <Text style={styles.title}>Edit Profile</Text>
+        </View>
 
-              <Input placeholder="Full Name" value={form.full_name} onChangeText={t => change("full_name", t)} />
+        <View style={styles.verticalContainer}>
 
-              <Input
-                placeholder="CNIC"
-                keyboardType="numeric"
-                maxLength={13}
-                value={form.cnic}
-                onChangeText={t => change("cnic", t.replace(/[^0-9]/g, ""))}
-              />
+          {/* Example tailor-specific action */}
+          <TouchableOpacity
+            style={styles.tailorBox}
+            onPress={() => alert("View Orders")}
+            disabled={showProfile}
+          >
+            <Ionicons name="receipt-outline" size={26} color="rgba(234, 238, 2, 1)" />
+            <Text style={styles.tailorText}>My Orders</Text>
+          </TouchableOpacity>
 
-              <Input
-                placeholder="Phone Number"
-                keyboardType="numeric"
-                maxLength={11}
-                value={form.phone_number}
-                onChangeText={t => change("phone_number", t.replace(/[^0-9]/g, ""))}
-              />
+          <TouchableOpacity
+            style={[styles.tailorBox, { marginTop: 20 }]}
+            onPress={() => alert("Manage Services")}
+            disabled={showProfile}
+          >
+            <Ionicons name="shirt-outline" size={26} color="rgba(234, 238, 2, 1)" />
+            <Text style={styles.tailorText}>Manage Services</Text>
+          </TouchableOpacity>
 
-              <Input placeholder="Location" value={form.location} onChangeText={t => change("location", t)} />
+          <View style={styles.horizontalButtons} pointerEvents={showProfile ? 'none' : 'auto'}>
 
-              <Input
-                placeholder="New Password (optional)"
-                secureTextEntry
-                value={form.password}
-                onChangeText={t => change("password", t)}
-              />
+            <TouchableOpacity
+              style={styles.smallButton}
+              onPress={() => alert("Appointments")}
+              disabled={showProfile}
+            >
+              <Ionicons name="calendar-outline" size={20} color="#fff" />
+              <Text style={styles.smallButtonText}>Appointments</Text>
+            </TouchableOpacity>
 
-              <Button text="Save Changes" color="#4CAF50" onPress={saveProfile} />
-              <Button text="Cancel" color="#f05454" onPress={() => setEditMode(false)} />
-            </>
-          )}
-        </Animated.View>
+            <TouchableOpacity
+              style={[styles.smallButton, { backgroundColor: "#42c3ffff" }]}
+              onPress={() => alert("Earnings")}
+              disabled={showProfile}
+            >
+              <Ionicons name="cash-outline" size={20} color="#fff" />
+              <Text style={styles.smallButtonText}>Earnings</Text>
+            </TouchableOpacity>
+
+          </View>
+        </View>
 
         {/* LOGOUT */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={() => navigation.navigate("Login")}>
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={() => navigation.navigate("Login")}
+          disabled={showProfile}
+        >
           <Ionicons name="log-out-outline" size={24} color="#fff" />
           <Text style={styles.logoutText}> Logout</Text>
         </TouchableOpacity>
 
       </LinearGradient>
-    </Animated.View>
+
+      {/* Profile overlay + card */}
+      {profileVisible && (
+        <TouchableWithoutFeedback onPress={() => setShowProfile(false)}>
+          <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+            <TouchableWithoutFeedback onPress={e => e.stopPropagation()}>
+              <Animated.View
+                style={[
+                  styles.card,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{ translateY: slideAnim }],
+                  }
+                ]}
+              >
+
+                {!editMode ? (
+                  <>
+                    <Text style={styles.title}>My Profile</Text>
+
+                    {/* Profile Items */}
+                    <View style={styles.itemBox}>
+                      <Text style={styles.label}>Full Name</Text>
+                      <Text style={styles.value}>{profile.full_name}</Text>
+                    </View>
+                    <View style={styles.itemBox}>
+                      <Text style={styles.label}>CNIC</Text>
+                      <Text style={styles.value}>{profile.cnic}</Text>
+                    </View>
+                    <View style={styles.itemBox}>
+                      <Text style={styles.label}>Phone Number</Text>
+                      <Text style={styles.value}>{profile.phone_number}</Text>
+                    </View>
+                    <View style={styles.itemBox}>
+                      <Text style={styles.label}>Location</Text>
+                      <Text style={styles.value}>{profile.location}</Text>
+                    </View>
+
+                    {/* Edit Button */}
+                    <TouchableOpacity style={[styles.btn, { backgroundColor: "#4a90e2" }]} onPress={() => setEditMode(true)}>
+                      <Text style={styles.btnText}>Edit Details</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.title}>Edit Profile</Text>
+
+                    {/* Inputs */}
+                    <TextInput
+                      placeholder="Full Name"
+                      value={form.full_name}
+                      onChangeText={t => change("full_name", t)}
+                      style={styles.input}
+                    />
+                    <TextInput
+                      placeholder="CNIC"
+                      keyboardType="numeric"
+                      maxLength={13}
+                      value={form.cnic}
+                      onChangeText={t => change("cnic", t)}
+                      style={styles.input}
+                    />
+                    <TextInput
+                      placeholder="Phone Number"
+                      keyboardType="numeric"
+                      maxLength={11}
+                      value={form.phone_number}
+                      onChangeText={t => change("phone_number", t)}
+                      style={styles.input}
+                    />
+                    <TextInput
+                      placeholder="Location"
+                      value={form.location}
+                      onChangeText={t => change("location", t)}
+                      style={styles.input}
+                    />
+                    <TextInput
+                      placeholder="New Password (optional)"
+                      secureTextEntry
+                      value={form.password}
+                      onChangeText={t => change("password", t)}
+                      style={styles.input}
+                    />
+
+                    {/* Save & Cancel */}
+                    <TouchableOpacity style={[styles.btn, { backgroundColor: "#4CAF50" }]} onPress={saveProfile}>
+                      <Text style={styles.btnText}>Save Changes</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.btn, { backgroundColor: "#f05454" }]} onPress={() => setEditMode(false)}>
+                      <Text style={styles.btnText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </Animated.View>
+        </TouchableWithoutFeedback>
+      )}
+    </View>
   );
 };
 
-/* ------------ Reusable Components -------------- */
-
-const Item = ({ label, value }) => (
-  <View style={styles.itemBox}>
-    <Text style={styles.label}>{label}</Text>
-    <Text style={styles.value}>{value}</Text>
-  </View>
-);
-
-const Input = props => <TextInput {...props} style={styles.input} />;
-
-const Button = ({ text, color, onPress }) => (
-  <TouchableOpacity style={[styles.btn, { backgroundColor: color }]} onPress={onPress}>
-    <Text style={styles.btnText}>{text}</Text>
-  </TouchableOpacity>
-);
-
-/* ------------ Styles -------------- */
-
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", paddingTop: 35 },
+  container: { flex: 1, alignItems: "center" },
+  greetingBox: {
+    width: "90%",
+    marginTop: 90,
+    marginBottom: 20,
+  },
 
-  imageCircle: {
-    padding: 15,
-    borderRadius: 100,
-    backgroundColor: "rgba(255, 255, 255, 0.23)",
-    marginTop: 5
+  greetingSmall: {
+    fontSize: 15,
+    color: "#ffffffff",
+    fontWeight: "500",
+  },
+
+  greetingName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#222",
+    marginTop: 4,
+  },
+
+  greetingSub: {
+    fontSize: 14,
+    color: "#ffffffff",
+    marginTop: 6,
+  },
+
+  topRightContainer: {
+    position: "absolute",
+    right: 20,
+    top: 50,
+    flexDirection: "row",
+    padding: 10,
+  },
+
+  iconButton: {
+    padding: 8,
+    backgroundColor: "rgba(255,255,255,0.85)",
+    borderRadius: 30,
+    marginLeft: 12,
+  },
+
+  verticalContainer: {
+    width: "80%",
+    alignSelf: "center",
+    marginTop: 35,
+  },
+
+  tailorBox: {
+    backgroundColor: "#201f52ff",
+    height: 60,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: 'row',
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    paddingHorizontal: 20,
+  },
+
+  tailorText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "700",
+    marginLeft: 10,
+  },
+
+  horizontalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+  },
+
+  smallButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#42c3ffff",
+    paddingVertical: 14,
+    borderRadius: 16,
+    marginRight: 10,
+    shadowColor: "#1b3344ff",
+    shadowOpacity: 2,
+    shadowRadius: 5,
+  },
+
+  smallButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+    marginLeft: 6,
   },
 
   card: {
+    position: "absolute",
+    top: '20%',
+    alignSelf: "center",
     width: "88%",
     padding: 20,
-    marginTop: 20,
-    backgroundColor: "rgba(255,255,255,0.85)",
-     shadowColor: '#6C63FF',
-    shadowOpacity: 0.7,
-    shadowRadius: 100,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderRadius: 20,
+    shadowColor: '#6C63FF',
+    shadowOpacity: 3,
+    shadowRadius: 20,
+    elevation: 10,
+    zIndex: 999,
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 17,
+    fontWeight: "bold",
     color: "#444",
-    alignSelf: "center",
-    marginBottom: 15
+    marginBottom: 20,
   },
 
   itemBox: {
@@ -224,7 +409,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#eee"
+    borderColor: "#eee",
   },
 
   label: { fontSize: 13, color: "#777" },
@@ -237,30 +422,39 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#fff",
     marginBottom: 10,
-    fontSize: 16
+    fontSize: 16,
   },
 
   btn: {
     padding: 14,
     borderRadius: 14,
     alignItems: "center",
-    marginTop: 10
+    marginTop: 10,
   },
 
   btnText: { color: "#fff", fontSize: 17, fontWeight: "700" },
 
   logoutBtn: {
-    marginTop:90,
+    marginTop: 160,
     bottom: 40,
     backgroundColor: "#d85b5b",
     paddingVertical: 14,
     paddingHorizontal: 35,
     borderRadius: 30,
     flexDirection: "row",
-    alignItems: "center"
+    alignItems: "center",
+    alignSelf: "center",
   },
 
-  logoutText: { color: "#fff", fontSize: 18, fontWeight: "700", marginLeft: 6 }
+  logoutText: { color: "#fff", fontSize: 18, fontWeight: "700", marginLeft: 6 },
+
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 998,
+  }
 });
 
 export default TailorDashboard;

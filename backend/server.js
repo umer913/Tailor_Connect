@@ -214,12 +214,14 @@ app.post("/reset-password", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+// ---------------- GET PROFILE ----------------
 app.get("/get-profile", async (req, res) => {
   const { email } = req.query;
   try {
     const { data: user, error } = await supabase
       .from("profiles")
-      .select("full_name, cnic, phone_number, location") // ✅ field names in DB
+      .select("full_name, cnic, phone_number, location") 
       .eq("email", email)
       .single();
     if (error) return res.status(400).json({ error: error.message });
@@ -259,13 +261,14 @@ app.put("/update-profile", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-// ---------------- BrowseTailor ----------------
+
+// ---------------- BrowseTailors ----------------
 app.get("/get-tailors", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name")
-      .eq("role", "tailor")
+      .select("id, full_name,location,phone_number ,email")
+      .eq("role", "tailor");
 
     if (error) return res.status(400).json({ error: error.message });
 
@@ -276,7 +279,109 @@ app.get("/get-tailors", async (req, res) => {
 });
 
 
+// ---------------- ADD SERVICES ----------------
+app.post("/add-services", async (req, res) => {
+  const { email, services } = req.body;
 
+  try {
+
+    const insertData = services.map(s => ({
+      tailor_email: email,
+      service_types: s.service_types,
+      gender: s.gender,
+      description: s.description,
+      price_range: s.price_range
+    }));
+
+    const { error } = await supabase.from("services").insert(insertData);
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ message: "Services added successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ---------------- GET SERVICES FOR TAILOR ----------------
+app.get("/get-services", async (req, res) => {
+  const { email } = req.query;
+  try {
+    const { data, error } = await supabase
+      .from("services")
+      .select("*")
+      .eq("tailor_email", email);
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ services: data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ---------------- UPDATE SERVICE ----------------
+app.put("/update-service", async (req, res) => {
+  const { email, id, service_types, gender, description, price_range } = req.body;
+
+  try {
+    const { error } = await supabase
+      .from("services")
+      .update({ service_types, gender, description, price_range })
+      .eq("tailor_email", email)
+      .eq("id", id);
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ message: "Service updated successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ---------------- DELETE SERVICE ----------------
+app.delete("/delete-service/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { error } = await supabase
+      .from("services")
+      .delete()
+      .eq("id", id);
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ message: "Service deleted successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+// ---------------- Get Tailors Service ----------------
+app.get('/get-tailor-services', async (req, res) => {
+  const { email } = req.query;
+
+  if (!email) return res.status(400).json({ error: "Tailor email is required" });
+
+  try {
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('tailor_email', email); // get all services for this tailor
+
+    if (error) throw error;
+
+    res.json({ services: data }); // send array of services
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: 'Failed to fetch tailor services' });
+  }
+});
 
 // ---------------- START SERVER ----------------
 const PORT = process.env.PORT;

@@ -19,6 +19,8 @@ import BrowseTailors from '../screens/Customer/BrowseTailors';
 import CustomerChatbox from '../screens/Customer/CustomerChatbox';
 import CustomerDashboard from '../screens/Customer/CustomerDashboard';
 import CustomerOrders from '../screens/Customer/CustomerOrders';
+import OrderForm from '../screens/Customer/OrderForm';
+import TailorServices from '../screens/Customer/TailorServices';
 // Create Drawer
 const Drawer = createDrawerNavigator();
 
@@ -30,9 +32,9 @@ function CustomerDrawer({ route }) {
     <Drawer.Navigator
       initialRouteName="CustomerDashboard"
       screenOptions={{
-        headerStyle: { backgroundColor: '#ff6f61' },
+        headerStyle: { backgroundColor: '#2b2a74ff' },
         headerTintColor: '#fff',
-        drawerActiveTintColor: '#ff6f61',
+        drawerActiveTintColor: '#2b2a74ff',
         drawerLabelStyle: { fontSize: 16 },
       }}
     >
@@ -55,6 +57,11 @@ function CustomerDrawer({ route }) {
           ),
         }}
       />
+<Drawer.Screen
+  name="TailorServices"
+  component={TailorServices}
+  options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
+/>
       <Drawer.Screen
         name="CustomerOrders"
         component={CustomerOrders}
@@ -101,6 +108,7 @@ function TailorDrawer({route}) {
       <Drawer.Screen
         name="AddServices"
         component={AddServices}
+        initialParams={{ email }}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="add-circle-outline" size={size} color={color} />
@@ -142,6 +150,7 @@ const App = () => {
         <Stack.Screen options={{ headerShown: false }} name="CustomerDrawer" component={CustomerDrawer} />
         {/* Use the Tailor Drawer for tailors */}
         <Stack.Screen options={{ headerShown: false }} name="TailorDrawer" component={TailorDrawer} />
+        <Stack.Screen name="OrderForm" component={OrderForm} />
         <Stack.Screen options={{ headerShown: false }} name="AdminDashboard" component={AdminDashboard} />
         <Stack.Screen name="Forgot" component={Forgot} />
         <Stack.Screen options={{ headerShown: false }} name="Start" component={Start} />

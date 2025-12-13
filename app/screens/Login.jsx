@@ -88,7 +88,7 @@ const Login = ({ navigation }) => {
 }
 
   } catch (err) {
-    console.error("Login error:", err);
+   
 
     setError(err.response?.data?.error || "Network error: " + err.message);
   }
