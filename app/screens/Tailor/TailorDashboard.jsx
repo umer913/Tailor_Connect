@@ -132,23 +132,24 @@ const TailorDashboard = ({ route, navigation }) => {
         <View style={styles.verticalContainer}>
 
           {/* Example tailor-specific action */}
-          <TouchableOpacity
-            style={styles.tailorBox}
-            onPress={() => alert("View Orders")}
-            disabled={showProfile}
-          >
-            <Ionicons name="receipt-outline" size={26} color="rgba(234, 238, 2, 1)" />
-            <Text style={styles.tailorText}>My Orders</Text>
-          </TouchableOpacity>
+          <TouchableOpacity style={styles.locationBox} onPress={() => alert("Location pressed")} disabled={showProfile}>
+                    <Ionicons name="location-outline" size={26} color="rgba(234, 238, 2, 1)" />
+                    <View style={{ marginLeft: 10 }}>
+                      <Text style={styles.locationTitle}>My Location</Text>
+                      <Text style={styles.locationText}>
+                        {profile.location || "Fetching location..."}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.tailorBox, { marginTop: 20 }]}
-            onPress={() => alert("Manage Services")}
-            disabled={showProfile}
-          >
-            <Ionicons name="shirt-outline" size={26} color="rgba(234, 238, 2, 1)" />
-            <Text style={styles.tailorText}>Manage Services</Text>
-          </TouchableOpacity>
+          <TouchableOpacity style={styles.TruckBox} onPress={() => alert("Look for tailor")} disabled={showProfile}>
+                     <Image
+                       source={require('../../../assets/images/Truck.png')}
+                       style={styles.TruckImage}
+                       resizeMode="contain"
+                     />
+                     <Text style={styles.TruckText}>My Orders</Text>
+                   </TouchableOpacity>
 
           <View style={styles.horizontalButtons} pointerEvents={showProfile ? 'none' : 'auto'}>
 
@@ -292,12 +293,13 @@ const styles = StyleSheet.create({
     width: "90%",
     marginTop: 90,
     marginBottom: 20,
+    marginLeft:40
   },
 
   greetingSmall: {
-    fontSize: 15,
+    fontSize: 25,
     color: "#ffffffff",
-    fontWeight: "500",
+    fontWeight: "bold",
   },
 
   greetingName: {
@@ -333,25 +335,51 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginTop: 35,
   },
+  locationBox: {
+    flexDirection: "row",
+    alignItems: "center",
+  backgroundColor: "#201f52ff",
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 18,
+    marginBottom: 25,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
 
-  tailorBox: {
+  locationTitle: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  locationText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+   TruckBox: {
     backgroundColor: "#201f52ff",
-    height: 60,
+    height: 150,
     borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
-    flexDirection: 'row',
     shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowRadius: 6,
-    paddingHorizontal: 20,
   },
 
-  tailorText: {
+  TruckImage: {
+    width: 500,
+    height: 80,
+    marginBottom: 10,
+  },
+
+  TruckText: {
     color: "#fff",
     fontSize: 20,
     fontWeight: "700",
-    marginLeft: 10,
   },
 
   horizontalButtons: {

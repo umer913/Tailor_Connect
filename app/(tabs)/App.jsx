@@ -89,9 +89,9 @@ function TailorDrawer({route}) {
     <Drawer.Navigator
       initialRouteName="TailorDashboard"
       screenOptions={{
-       headerStyle: { backgroundColor: '#ff6f61' },
+        headerStyle: { backgroundColor: '#2b2a74ff' },
         headerTintColor: '#fff',
-        drawerActiveTintColor: '#ff6f61',
+        drawerActiveTintColor: '#2b2a74ff',
         drawerLabelStyle: { fontSize: 16 },
       }}
     >

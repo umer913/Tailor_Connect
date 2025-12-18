@@ -91,7 +91,7 @@ const CustomerDashboard = ({ route, navigation }) => {
 
   return (
     <View style={{ flex: 1 }}>
-       <LinearGradient colors={['#4c669f', '#3b5998', '#192f6a']} style={styles.container} pointerEvents={showProfile ? 'none' : 'auto'}>
+       <LinearGradient colors={['#64769eff', '#3b5998', '#192f6a']} style={styles.container} pointerEvents={showProfile ? 'none' : 'auto'}>
 
         <View style={styles.greetingBox}>
           <Text style={styles.greetingSmall}>Welcome back 👋</Text>
@@ -138,7 +138,7 @@ const CustomerDashboard = ({ route, navigation }) => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tailorBox} onPress={() => alert("Look for tailor")} disabled={showProfile}>
+          <TouchableOpacity style={styles.tailorBox}  onPress={() => navigation.navigate("BrowseTailors")} disabled={showProfile}>
             <Image
               source={require('../../../assets/images/3Peice.png')}
               style={styles.tailorImage}
@@ -289,12 +289,13 @@ const styles = StyleSheet.create({
     width: "90%",
     marginTop: 90,
     marginBottom: 20,
+    marginLeft:46
   },
 
   greetingSmall: {
     fontSize: 15,
     color: "#ffffffff",
-    fontWeight: "500",
+    fontWeight: "bold",
   },
 
   greetingName: {
@@ -312,14 +313,14 @@ const styles = StyleSheet.create({
 
   topRightContainer: {
     position: "absolute",
-    marginLeft: 300,
+    marginLeft: 280,
     flexDirection: "row",
     padding: 20,
   },
 
   iconButton: {
     padding: 8,
-    backgroundColor: "rgba(255,255,255,0.85)",
+    backgroundColor: "rgba(244, 244, 244, 1)",
     borderRadius: 30,
     marginLeft: 12,
   },

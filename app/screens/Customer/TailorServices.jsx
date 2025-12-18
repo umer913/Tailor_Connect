@@ -8,7 +8,8 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity
+  TouchableOpacity,
+  View
 } from "react-native";
 
 export default function TailorServices({ route, navigation }) {
@@ -29,6 +30,9 @@ export default function TailorServices({ route, navigation }) {
     "Waistcoats": require("../../../assets/images/coat.png"),
     "Shirts": require("../../../assets/images/shirt.png"),
     "Shalwar": require("../../../assets/images/shalwer.png"),
+    "Pico":require("../../../assets/images/pico.png"),
+    "Overlock":require("../../../assets/images/overlock.png"),
+    "Button Hole":require("../../../assets/images/buttonhole.png"),
   };
 
   // Small icon images (female)
@@ -44,6 +48,9 @@ export default function TailorServices({ route, navigation }) {
     "Waistcoats": require("../../../assets/images/Fcoat.png"),
     "Shirts": require("../../../assets/images/Fshirt.png"),
     "Shalwar": require("../../../assets/images/Fshalwer.png"),
+    "Pico":require("../../../assets/images/pico.png"),
+    "Overlock":require("../../../assets/images/overlock.png"),
+    "Button Hole":require("../../../assets/images/buttonhole.png"),
   };
 
   // Large images (male)
@@ -101,6 +108,15 @@ export default function TailorServices({ route, navigation }) {
     "Shalwar": [
       require("../../../assets/images/shalwer.png"),
        require("../../../assets/images/shalwer2.png"),
+    ],
+    "Pico": [
+      require("../../../assets/images/pico.png")
+    ],
+    "Overlock": [
+      require("../../../assets/images/overlock.png")
+    ],
+    "Button Hole": [
+      require("../../../assets/images/buttonhole.png")
     ],
   };
 
@@ -160,15 +176,21 @@ export default function TailorServices({ route, navigation }) {
       require("../../../assets/images/Fshalwer.png"),
        require("../../../assets/images/shalwer2.png"),
     ],
+    "Pico": [
+      require("../../../assets/images/pico.png")
+    ],
+    "Overlock": [
+      require("../../../assets/images/overlock.png")
+    ],
+    "Button Hole": [
+      require("../../../assets/images/buttonhole.png")
+    ],
   };
 
   const defaultImage = require("../../../assets/images/2Peice.png");
 
-  const buttonColors = [
-    "#cdba12c3", "#588155b7", "#2ec9e1ab", "#f494b1ff",
-    "#ebe7daff", "#d09de1ff", "#93eaf5ff", "#f2a087ff",
-    "#d78484ff", "#bbbbadff"
-  ];
+  // Single uniform button color for all cards:
+  const buttonColor = "rgba(90, 50, 180, 0.35)"; // soft purple translucent
 
   const fetchServices = async () => {
     try {
@@ -187,46 +209,51 @@ export default function TailorServices({ route, navigation }) {
   }, [email]);
 
   return (
-    <LinearGradient colors={["#cea8edff", "#d6fee2ff"]} style={styles.container}>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.navigate("BrowseTailors")}
-      >
-        <Ionicons name="arrow-back" size={24} color="#fff" />
-        <Text style={styles.backText}>Back</Text>
-      </TouchableOpacity>
+    <LinearGradient
+      colors={["#64769eff", "#3b5998", "#192f6a"]}
+      style={styles.container}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.navigate("BrowseTailors")}
+        >
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </TouchableOpacity>
 
-      <Text style={styles.title}>{name} – Services</Text>
+        <Text style={styles.title}>{name}</Text>
+        <Text style={styles.subtitle}>Available Services</Text>
+      </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#333" />
+        <ActivityIndicator size="large" color="#fff" style={{ marginTop: 50 }} />
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
           {services.length > 0 ? (
             services.map((service, serviceIndex) =>
               service.service_types.map((type, index) => {
-                const colorIndex = (serviceIndex + index) % buttonColors.length;
-
-                const genderLower = (service.gender || '').toLowerCase();
+                const genderLower = (service.gender || "").toLowerCase();
 
                 let imagesToPass = [];
                 let iconImage;
 
-                // ✅ MINIMAL CHANGE:
-                // If gender = both → use male images
                 if (
                   genderLower === "male" ||
                   genderLower === "men" ||
                   genderLower === "both"
                 ) {
-                  imagesToPass = serviceTypeImagesMale[type] || [defaultImage];
+                  imagesToPass =
+                    serviceTypeImagesMale[type] || [defaultImage];
                   iconImage = serviceImagesMale[type] || defaultImage;
-                } 
-                else if (genderLower === "female" || genderLower === "women") {
-                  imagesToPass = serviceTypeImagesFemale[type] || [defaultImage];
+                } else if (
+                  genderLower === "female" ||
+                  genderLower === "women"
+                ) {
+                  imagesToPass =
+                    serviceTypeImagesFemale[type] || [defaultImage];
                   iconImage = serviceImagesFemale[type] || defaultImage;
-                } 
-                else {
+                } else {
                   imagesToPass = [defaultImage];
                   iconImage = defaultImage;
                 }
@@ -234,7 +261,11 @@ export default function TailorServices({ route, navigation }) {
                 return (
                   <TouchableOpacity
                     key={`${service.id}-${index}`}
-                    style={[styles.serviceBtn, { backgroundColor: buttonColors[colorIndex] }]}
+                    activeOpacity={0.9}
+                    style={[
+                      styles.card,
+                      { backgroundColor: "#192f6a" },
+                    ]}
                     onPress={() =>
                       navigation.navigate("OrderForm", {
                         tailorEmail: email,
@@ -246,17 +277,19 @@ export default function TailorServices({ route, navigation }) {
                       })
                     }
                   >
-                    <Image source={iconImage} style={styles.serviceImage} />
+                    <Image source={iconImage} style={styles.image} />
 
                     <Text style={styles.serviceText}>{type}</Text>
 
-                    <Text style={styles.serviceSubText}>
+                    <Text style={styles.priceText}>
                       {service.price_range || "Price not added"}
                     </Text>
 
-                    <Text style={styles.genderText}>
-                      {service.gender ? `For: ${service.gender}` : "For: All"}
-                    </Text>
+                    <View style={styles.genderBadge}>
+                      <Text style={styles.genderText}>
+                        {service.gender ? service.gender : "All"}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 );
               })
@@ -271,69 +304,93 @@ export default function TailorServices({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 50, paddingHorizontal: 20 },
+  container: {
+    flex: 1,
+    paddingTop: 50,
+    paddingHorizontal: 18,
+  },
+
+  header: {
+    alignItems: "center",
+    marginBottom: 25,
+  },
 
   backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#2b2a74ff",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginBottom: 20
+    position: "absolute",
+    left: 0,
+    top: 0,
+    padding: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 12,
   },
-  backText: { color: "#fff", fontSize: 16, marginLeft: 6 },
 
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-    color: "#333"
+    color: "#fff",
   },
 
-  list: { paddingBottom: 25 },
+  subtitle: {
+    fontSize: 14,
+    color: "#eaeaea",
+    marginTop: 4,
+  },
 
-  serviceBtn: {
-    borderRadius: 15,
-    paddingVertical: 18,
-    paddingHorizontal: 15,
-    marginBottom: 15,
+  list: {
+    paddingBottom: 40,
+  },
+
+  card: {
+    borderRadius: 18,
+    padding: 12,
+    marginBottom: 14,
     alignItems: "center",
-    elevation: 3
+    shadowColor: "#000",
+    shadowOpacity: 0.22,
+    shadowRadius: 6,
+    elevation: 4,
   },
 
-  serviceImage: {
-    height: 180,
-    width: 300,
-    borderRadius: 10,
+  image: {
+    height: 130,
+    width: "100%",
     resizeMode: "contain",
-    marginBottom: 10
+    borderRadius: 12,
+    marginBottom: 12,
   },
 
   serviceText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700",
-    color: "#333"
+    color: "#f0f0f0",
+    marginBottom: 4,
   },
 
-  serviceSubText: {
+  priceText: {
     fontSize: 14,
-    color: "#555",
-    marginTop: 4
+    fontWeight: "600",
+    color: "#ddd",
+  },
+
+  genderBadge: {
+    marginTop: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 14,
+    backgroundColor: "#64769eff",
+    borderRadius: 20,
   },
 
   genderText: {
-    fontSize: 14,
-    color: "#222",
-    fontWeight: "600",
-    marginTop: 6
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#eee",
+    textTransform: "capitalize",
   },
 
   noServices: {
     textAlign: "center",
     fontSize: 16,
-    color: "#555",
-    marginTop: 30
-  }
+    color: "#fff",
+    marginTop: 40,
+  },
 });

@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
@@ -7,7 +8,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 export default function BrowseTailors({ navigation }) {
@@ -27,76 +28,161 @@ export default function BrowseTailors({ navigation }) {
   }, []);
 
   return (
-    <LinearGradient colors={["#000000ff", "#000000ff"]} style={styles.container}>
-      
-
- <ScrollView contentContainerStyle={styles.list}>
-  {tailors.map((tailor) => (
-    <TouchableOpacity
-      key={tailor.id}
-      style={styles.card}
-       onPress={() =>
-      navigation.navigate("TailorServices", {
-        email: tailor.email,      
-        name: tailor.full_name,
-        location: tailor.location,
-        phone_number: tailor.phone_number
-      })
-    }
-  >
-      <View style={styles.imageCircle}>
-        <Image
-          source={require("../../../assets/images/imTailor.png")}
-          style={{ height: 100, width: 300 }}
-          resizeMode="contain"
-        />
+    <LinearGradient
+      colors={["#64769eff", "#3b5998", "#192f6a"]}
+      style={styles.container}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Browse Tailors</Text>
+        <Text style={styles.headerSub}>Choose the best tailor for you</Text>
       </View>
 
-      <Text style={styles.name}>Name: {tailor.full_name}</Text>
-      <Text style={styles.name}>Location: {tailor.location}</Text>
-      <Text style={styles.name}>Phone Number: {tailor.phone_number}</Text>
-    </TouchableOpacity>
-  ))}
+      <ScrollView contentContainerStyle={styles.list}>
+        {tailors.map((tailor) => (
+          <TouchableOpacity
+            key={tailor.id}
+            style={styles.card}
+            activeOpacity={0.85}
+            onPress={() =>
+              navigation.navigate("TailorServices", {
+                email: tailor.email,
+                name: tailor.full_name,
+                location: tailor.location,
+                phone_number: tailor.phone_number,
+              })
+            }
+          >
+            {/* Image */}
+            <View style={styles.imageCircle}>
+              <Image
+                source={require("../../../assets/images/imTailor.png")}
+                style={styles.image}
+                resizeMode="contain"
+              />
+            </View>
 
-  {tailors.length === 0 && (
-    <Text style={styles.noTailors}>No tailors found.</Text>
-  )}
-</ScrollView>
+            {/* Info */}
+            <Text style={styles.name}>{tailor.full_name}</Text>
 
+            <View style={styles.infoRow}>
+              <Ionicons name="location-outline" size={18} color="#555" />
+              <Text style={styles.infoText}>{tailor.location}</Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Ionicons name="call-outline" size={18} color="#555" />
+              <Text style={styles.infoText}>{tailor.phone_number}</Text>
+            </View>
+
+            {/* Action */}
+            <View style={styles.viewBtn}>
+              <Text style={styles.viewBtnText}>View Services</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+
+        {tailors.length === 0 && (
+          <Text style={styles.noTailors}>No tailors found.</Text>
+        )}
+      </ScrollView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 50, alignItems: "center" },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, color: "#333" },
-
-  imageCircle: {
-    padding: 15,
-    borderRadius: 10,
-    backgroundColor: "#e6e4fdff",
-    marginTop: 5,
-    alignSelf: "center",
-  },
-
-  list: {width: "65%", paddingBottom: 30 },
-
-  card: {
-    backgroundColor: "#f2f2f2ff",
-    padding: 15,
-    borderRadius: 10,
-    margin: 22,
-    shadowColor: "#6C63FF",
-  
+  container: {
+    flex: 1,
+    paddingTop: 60,
     alignItems: "center",
   },
 
-  name: { fontSize: 18, color: "#333", fontWeight: "bold", marginTop: 10 },
+  header: {
+    width: "90%",
+    marginBottom: 40,
+    marginLeft:190
+  },
 
-  noTailors: { 
-    fontSize: 16, 
-    color: "#555", 
-    marginTop: 20, 
-    textAlign: "center" 
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#fff",
+
+  },
+
+  headerSub: {
+    fontSize: 14,
+    color: "#eaeaea",
+ 
+  },
+
+  list: {
+    width: "90%",
+    paddingBottom: 40,
+  },
+
+  card: {
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: "#94b4bcff",
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+ 
+    alignItems: "center",
+  },
+
+  imageCircle: {
+    backgroundColor: "#64769eff",
+    padding: 18,
+    borderRadius: 18,
+    marginBottom: 12,
+  },
+
+  image: {
+    height: 80,
+    width: 180,
+  },
+
+  name: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+
+  infoText: {
+    marginLeft: 6,
+    fontSize: 15,
+    color: "#555",
+    fontWeight: "600",
+  },
+
+  viewBtn: {
+    marginTop: 14,
+    backgroundColor: "#4a90e2",
+    paddingVertical: 10,
+    paddingHorizontal: 100,
+    borderRadius: 14,
+  },
+
+  viewBtnText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  noTailors: {
+    fontSize: 16,
+    color: "#fff",
+    marginTop: 40,
+    textAlign: "center",
   },
 });
