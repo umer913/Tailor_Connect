@@ -1,3 +1,4 @@
+
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
 
@@ -105,7 +106,7 @@ const serviceOptionsGrouped = {
       "Lapel Style": ["Peak Lapel", "Notched Lapel", "Shawl Lapel"],
       "Vent Style": ["Italian Vent", "American Vent", "English Vent"],
     },
-    Sherwani: {
+    "Sherwani": {
       "Front Style": ["Open", "Closed"],
     },
     "Shalwar Kameez": {
@@ -117,7 +118,7 @@ const serviceOptionsGrouped = {
       "Front Style": ["Flat Front", "Pleated"],
       "Bottom Style": ["Cuffed", "Plain"],
     },
-    Shirts: {
+    "Shirts": {
       "Collar Type": ["Collared", "Non-collared"],
       "Cuff Style": ["Buttoned", "Plain"],
       "Fit": ["Slim", "Regular"],
@@ -288,31 +289,35 @@ const pickFabricImage = async () => {
         <Text style={styles.genderText}>Gender: {gender || "N/A"}</Text>
 
         {images.length > 0 ? (
-          <View style={styles.imageWrapper}>
-            <TouchableOpacity
-              style={styles.leftArrow}
-              onPress={handlePrev}
-              disabled={currentIndex === 0}
-            >
-              <Text style={styles.arrowText}>{"<"}</Text>
-            </TouchableOpacity>
+         <View style={styles.imageWrapper}>
+  <TouchableOpacity
+    style={styles.leftArrow}
+    onPress={handlePrev}
+    disabled={currentIndex === 0}
+  >
+    <Text style={styles.arrowText}>{"<"}</Text>
+  </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => setZoomVisible(true)}
-              style={{ flex: 1 }}
-            >
-              <Image style={styles.mainImage} source={images[currentIndex]} />
-            </TouchableOpacity>
+  <TouchableOpacity
+    activeOpacity={0.9}
+    onPress={() => setZoomVisible(true)}
+    style={{ flex: 1 }}
+  >
+    <Image
+      style={styles.mainImage}
+      source={images[currentIndex]}
+    />
+  </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.rightArrow}
-              onPress={handleNext}
-              disabled={currentIndex === images.length - 1}
-            >
-              <Text style={styles.arrowText}>{">"}</Text>
-            </TouchableOpacity>
-          </View>
+  <TouchableOpacity
+    style={styles.rightArrow}
+    onPress={handleNext}
+    disabled={currentIndex === images.length - 1}
+  >
+    <Text style={styles.arrowText}>{">"}</Text>
+  </TouchableOpacity>
+</View>
+
         ) : (
           <Text style={{ textAlign: "center", marginVertical: 20 }}>
             No images available
@@ -694,6 +699,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginHorizontal: 6,
   },
+  imageWrapper: {
+  position: "relative",
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+leftArrow: {
+  position: "absolute",
+  left: 5,
+  backgroundColor: "#00000050",
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+  borderRadius: 50,
+  zIndex: 10,
+},
+
+rightArrow: {
+  position: "absolute",
+  right: 5,
+  backgroundColor: "#00000050",
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+  borderRadius: 50,
+  zIndex: 10,
+},
+
   selectorBtnActive: {
     backgroundColor: "#333",
     borderColor: "#333",
@@ -741,7 +773,7 @@ const styles = StyleSheet.create({
     borderColor: "#aaa",
     borderRadius: 8,
     overflow: "hidden",
-    height: 40,
+    height: 30,
     justifyContent: "center",
     width: "100%",
     alignSelf: "center",
