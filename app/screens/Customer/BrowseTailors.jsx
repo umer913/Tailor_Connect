@@ -11,7 +11,14 @@ import {
   View,
 } from "react-native";
 
-export default function BrowseTailors({ navigation }) {
+export default function BrowseTailors({ navigation, route }) {
+const CustomerEmail = route?.params?.CustomerEmail || "";
+
+
+  console.log("Customer Email:", CustomerEmail);
+  
+
+  // Get email from navigation params
   const [tailors, setTailors] = useState([]);
 
   const fetchTailors = async () => {
@@ -28,6 +35,7 @@ export default function BrowseTailors({ navigation }) {
   }, []);
 
   return (
+    
     <LinearGradient
       colors={["#64769eff", "#3b5998", "#192f6a"]}
       style={styles.container}
@@ -46,6 +54,7 @@ export default function BrowseTailors({ navigation }) {
             activeOpacity={0.85}
             onPress={() =>
               navigation.navigate("TailorServices", {
+             CustomerEmail: CustomerEmail,
                 email: tailor.email,
                 name: tailor.full_name,
                 location: tailor.location,

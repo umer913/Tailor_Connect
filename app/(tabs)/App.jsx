@@ -19,6 +19,7 @@ import BrowseTailors from '../screens/Customer/BrowseTailors';
 import CustomerChatbox from '../screens/Customer/CustomerChatbox';
 import CustomerDashboard from '../screens/Customer/CustomerDashboard';
 import CustomerOrders from '../screens/Customer/CustomerOrders';
+import Form from '../screens/Customer/Form';
 import OrderForm from '../screens/Customer/OrderForm';
 import TailorServices from '../screens/Customer/TailorServices';
 // Create Drawer
@@ -153,6 +154,7 @@ const App = () => {
         <Stack.Screen name="OrderForm" component={OrderForm} />
         <Stack.Screen options={{ headerShown: false }} name="AdminDashboard" component={AdminDashboard} />
         <Stack.Screen name="Forgot" component={Forgot} />
+         <Stack.Screen name="Form"  component={Form} />
         <Stack.Screen options={{ headerShown: false }} name="Start" component={Start} />
       </Stack.Navigator>
     </NavigationContainer>

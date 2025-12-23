@@ -1,7 +1,8 @@
 
 import { Picker } from "@react-native-picker/picker";
-import * as ImagePicker from "expo-image-picker";
-
+import axios from "axios";
+import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useRef, useState } from "react";
 import {
   Alert,
@@ -21,7 +22,7 @@ import {
   View,
 } from "react-native";
 import { PinchGestureHandler, State } from "react-native-gesture-handler";
-
+ 
 const window = Dimensions.get("window");
 
 const measurementFields = {
@@ -143,7 +144,11 @@ const serviceOptionsGrouped = {
 };
 
 export default function OrderForm({ route, navigation }) {
-  const { price, serviceType, gender, images: passedImages } = route.params || {};
+  const { CustomerEmail, tailorEmail,  price, serviceType, gender, images: passedImages,description } = route.params || {};
+
+  console.log("Customer Email:", CustomerEmail);
+  // now you can use tailorEmail and customerEmail variables in your component
+
   const images = Array.isArray(passedImages) ? passedImages : [];
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -157,6 +162,22 @@ const [fabricImage, setFabricImage] = useState(null);
   const [selectedOptionGroups, setSelectedOptionGroups] = useState({});
 
   const scale = useRef(new Animated.Value(1)).current;
+  // Define fields and optionGroups based on current selections
+function normalizeGender(gender) {
+  if (!gender) return null;
+  gender = gender.toLowerCase();
+  if (gender === "men" || gender === "male") return "male";
+  if (gender === "women" || gender === "female") return "female";
+  if (gender === "both") return "both";
+  return null;
+}
+
+const normalizedGender = normalizeGender(gender);
+const effectiveGender = selectedFormGender || normalizedGender;
+
+const fields = measurementFields[serviceType]?.[effectiveGender] || [];
+const optionsGroups = serviceOptionsGrouped[effectiveGender]?.[serviceType] || {};
+
 
   // Image carousel controls
   const handleNext = () => {
@@ -170,6 +191,27 @@ const [fabricImage, setFabricImage] = useState(null);
       setCurrentIndex(currentIndex - 1);
       scale.setValue(1);
     }
+  };
+console.log("selectedFormGender:", selectedFormGender);
+console.log("gender prop:", gender);
+console.log("effectiveGender:", effectiveGender);
+console.log("fields:", fields);
+
+  // Pick fabric image from gallery
+  const pickFabricImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setFabricImage(result.assets[0].uri);
+    }
+  };
+
+  // Open the buy modal
+  const openBuyModal = () => {
+    setBuyModalVisible(true);
   };
 
   const setField = (genderKey, key, value) => {
@@ -195,8 +237,8 @@ const [fabricImage, setFabricImage] = useState(null);
 
   const isFormValid = () => {
     if (!selectedFormGender || !serviceType || !measurementFields[serviceType]) return false;
-    const fields = measurementFields[serviceType][selectedFormGender];
-    const allMeasurementsFilled = fields.every((field) => {
+    const requiredFields = measurementFields[serviceType][selectedFormGender];
+    const allMeasurementsFilled = requiredFields.every((field) => {
       const key = field.toLowerCase().replace(/\s+/g, "");
       return measurements[selectedFormGender][key] && measurements[selectedFormGender][key].trim() !== "";
     });
@@ -211,9 +253,10 @@ const [fabricImage, setFabricImage] = useState(null);
     return allMeasurementsFilled && allOptionsSelected;
   };
 
-  const handleSubmitOrder = () => {
-    const finalGender = (gender || "").toLowerCase();
-    const formGender = finalGender === "both" ? selectedFormGender : finalGender;
+  const handleSubmitOrder = async () => {
+const finalGenderRaw = (gender || "").toLowerCase();
+const finalGender = normalizeGender(finalGenderRaw);
+const formGender = finalGender === "both" ? selectedFormGender : finalGender;
 
     if (!formGender) {
       Alert.alert("Choose gender", "Please choose Men or Women form.");
@@ -230,57 +273,67 @@ const [fabricImage, setFabricImage] = useState(null);
       return;
     }
 
-    // Submit your order here (API call or logic)
-    console.log("Placing order:", {
-      serviceType,
-      price,
-      measurements: measurements[formGender],
-      options: selectedOptionGroups,
-    });
+    try {
+      const formData = new FormData();
+      formData.append("tailor_email", tailorEmail);
+      formData.append("customer_email", CustomerEmail);
+      formData.append("service_type", serviceType);
+      formData.append("gender", formGender);
+      formData.append("price", price.toString());
+      formData.append("measurements", JSON.stringify(measurements[formGender]));
+      formData.append("options", JSON.stringify(selectedOptionGroups));
 
-    Alert.alert("Order placed", "Your order & measurements were submitted.");
-    setBuyModalVisible(false);
-    setSelectedFormGender(null);
-    setMeasurements({ male: {}, female: {} });
-    setErrors({});
-    setSelectedOptionGroups({});
+      if (fabricImage) {
+        const uriParts = fabricImage.split('.');
+        const fileType = uriParts[uriParts.length - 1];
+
+        formData.append("fabric", {
+          uri: fabricImage,
+          name: `fabric.${fileType}`,
+          type: `image/${fileType === "jpg" ? "jpeg" : fileType}`,
+        });
+      }
+
+      const response = await axios.post(
+        "http://UF-MacBook-Pro.local:3000/place-order",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+
+      Alert.alert("Order placed", "Your order & measurements were submitted.");
+
+      // Reset form state
+      setBuyModalVisible(false);
+      setSelectedFormGender(null);
+      setMeasurements({ male: {}, female: {} });
+      setErrors({});
+      setSelectedOptionGroups({});
+      setFabricImage(null);
+      navigation.navigate("Form", {
+      CustomerEmail: CustomerEmail,
+    })
+      // Navigate after successful submission
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to place order.");
+    }
   };
 
-  const openBuyModal = () => {
-    const g = (gender || "").toLowerCase();
-    if (g === "male" || g === "men") setSelectedFormGender("male");
-    else if (g === "female" || g === "women") setSelectedFormGender("female");
-    else setSelectedFormGender(null);
-    setBuyModalVisible(true);
-  };
-
-  const fields =
-    serviceType && selectedFormGender && measurementFields[serviceType]
-      ? measurementFields[serviceType][selectedFormGender]
-      : [];
-
-  const optionsGroups =
-    serviceOptionsGrouped[selectedFormGender]?.[serviceType] || {};
-const pickFabricImage = async () => {
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permission.granted) {
-    Alert.alert("Permission required", "Gallery permission is needed.");
-    return;
-  }
-
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: true,
-    quality: 0.7,
-  });
-
-  if (!result.canceled) {
-    setFabricImage(result.assets[0].uri);
-  }
-};
 
   return (
     <>
+    <LinearGradient
+      colors={['#64769eff', '#3b5998', '#192f6a']}
+      style={{ flex: 1, padding: 16 }}
+    >
+
       <ScrollView  style={styles.container}>
         <Text style={styles.title}>{serviceType || "Service"}</Text>
         <View style={styles.priceRow}>
@@ -325,23 +378,35 @@ const pickFabricImage = async () => {
         )}
 
         <TouchableOpacity
-          style={styles.buyButton}
-          onPress={() => {
-            if (noMeasurementServices.includes(serviceType)) {
-              Alert.alert(
-                "Order placed",
-                "Your order has been submitted successfully."
-              );
-              return;
-            }
-            openBuyModal();
-          }}
-        >
-          <Text style={styles.buyText}>Buy It Now</Text>
-        </TouchableOpacity>
+  style={styles.buyButton}
+onPress={() => {
+  if (noMeasurementServices.includes(serviceType)) {
+    Alert.alert(
+      "Order placed",
+      "Your order has been submitted successfully."
+    );
+    return;
+  }
+
+  const lowerGender = normalizeGender(gender);
+  setSelectedFormGender(
+    lowerGender === "male" || lowerGender === "female" ? lowerGender : null
+  );
+  setBuyModalVisible(true);
+}}
+>
+  <Text style={styles.buyText}>Buy It Now</Text>
+</TouchableOpacity>
+<View style={styles.descriptionCard}>
+  <Text style={styles.descriptionTitle}>Description</Text>
+  <Text style={styles.descriptionText}>
+    {description }
+  </Text>
+</View>
 
         <View style={{ height: 30 }} />
       </ScrollView>
+      </LinearGradient>
 
       {/* Zoom Modal */}
       <Modal visible={zoomVisible} transparent animationType="fade">
@@ -462,7 +527,7 @@ const pickFabricImage = async () => {
                                 }));
                               }}
                             
-                             itemStyle={{ fontSize: 20,color:"#000" }}     
+                             itemStyle={{ fontSize: 15,color:"#000" }}     
                             >
                               <Picker.Item label={`Select ${groupName}`} value="" />
                               {options.map((opt) => (
@@ -531,7 +596,7 @@ const pickFabricImage = async () => {
                     onPress={handleSubmitOrder}
                     disabled={!isFormValid()}
                   >
-                    <Text style={styles.modalBtnTextSubmit}>Submit Order</Text>
+                    <Text style={styles.modalBtnTextSubmit}>Next</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -540,12 +605,16 @@ const pickFabricImage = async () => {
         </TouchableWithoutFeedback>
       </Modal>
     </>
+    
   );
+   
 }
 
 const styles = StyleSheet.create({
   container: {
-    maxHeight: '100%',
+    borderRadius: 12,
+    marginTop: 30,
+    maxHeight: '90%',
     padding: 20,
     backgroundColor: "#fff",
   },
@@ -630,12 +699,34 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: "red",
   },
+
   errorText: {
     color: "red",
     fontSize: 12,
     marginTop: -8,
     marginBottom: 8,
   },
+descriptionCard: {
+  backgroundColor: "#fafafa",
+  borderRadius: 12,
+  padding: 16,
+  marginTop: 16,
+  borderWidth: 1,
+  borderColor: "#e0e0e0",
+},
+
+descriptionTitle: {
+  fontSize: 16,
+  fontWeight: "700",
+  color: "#111",
+  marginBottom: 6,
+},
+
+descriptionText: {
+  fontSize: 14,
+  lineHeight: 22,
+  color: "#444",
+},
 
   modalBackground: {
     flex: 1,
@@ -675,9 +766,10 @@ const styles = StyleSheet.create({
   buyCard: {
     backgroundColor: "#fff",
     padding: 18,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderRadius: 22,
+    margin: 20,
     maxHeight: "80%",
+    width: "90%",
   },
   buyTitle: {
     fontSize: 20,
@@ -773,7 +865,7 @@ rightArrow: {
     borderColor: "#aaa",
     borderRadius: 8,
     overflow: "hidden",
-    height: 30,
+    height: 24,
     justifyContent: "center",
     width: "100%",
     alignSelf: "center",

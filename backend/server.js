@@ -2,7 +2,9 @@ import { createClient } from "@supabase/supabase-js"; //this connects my js proj
 import cors from "cors"; //for cross sharing of resource on different ports//backend and frontend
 import dotenv from "dotenv"; //secret enviroment keys and variable are stored in .env which are not directly visible as we r not using in the code
 import express from "express"; //Nodejs Framework for creating apis,handle http request and response,parsing data
+import multer from "multer";
 import nodemailer from "nodemailer"; //node.js library to send otp messages
+
 
 dotenv.config();
 
@@ -382,6 +384,73 @@ app.get('/get-tailor-services', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch tailor services' });
   }
 });
+
+// ---------------- PLACE ORDER ----------------
+const upload = multer({ storage: multer.memoryStorage() });
+
+app.post("/place-order", upload.single("fabric"), async (req, res) => {
+  try {
+    const { customer_email, tailor_email, service_type, gender, price, measurements, options } = req.body;
+
+    let fabricImageUrl = null;
+
+    if (req.file) {
+      const fileName = `fabric_${Date.now()}.jpg`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("Fabric")
+        .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data, error: urlError } = supabase.storage
+        .from("Fabric")
+        .getPublicUrl(fileName);
+
+      if (urlError) throw urlError;
+
+      fabricImageUrl = data.publicUrl;
+    }
+
+    let parsedMeasurements = {};
+    let parsedOptions = {};
+
+    try {
+      parsedMeasurements = JSON.parse(measurements);
+    } catch (e) {
+      console.warn("Invalid measurements JSON", e);
+    }
+
+    try {
+      parsedOptions = JSON.parse(options);
+    } catch (e) {
+      console.warn("Invalid options JSON", e);
+    }
+
+    const { error } = await supabase.from("orders").insert([
+      {
+        customer_email,
+        tailor_email,
+        service_type,
+        gender,
+        price,
+        measurements: parsedMeasurements,
+        options: parsedOptions,
+        fabric_image_url: fabricImageUrl,
+      },
+    ]);
+
+    if (error) throw error;
+
+    res.json({ message: "Order placed successfully!" });
+  } catch (err) {
+    console.error("Place order error:", err);
+    res.status(500).json({ error: "Failed to place order" });
+  }
+});
+
 
 // ---------------- START SERVER ----------------
 const PORT = process.env.PORT;

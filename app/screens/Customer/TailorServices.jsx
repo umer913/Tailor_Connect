@@ -13,7 +13,9 @@ import {
 } from "react-native";
 
 export default function TailorServices({ route, navigation }) {
-  const { email, name } = route.params;
+ 
+  const { CustomerEmail, email, name } = route.params;
+  console.log("Customer Email:", CustomerEmail);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +58,7 @@ export default function TailorServices({ route, navigation }) {
   // Large images (male)
   const serviceTypeImagesMale = {
     "Shalwar Kameez": [
-     require("../../../assets/images/shalwer.png"),
+     require("../../../assets/images/shalwar.png"),
      require("../../../assets/images/shalwer1.png"),
      require("../../../assets/images/shalwer2.png"), 
     ],
@@ -268,12 +270,15 @@ export default function TailorServices({ route, navigation }) {
                     ]}
                     onPress={() =>
                       navigation.navigate("OrderForm", {
+                        CustomerEmail: CustomerEmail,
                         tailorEmail: email,
                         tailorName: name,
                         serviceType: type,
                         price: service.price_range,
                         gender: service.gender,
                         images: imagesToPass,
+                        description: service.description || "",
+                       
                       })
                     }
                   >

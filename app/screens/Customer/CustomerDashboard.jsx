@@ -138,7 +138,8 @@ const CustomerDashboard = ({ route, navigation }) => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tailorBox}  onPress={() => navigation.navigate("BrowseTailors")} disabled={showProfile}>
+          <TouchableOpacity style={styles.tailorBox}   onPress={() => navigation.navigate("BrowseTailors", { CustomerEmail: email })}
+  disabled={showProfile}>
             <Image
               source={require('../../../assets/images/3Peice.png')}
               style={styles.tailorImage}
@@ -252,7 +253,7 @@ const CustomerDashboard = ({ route, navigation }) => {
                       style={styles.input}
                     />
                     <TextInput
-                      placeholder="Location"
+                      placeholder="Street, apartment, suite"
                       value={form.location}
                       onChangeText={t => change("location", t)}
                       style={styles.input}
