@@ -15,7 +15,7 @@ import {
 
 const CustomerDashboard = ({ route, navigation }) => {
   const { email } = route.params;
-
+co
   const [profile, setProfile] = useState({});
   const [form, setForm] = useState({});
   const [editMode, setEditMode] = useState(false);

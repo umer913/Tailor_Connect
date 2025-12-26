@@ -1,4 +1,5 @@
 
+import { Ionicons } from '@expo/vector-icons';
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import * as ImagePicker from 'expo-image-picker';
@@ -19,7 +20,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View,
+  View
 } from "react-native";
 import { PinchGestureHandler, State } from "react-native-gesture-handler";
  
@@ -147,6 +148,7 @@ export default function OrderForm({ route, navigation }) {
   const { CustomerEmail, tailorEmail,  price, serviceType, gender, images: passedImages,description } = route.params || {};
 
   console.log("Customer Email:", CustomerEmail);
+  console.log("Tailor=",tailorEmail)
   // now you can use tailorEmail and customerEmail variables in your component
 
   const images = Array.isArray(passedImages) ? passedImages : [];
@@ -308,7 +310,7 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
         throw new Error(response.data.error);
       }
 
-      Alert.alert("Order placed", "Your order & measurements were submitted.");
+     
 
       // Reset form state
       setBuyModalVisible(false);
@@ -319,6 +321,7 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
       setFabricImage(null);
       navigation.navigate("Form", {
       CustomerEmail: CustomerEmail,
+      tailorEmail:tailorEmail
     })
       // Navigate after successful submission
     } catch (error) {
@@ -335,6 +338,17 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
     >
 
       <ScrollView  style={styles.container}>
+      <TouchableOpacity
+  style={styles.backButton}
+  onPress={() =>
+    navigation.navigate("CustomerDrawer", {
+      screen: "TailorService",
+      params: { CustomerEmail: CustomerEmail },
+    })
+  }
+>
+  <Ionicons name="arrow-back" size={22} color="#fff" />
+</TouchableOpacity>
         <Text style={styles.title}>{serviceType || "Service"}</Text>
         <View style={styles.priceRow}>
           <Text style={styles.newPrice}>Rs. {price}</Text>
@@ -499,7 +513,10 @@ onPress={() => {
                               placeholder={`${field} (${measurementRanges[field] || "inches"} in)`}
                               placeholderTextColor="#777"
                               value={value}
-                              onChangeText={(v) => setField(selectedFormGender, field, v)}
+                             onChangeText={(v) => {
+                             const numericValue = v.replace(/[^0-9.]/g, "");
+                             setField(selectedFormGender, field, numericValue);
+          }}
                               maxLength={4}
                               keyboardType="numeric"
                               style={[styles.input, hasError && { borderColor: "red" }]}
@@ -613,7 +630,7 @@ onPress={() => {
 const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
-    marginTop: 30,
+    marginTop: 60,
     maxHeight: '90%',
     padding: 20,
     backgroundColor: "#fff",
@@ -887,6 +904,14 @@ rightArrow: {
     height: "100%",
     borderRadius: 8,
     resizeMode: "cover",
+  },
+  backButton: {
+    position: "absolute",
+    left: 16,
+    top: 400,
+    padding: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 12,
   },
   removeImageBtn: {
     position: "absolute",

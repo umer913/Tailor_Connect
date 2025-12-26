@@ -19,7 +19,6 @@ const serviceOptions = [
   "Pico","Overlock","Button Hole"
 ];
 
-
 export default function AddServices({ route }) {
   const { email } = route.params;
 
@@ -63,7 +62,6 @@ export default function AddServices({ route }) {
       fetchServices();
       setShowAddForm(false);
     } catch (err) {
-      console.log(err);
       Alert.alert('Error', 'Failed to add service');
     }
   };
@@ -75,7 +73,6 @@ export default function AddServices({ route }) {
       });
       setServices(res.data.services || []);
     } catch (err) {
-      console.log(err);
       Alert.alert('Error', 'Failed to fetch services');
     }
   };
@@ -92,7 +89,6 @@ export default function AddServices({ route }) {
       });
       Alert.alert("Success", "Service updated!");
     } catch (err) {
-      console.log(err);
       Alert.alert("Error", "Failed to update service");
     }
   };
@@ -103,59 +99,37 @@ export default function AddServices({ route }) {
       Alert.alert("Success", "Service Deleted!");
       fetchServices();
     } catch (err) {
-      console.log(err);
       Alert.alert('Error', 'Failed to delete service');
     }
   };
 
   return (
-    <LinearGradient colors={['#4c669f', '#3b5998', '#192f6a']} style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* ---------- Switch Button ---------- */}
+    <LinearGradient colors={['#2B0F14', '#3A1419', '#4A1C22']} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+
+        {/* Switch */}
         <View style={styles.switchContainer}>
           <Pressable
-            android_ripple={{ color: '#7b52ff44' }}
-            style={({ pressed }) => [
-              styles.switchBtn,
-              !showAddForm && styles.switchActive,
-              pressed && styles.pressedBtn,
-            ]}
+            style={[styles.switchBtn, !showAddForm && styles.switchActive]}
             onPress={() => setShowAddForm(false)}
           >
-            <Image
-              source={require('../../../assets/images/MyService.png')}
-              style={styles.switchImg}
-              resizeMode="contain"
-            />
+            <Image source={require('../../../assets/images/MyService.png')} style={styles.switchImg} />
             <Text style={[styles.switchText, !showAddForm && styles.switchTextActive]}>
               My Services
             </Text>
           </Pressable>
 
           <Pressable
-            android_ripple={{ color: '#7b52ff44' }}
-            style={({ pressed }) => [
-              styles.switchBtn,
-              showAddForm && styles.switchActive,
-              pressed && styles.pressedBtn,
-            ]}
+            style={[styles.switchBtn, showAddForm && styles.switchActive]}
             onPress={() => setShowAddForm(true)}
           >
-            <Image
-              source={require('../../../assets/images/AddServicE.png')}
-              style={styles.switchImg}
-              resizeMode="contain"
-            />
+            <Image source={require('../../../assets/images/AddServicE.png')} style={styles.switchImg} />
             <Text style={[styles.switchText, showAddForm && styles.switchTextActive]}>
               Add Service
             </Text>
           </Pressable>
         </View>
 
-        {/* ---------- Content ---------- */}
         {showAddForm ? (
           <>
             <Text style={styles.title}>Add New Service</Text>
@@ -168,7 +142,6 @@ export default function AddServices({ route }) {
                 return (
                   <TouchableOpacity
                     key={opt}
-                    activeOpacity={0.8}
                     style={[
                       styles.optionBtn,
                       selected && styles.optionSelected,
@@ -176,10 +149,7 @@ export default function AddServices({ route }) {
                     ]}
                     onPress={() => !alreadyAdded && toggleServiceType(opt)}
                   >
-                    <Text style={[
-                      selected ? styles.optionTextSelected : styles.optionText,
-                      alreadyAdded && { color: '#999' }
-                    ]}>
+                    <Text style={selected ? styles.optionTextSelected : styles.optionText}>
                       {opt}
                     </Text>
                   </TouchableOpacity>
@@ -189,10 +159,9 @@ export default function AddServices({ route }) {
 
             <Text style={styles.label}>Gender</Text>
             <View style={styles.optionsContainerRow}>
-              {['men', 'women', 'both'].map(g => (
+              {['men','women','both'].map(g => (
                 <TouchableOpacity
                   key={g}
-                  activeOpacity={0.8}
                   style={[
                     styles.optionBtnGender,
                     newService.gender === g && styles.optionSelectedGender
@@ -200,34 +169,29 @@ export default function AddServices({ route }) {
                   onPress={() => setNewService({ ...newService, gender: g })}
                 >
                   <Text style={newService.gender === g ? styles.optionTextSelectedGender : styles.optionTextGender}>
-                    {g.charAt(0).toUpperCase() + g.slice(1)}
+                    {g}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.label}>Description</Text>
             <TextInput
               style={styles.input}
-              placeholder="Describe this service"
-              placeholderTextColor="#ccc"
-              multiline
-              numberOfLines={3}
+              placeholder="Description"
+              placeholderTextColor="#C9A3A3"
               value={newService.description}
-              onChangeText={(text) => setNewService({ ...newService, description: text })}
+              onChangeText={(t) => setNewService({ ...newService, description: t })}
             />
 
-            <Text style={styles.label}>Price Range</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. 5000-10000 PKR"
-              placeholderTextColor="#ccc"
+              placeholder="Price Range"
+              placeholderTextColor="#C9A3A3"
               value={newService.price_range}
-              onChangeText={(text) => setNewService({ ...newService, price_range: text })}
-              keyboardType="numeric"
+              onChangeText={(t) => setNewService({ ...newService, price_range: t })}
             />
 
-            <TouchableOpacity style={styles.addBtn} activeOpacity={0.9} onPress={addService}>
+            <TouchableOpacity style={styles.addBtn} onPress={addService}>
               <Text style={styles.btnText}>Add Service</Text>
             </TouchableOpacity>
           </>
@@ -235,50 +199,37 @@ export default function AddServices({ route }) {
           <>
             <Text style={styles.title}>My Services</Text>
 
-            {services.length > 0 ? services.map(s => (
+            {services.map(s => (
               <View key={s.id} style={styles.card}>
                 <Text style={styles.cardTitle}>{s.service_types.join(", ")}</Text>
 
-                <View style={styles.row}>
-                  <Text style={styles.label}>Gender:</Text>
-                  <Text style={styles.value}>{s.gender.charAt(0).toUpperCase() + s.gender.slice(1)}</Text>
-                </View>
-
-                <Text style={styles.label}>Description:</Text>
                 <TextInput
                   style={styles.input}
-                  multiline
                   value={s.description}
-                  onChangeText={(text) => {
-                    s.description = text;
+                  onChangeText={(t) => {
+                    s.description = t;
                     setServices([...services]);
                   }}
                 />
 
-                <Text style={styles.label}>Price Range:</Text>
                 <TextInput
                   style={styles.input}
                   value={s.price_range}
-                  onChangeText={(text) => {
-                    s.price_range = text;
+                  onChangeText={(t) => {
+                    s.price_range = t;
                     setServices([...services]);
                   }}
-                  keyboardType="numeric"
                 />
 
-                <TouchableOpacity style={styles.saveBtn} activeOpacity={0.9} onPress={() => updateService(s)}>
+                <TouchableOpacity style={styles.saveBtn} onPress={() => updateService(s)}>
                   <Text style={styles.btnText}>Save</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.deleteBtn} activeOpacity={0.9} onPress={() => deleteService(s.id)}>
+                <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteService(s.id)}>
                   <Text style={styles.btnText}>Delete</Text>
                 </TouchableOpacity>
               </View>
-            )) : (
-              <Text style={styles.noServiceText}>
-                No services added yet.
-              </Text>
-            )}
+            ))}
           </>
         )}
       </ScrollView>
@@ -288,248 +239,95 @@ export default function AddServices({ route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  scrollContainer: { padding: 20 },
 
-  scrollContainer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-
-  // Switch Button Styles
   switchContainer: {
     flexDirection: 'row',
-    backgroundColor: '#192f6a',
+    backgroundColor: '#3A1419',
     borderRadius: 20,
     marginBottom: 30,
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#36006f',
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-  },
-  switchBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-  },
-  switchActive: {
-    backgroundColor: '#8e24aa',
-  },
-  switchText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#b293d3',
-    marginTop: 8,
-  },
-  switchTextActive: {
-    color: '#fff',
-  },
-  switchImg: {
-    width: 110,
-    height: 110,
-  },
-  pressedBtn: {
-    opacity: 0.75,
   },
 
+  switchBtn: { flex: 1, alignItems: 'center', paddingVertical: 12 },
+  switchActive: { backgroundColor: '#7A1F2B' },
+  switchText: { color: '#C9A3A3', fontWeight: '700' },
+  switchTextActive: { color: '#FFF' },
+  switchImg: { width: 90, height: 90 },
+
   title: {
+    color: '#F2E6E6',
     fontSize: 28,
     fontWeight: '900',
-    color: '#e0d7f7',
-    marginBottom: 20,
     alignSelf: 'center',
-    textShadowColor: '#4a148c88',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 5,
+    marginBottom: 20,
   },
 
   card: {
-    backgroundColor: '#192f6a',
+    backgroundColor: '#E6B0B0',
     padding: 22,
-    borderRadius: 25,
-    marginBottom: 28,
-    shadowColor: '#311b92',
-    shadowOpacity: 0.8,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    borderRadius: 22,
+    marginBottom: 20,
   },
 
-  cardTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 14,
-    color: '#e1dfe4ff',
-  },
+  cardTitle: { color: '#000000ff', fontSize: 20, fontWeight: '800' },
 
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  label: { color: '#EADDDD', marginBottom: 6 },
+
+  input: {
+    backgroundColor: '#2B0F14',
+    color: '#FFF',
+    borderRadius: 14,
+    padding: 14,
     marginBottom: 12,
   },
 
-  label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#efefefff',
-    marginBottom: 8,
-  },
-
-  value: {
-    fontSize: 16,
-    color: '#fff',
-    marginLeft: 10,
-    marginBottom:8,
-    fontWeight: '500',
-  },
-
-  input: {
-    borderWidth: 0,
-    backgroundColor: '#4c669f',
-    paddingVertical:16,
-    paddingHorizontal: 18,
-    borderRadius: 16,
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 14,
-    textAlignVertical: 'top',
-    shadowColor: '#4c669f',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-
-  deleteBtn: {
-    backgroundColor: '#e53935',
-    padding: 14,
-    borderRadius: 18,
-    alignItems: 'center',
-    marginTop: 14,
-    shadowColor: '#b71c1c',
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 7,
-  },
-
   addBtn: {
-    backgroundColor: 'linear-gradient(45deg, #8e24aa, #5e35b1)', // fallback, replaced below
-    paddingVertical: 16,
+    backgroundColor: '#E6B0B0',
+    padding: 16,
     borderRadius: 22,
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#311b92',
-    shadowOpacity: 0.9,
-    shadowRadius: 12,
-    elevation: 9,
-    marginTop: 12,
-  },
-
-  btnText: {
-    color: 'white',
-    fontWeight: '800',
-    fontSize: 18,
-  },
-
-  optionsContainer: {
-    marginBottom: 20,
-    flexWrap: 'wrap',
-    flexDirection: 'row',
-    gap: 12,
-  },
-
-  optionBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    margin: 6,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#b39ddb',
-    backgroundColor: '#4a148c',
-    shadowColor: '#311b92',
-    shadowOpacity: 0.9,
-    shadowRadius: 12,
-    elevation: 6,
-    minWidth: 110,
-    alignItems: 'center',
-  },
-
-  optionSelected: {
-    backgroundColor: '#8e24aa',
-    borderColor: '#d1c4e9',
-  },
-
-  disabledOption: {
-    backgroundColor: '#7a519b66',
-    borderColor: '#593f7c',
-  },
-
-  optionText: {
-    color: '#d1c4e9',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-
-  optionTextSelected: {
-    color: '#fff',
-    fontWeight: '900',
-    fontSize: 15,
-  },
-
-  optionsContainerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-
-  optionBtnGender: {
-    flex: 1,
-    marginHorizontal: 6,
-    paddingVertical: 12,
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: '#b39ddb',
-    backgroundColor: '#4a148c',
-    alignItems: 'center',
-  },
-
-  optionSelectedGender: {
-    backgroundColor: '#8e24aa',
-    borderColor: '#d1c4e9',
-  },
-
-  optionTextGender: {
-    color: '#d1c4e9',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-
-  optionTextSelectedGender: {
-    color: '#fff',
-    fontWeight: '900',
-    fontSize: 17,
   },
 
   saveBtn: {
-    backgroundColor: '#43a047',
+    backgroundColor: '#ffffffff',
     padding: 14,
     borderRadius: 18,
-    alignItems: 'center',
-    marginTop: 12,
-    shadowColor: '#2e7d32',
-    shadowOpacity: 0.9,
-    shadowRadius: 12,
-    elevation: 8,
+    marginTop: 10,
   },
 
-  noServiceText: {
-    color: '#b39ddb',
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 40,
-    alignSelf: 'center',
+  deleteBtn: {
+    backgroundColor: '#ffffffff',
+    padding: 14,
+    borderRadius: 18,
+    marginTop: 10,
   },
+
+  btnText: { color: '#000000ff', fontWeight: '800', textAlign: 'center' },
+
+  optionsContainer: { flexDirection: 'row', flexWrap: 'wrap' },
+  optionBtn: {
+    backgroundColor: '#2B0F14',
+    borderColor: '#7A1F2B',
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 10,
+    margin: 6,
+  },
+  optionSelected: { backgroundColor: '#E6B0B0' },
+  disabledOption: { opacity: 0.4 },
+
+  optionText: { color: '#C9A3A3' },
+  optionTextSelected: { color: '#000000ff', fontWeight: '800' },
+
+  optionsContainerRow: { flexDirection: 'row', marginBottom: 20 },
+  optionBtnGender: {
+    flex: 1,
+    margin: 6,
+    padding: 12,
+    borderRadius: 20,
+    backgroundColor: '#2B0F14',
+  },
+  optionSelectedGender: { backgroundColor: '#E6B0B0' },
+  optionTextGender: { color: '#C9A3A3', textAlign: 'center' },
+  optionTextSelectedGender: { color: '#000000ff', textAlign: 'center', fontWeight: '800' },
 });

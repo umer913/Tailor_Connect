@@ -15,7 +15,7 @@ import {
 
 const TailorDashboard = ({ route, navigation }) => {
   const { email } = route.params;
-
+console.log("Tailor Dashboard Email:", email);
   const [profile, setProfile] = useState({});
   const [form, setForm] = useState({});
   const [editMode, setEditMode] = useState(false);
@@ -92,7 +92,7 @@ const TailorDashboard = ({ route, navigation }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient colors={['#4c669f', '#3b5998', '#192f6a']} style={styles.container} pointerEvents={showProfile ? 'none' : 'auto'}>
+      <LinearGradient colors={['#2B0F14', '#3A1419', '#4A1C22']} style={styles.container} pointerEvents={showProfile ? 'none' : 'auto'}>
 
         <View style={styles.greetingBox}>
           <Text style={styles.greetingSmall}>Welcome back 👋</Text>
@@ -155,19 +155,19 @@ const TailorDashboard = ({ route, navigation }) => {
 
             <TouchableOpacity
               style={styles.smallButton}
-              onPress={() => alert("Appointments")}
+              onPress={() => navigation.navigate("Appointment", { email })}
               disabled={showProfile}
             >
-              <Ionicons name="calendar-outline" size={20} color="#fff" />
+              <Ionicons name="calendar-outline" size={20} color="#4A1C22" />
               <Text style={styles.smallButtonText}>Appointments</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.smallButton, { backgroundColor: "#42c3ffff" }]}
+              style={[styles.smallButton, { backgroundColor: "#E6B0B0" }]}
               onPress={() => alert("Earnings")}
               disabled={showProfile}
             >
-              <Ionicons name="cash-outline" size={20} color="#fff" />
+              <Ionicons name="cash-outline" size={20} color="#4A1C22" />
               <Text style={styles.smallButtonText}>Earnings</Text>
             </TouchableOpacity>
 
@@ -298,14 +298,14 @@ const styles = StyleSheet.create({
 
   greetingSmall: {
     fontSize: 25,
-    color: "#ffffffff",
+    color:"#F2E6E6",
     fontWeight: "bold",
   },
 
   greetingName: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#222",
+    color: "#E6B0B0",
     marginTop: 4,
   },
 
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   locationBox: {
     flexDirection: "row",
     alignItems: "center",
-  backgroundColor: "#201f52ff",
+  backgroundColor: "#E6B0B0",
     paddingVertical: 14,
     paddingHorizontal: 18,
     borderRadius: 18,
@@ -349,18 +349,18 @@ const styles = StyleSheet.create({
   },
 
   locationTitle: {
-    color: "#fff",
+    color: "#000000ff",
     fontSize: 14,
     fontWeight: "600",
   },
 
   locationText: {
-    color: "#fff",
+    color: "#000000ff",
     fontSize: 16,
     fontWeight: "bold",
   },
    TruckBox: {
-    backgroundColor: "#201f52ff",
+    backgroundColor: "#ffffffff",
     height: 150,
     borderRadius: 22,
     justifyContent: "center",
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
 
   TruckText: {
-    color: "#fff",
+    color: "#4A1C22",
     fontSize: 20,
     fontWeight: "700",
   },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#42c3ffff",
+    backgroundColor: "#E6B0B0",
     paddingVertical: 14,
     borderRadius: 16,
     marginRight: 10,
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   },
 
   smallButtonText: {
-    color: "#fff",
+    color: "#000000ff",
     fontSize: 15,
     fontWeight: "700",
     marginLeft: 6,
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "rgba(255,255,255,0.95)",
     borderRadius: 20,
-    shadowColor: '#6C63FF',
+    shadowColor: '#E6B0B0',
     shadowOpacity: 3,
     shadowRadius: 20,
     elevation: 10,

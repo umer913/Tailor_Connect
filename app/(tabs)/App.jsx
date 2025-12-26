@@ -8,6 +8,7 @@ import Login from '../screens/Login';
 import Signup from '../screens/Signup';
 import Start from '../screens/Start';
 import AddServices from '../screens/Tailor/AddServices';
+import Appointment from '../screens/Tailor/Appointment';
 import TailorChatbox from '../screens/Tailor/TailorChatbox';
 import TailorDashboard from '../screens/Tailor/TailorDashboard';
 import TailorOrders from '../screens/Tailor/TailorOrders';
@@ -15,6 +16,7 @@ import TailorOrders from '../screens/Tailor/TailorOrders';
 // 👇 NEW imports for Drawer
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { StyleSheet } from 'react-native';
+import BookAppointment from '../screens/Customer/BookAppointment';
 import BrowseTailors from '../screens/Customer/BrowseTailors';
 import CustomerChatbox from '../screens/Customer/CustomerChatbox';
 import CustomerDashboard from '../screens/Customer/CustomerDashboard';
@@ -49,6 +51,7 @@ function CustomerDrawer({ route }) {
           ),
         }}
       />
+        
       <Drawer.Screen
         name="BrowseTailors"
         component={BrowseTailors}
@@ -58,6 +61,7 @@ function CustomerDrawer({ route }) {
           ),
         }}
       />
+        
 <Drawer.Screen
   name="TailorServices"
   component={TailorServices}
@@ -90,9 +94,9 @@ function TailorDrawer({route}) {
     <Drawer.Navigator
       initialRouteName="TailorDashboard"
       screenOptions={{
-        headerStyle: { backgroundColor: '#2b2a74ff' },
-        headerTintColor: '#fff',
-        drawerActiveTintColor: '#2b2a74ff',
+        headerStyle: { backgroundColor: '#E6B0B0' },
+        headerTintColor: '#4A1C22',
+        drawerActiveTintColor: '#E6B0B0',
         drawerLabelStyle: { fontSize: 16 },
       }}
     >
@@ -151,10 +155,13 @@ const App = () => {
         <Stack.Screen options={{ headerShown: false }} name="CustomerDrawer" component={CustomerDrawer} />
         {/* Use the Tailor Drawer for tailors */}
         <Stack.Screen options={{ headerShown: false }} name="TailorDrawer" component={TailorDrawer} />
-        <Stack.Screen name="OrderForm" component={OrderForm} />
+        <Stack.Screen  name="OrderForm" component={OrderForm} />
         <Stack.Screen options={{ headerShown: false }} name="AdminDashboard" component={AdminDashboard} />
+        <Stack.Screen name="Appointment" component={Appointment} />
+         <Stack.Screen options={{ headerShown: false }} name="BookAppointment" component={BookAppointment} />
+         
         <Stack.Screen name="Forgot" component={Forgot} />
-         <Stack.Screen name="Form"  component={Form} />
+         <Stack.Screen options={{ headerShown: false }} name="Form"  component={Form} />
         <Stack.Screen options={{ headerShown: false }} name="Start" component={Start} />
       </Stack.Navigator>
     </NavigationContainer>

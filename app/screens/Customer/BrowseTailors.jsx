@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 export default function BrowseTailors({ navigation, route }) {
@@ -36,67 +36,95 @@ const CustomerEmail = route?.params?.CustomerEmail || "";
 
   return (
     
-    <LinearGradient
-      colors={["#64769eff", "#3b5998", "#192f6a"]}
-      style={styles.container}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Browse Tailors</Text>
-        <Text style={styles.headerSub}>Choose the best tailor for you</Text>
-      </View>
+  <LinearGradient
+    colors={["#64769eff", "#3b5998", "#192f6a"]}
+    style={styles.container}
+  >
+    {/* Header */}
+    <View style={styles.header}>
+      <Text style={styles.headerTitle}>Browse Tailors</Text>
+      <Text style={styles.headerSub}>Choose the best tailor for you</Text>
+    </View>
 
-      <ScrollView contentContainerStyle={styles.list}>
-        {tailors.map((tailor) => (
-          <TouchableOpacity
-            key={tailor.id}
-            style={styles.card}
-            activeOpacity={0.85}
-            onPress={() =>
-              navigation.navigate("TailorServices", {
-             CustomerEmail: CustomerEmail,
-                email: tailor.email,
-                name: tailor.full_name,
-                location: tailor.location,
-                phone_number: tailor.phone_number,
-              })
-            }
-          >
-            {/* Image */}
-            <View style={styles.imageCircle}>
-              <Image
-                source={require("../../../assets/images/imTailor.png")}
-                style={styles.image}
-                resizeMode="contain"
-              />
-            </View>
+    <ScrollView contentContainerStyle={styles.list}>
+      {tailors.map((tailor) => (
+        <TouchableOpacity
+          key={tailor.id}
+          style={styles.card}
+          activeOpacity={0.85}
+          onPress={() =>
+            navigation.navigate("TailorServices", {
+              CustomerEmail: CustomerEmail,
+              email: tailor.email,
+              name: tailor.full_name,
+              location: tailor.location,
+              phone_number: tailor.phone_number,
+            })
+          }
+        >
+          {/* Image */}
+          <View style={styles.imageCircle}>
+            <Image
+              source={require("../../../assets/images/imTailor.png")}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          </View>
 
-            {/* Info */}
-            <Text style={styles.name}>{tailor.full_name}</Text>
+          {/* Info */}
+          <Text style={styles.name}>{tailor.full_name}</Text>
 
-            <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={18} color="#555" />
-              <Text style={styles.infoText}>{tailor.location}</Text>
-            </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={18} color="#555" />
+            <Text style={styles.infoText}>{tailor.location}</Text>
+          </View>
 
-            <View style={styles.infoRow}>
-              <Ionicons name="call-outline" size={18} color="#555" />
-              <Text style={styles.infoText}>{tailor.phone_number}</Text>
-            </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="call-outline" size={18} color="#555" />
+            <Text style={styles.infoText}>{tailor.phone_number}</Text>
+          </View>
 
-            {/* Action */}
-            <View style={styles.viewBtn}>
+          {/* Action Buttons Container */}
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity
+              style={styles.viewBtn}
+              activeOpacity={0.85}
+              onPress={() =>
+                navigation.navigate("TailorServices", {
+                  CustomerEmail: CustomerEmail,
+                  email: tailor.email,
+                  name: tailor.full_name,
+                  location: tailor.location,
+                  phone_number: tailor.phone_number,
+                })
+              }
+            >
               <Text style={styles.viewBtnText}>View Services</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
 
-        {tailors.length === 0 && (
-          <Text style={styles.noTailors}>No tailors found.</Text>
-        )}
-      </ScrollView>
-    </LinearGradient>
-  );
+            <TouchableOpacity
+              style={styles.bookBtn}
+              activeOpacity={0.85}
+              onPress={() =>
+                navigation.navigate("BookAppointment", {
+                  email: tailor.email,
+                  CustomerEmail: CustomerEmail,
+                })
+              }
+            
+            >
+              <Text style={styles.bookBtnText}>Book Appointment</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      ))}
+
+      {tailors.length === 0 && (
+        <Text style={styles.noTailors}>No tailors found.</Text>
+      )}
+    </ScrollView>
+  </LinearGradient>
+);
 }
 
 const styles = StyleSheet.create({
@@ -109,20 +137,18 @@ const styles = StyleSheet.create({
   header: {
     width: "90%",
     marginBottom: 40,
-    marginLeft:190
+    marginLeft: 190,
   },
 
   headerTitle: {
     fontSize: 26,
     fontWeight: "bold",
     color: "#fff",
-
   },
 
   headerSub: {
     fontSize: 14,
     color: "#eaeaea",
- 
   },
 
   list: {
@@ -138,7 +164,6 @@ const styles = StyleSheet.create({
     shadowColor: "#94b4bcff",
     shadowOpacity: 0.5,
     shadowRadius: 10,
- 
     alignItems: "center",
   },
 
@@ -174,11 +199,18 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  viewBtn: {
+  buttonsContainer: {
+    padding:20,
+    justifyContent: "space-between",
     marginTop: 14,
+    width: "100%",
+  },
+
+  viewBtn: {
+    marginBottom: 15,
     backgroundColor: "#4a90e2",
     paddingVertical: 10,
-    paddingHorizontal: 100,
+    paddingHorizontal: 40,
     borderRadius: 14,
   },
 
@@ -186,6 +218,21 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "700",
+    textAlign: "center",
+  },
+
+  bookBtn: {
+    backgroundColor: "#28a745", // green color
+    paddingVertical: 10,
+    paddingHorizontal: 40,
+    borderRadius: 14,
+  },
+
+  bookBtnText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+    textAlign: "center",
   },
 
   noTailors: {

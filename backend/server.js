@@ -450,7 +450,199 @@ app.post("/place-order", upload.single("fabric"), async (req, res) => {
     res.status(500).json({ error: "Failed to place order" });
   }
 });
+// ---------------- PLACE ORDER2 ----------------
+app.post("/place-order2", async (req, res) => {
+  try {
+    const { CustomerEmail, tailorEmail,full_name, address, phone } = req.body;
 
+    if (!full_name || !address || !phone) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const { error } = await supabase.from("orders").insert([
+      {
+        full_name,
+        address,
+        phone,
+      },
+    ]);
+
+    if (error) throw error;
+    await transporter.sendMail({
+      from: `"TailorX" <${process.env.EMAIL_USER}>`,
+      to: CustomerEmail,
+      subject: "Order Confirmation - TailorX",
+      text: `Hello ${full_name},\n\nYour order has been successfully placed.\nThank you for choosing TailorX!`,
+    });
+
+    // Send new order notification email to Tailor
+    await transporter.sendMail({
+      from: `"TailorX" <${process.env.EMAIL_USER}>`,
+      to: tailorEmail,
+      subject: "New Order Received - TailorX",
+      text: `Hello,\n\nYou have received a new order from ${full_name}.\nPlease check your TailorX dashboard for details.`,
+    });
+
+    res.json({ message: "Order placed successfully!" });
+  } catch (err) {
+    console.error("Place order error:", err);
+    res.status(500).json({ error: "Failed to place order" });
+  }
+});
+// ---------------- Get Profile2 ----------------
+app.get("/get-profile2", async (req, res) => {
+  const { email } = req.query;
+  try {
+    const { data: user, error } = await supabase
+      .from("profiles")
+      .select("full_name, location, phone_number")  // <-- profile fields
+      .eq("email", email)
+      .single();
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ user });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+// ---------------- Save Availability ----------------
+app.post("/save-availability", async (req, res) => {
+  try {
+    const { email, availability } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    if (!availability || Object.keys(availability).length === 0) {
+      // Delete availability if empty
+      const { error: deleteError } = await supabase
+        .from("availability")
+        .delete()
+        .eq("tailor_email", email);
+
+      if (deleteError) {
+        console.error("Supabase delete error:", deleteError);
+        return res.status(500).json({ error: "Database delete error" });
+      }
+
+      return res.json({ message: "Availability deleted" });
+    }
+
+    // Upsert availability
+    const { data, error } = await supabase
+      .from("availability")
+      .upsert(
+        {
+          tailor_email: email,
+          availability,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "tailor_email" }
+      )
+      .select();
+
+    if (error) {
+      console.error("Supabase upsert error:", error);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    res.json({ message: "Availability saved", data });
+  } catch (err) {
+    console.error("Server error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+// ---------------- Get Availability ----------------
+app.get("/get-availability/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+
+    const { data, error } = await supabase
+      .from("availability")
+      .select("availability")
+      .eq("tailor_email", email)
+      .single();
+
+    if (error && error.code !== "PGRST116") { // no row found is OK
+      console.error("Supabase error:", error);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    res.json({ availability: data ? data.availability : {} });
+  } catch (err) {
+    console.error("Server error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ---------------- Get Availability (Customer) ----------------
+app.get("/get-availability", async (req, res) => {
+  const { email } = req.query;
+
+  if (!email) return res.status(400).json({ error: "Missing email parameter" });
+
+  const { data, error } = await supabase
+    .from("availability")
+    .select("availability")
+    .eq("tailor_email", email)
+    .single();
+
+  if (error) {
+    console.error("Supabase error:", error);
+    return res.status(500).json({ availability: {} });
+  }
+
+  res.json({ availability: data ? data.availability : {} });
+});
+
+// ---------------- Book Appointment ----------------
+
+app.post("/book-appointment", async (req, res) => {
+  const { tailor_email, customer_email, day, time } = req.body;
+
+  if (!tailor_email || !customer_email || !day || !time) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
+
+  const { error } = await supabase.from("appointments").insert([
+    {
+      tailor_email,
+      customer_email,
+      day,
+      time,
+      status: "pending",
+    },
+  ]);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({ message: "Appointment booked successfully" });
+});
+// ---------------- Get Booked Slots ----------------
+// GET /get-booked-slots?email=tailor_email
+app.get("/get-booked-slots", async (req, res) => {
+  const { email } = req.query;
+
+  if (!email) return res.status(400).json({ error: "Missing email" });
+
+  try {
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("day, time")
+      .eq("tailor_email", email)
+      .eq("status", "pending"); // or filter other statuses if needed
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ booked: data || [] });
+  } catch (err) {
+    console.error("Error fetching booked slots:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // ---------------- START SERVER ----------------
 const PORT = process.env.PORT;

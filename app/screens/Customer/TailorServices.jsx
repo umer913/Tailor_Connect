@@ -219,7 +219,8 @@ export default function TailorServices({ route, navigation }) {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.navigate("BrowseTailors")}
+          onPress={() =>navigation.navigate("BrowseTailors", {
+            CustomerEmail: CustomerEmail,})}
         >
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
