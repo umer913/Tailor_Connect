@@ -12,7 +12,8 @@ import {
 } from "react-native";
 
 export default function BrowseTailors({ navigation, route }) {
-const CustomerEmail = route?.params?.CustomerEmail || "";
+const CustomerEmail = route?.params?.email || "";
+
 
 
   console.log("Customer Email:", CustomerEmail);
@@ -107,6 +108,7 @@ const CustomerEmail = route?.params?.CustomerEmail || "";
               activeOpacity={0.85}
               onPress={() =>
                 navigation.navigate("BookAppointment", {
+                  tailor_name: tailor.full_name,
                   email: tailor.email,
                   CustomerEmail: CustomerEmail,
                 })

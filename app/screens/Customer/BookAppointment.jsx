@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import axios from "axios";
 import React, { useEffect, useState } from "react";
+
 import {
   ActivityIndicator,
   Alert,
@@ -12,8 +13,8 @@ import {
 } from "react-native";
 
 export default function BookAppointment({ route, navigation }) {
-  const { email, CustomerEmail } = route.params;
-
+  const { email, CustomerEmail,tailor_name } = route.params;
+  console.log("Tailor name:", tailor_name);
   const [availability, setAvailability] = useState({});
   const [bookedSlots, setBookedSlots] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -57,6 +58,7 @@ export default function BookAppointment({ route, navigation }) {
 
     try {
       const response = await axios.post("http://UF-MacBook-Pro.local:3000/book-appointment", {
+        tailor_name:tailor_name,
         tailor_email: email,
         customer_email: CustomerEmail,
         day: selected.day,
@@ -88,12 +90,7 @@ export default function BookAppointment({ route, navigation }) {
       <View style={styles.centered}>
     <TouchableOpacity
           style={styles.backButton}
-          onPress={() =>
-            navigation.navigate("CustomerDrawer", {
-              screen: "BrowseTailors",
-              params: { CustomerEmail: CustomerEmail },
-            })
-          }
+          onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
@@ -112,12 +109,7 @@ export default function BookAppointment({ route, navigation }) {
       <View style={styles.centered}>
             <TouchableOpacity
           style={styles.backButton}
-          onPress={() =>
-            navigation.navigate("CustomerDrawer", {
-              screen: "BrowseTailors",
-              params: { CustomerEmail: CustomerEmail },
-            })
-          }
+         onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
@@ -135,12 +127,7 @@ export default function BookAppointment({ route, navigation }) {
       <ScrollView contentContainerStyle={styles.container}>
       <TouchableOpacity
           style={styles.backButton}
-          onPress={() =>
-            navigation.navigate("CustomerDrawer", {
-              screen: "BrowseTailors",
-              params: { CustomerEmail: CustomerEmail },
-            })
-          }
+           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>

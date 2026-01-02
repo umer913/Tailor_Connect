@@ -22,6 +22,7 @@ import CustomerChatbox from '../screens/Customer/CustomerChatbox';
 import CustomerDashboard from '../screens/Customer/CustomerDashboard';
 import CustomerOrders from '../screens/Customer/CustomerOrders';
 import Form from '../screens/Customer/Form';
+import MyAppointments from '../screens/Customer/MyAppointments';
 import OrderForm from '../screens/Customer/OrderForm';
 import TailorServices from '../screens/Customer/TailorServices';
 // Create Drawer
@@ -30,7 +31,6 @@ const Drawer = createDrawerNavigator();
 // Drawer content (Customer side)
 function CustomerDrawer({ route }) {
   const email = route.params?.email;
-
   return (
     <Drawer.Navigator
       initialRouteName="CustomerDashboard"
@@ -55,6 +55,7 @@ function CustomerDrawer({ route }) {
       <Drawer.Screen
         name="BrowseTailors"
         component={BrowseTailors}
+        initialParams={{ email }}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="search-outline" size={size} color={color} />
@@ -64,12 +65,26 @@ function CustomerDrawer({ route }) {
         
 <Drawer.Screen
   name="TailorServices"
+  initialParams={{ email }}
   component={TailorServices}
+  options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
+/>
+<Drawer.Screen
+  name="OrderForm"
+  initialParams={{ email }}
+  component={OrderForm}
+  options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
+/>
+<Drawer.Screen
+  name="MyAppointments"
+  initialParams={{ email }}
+  component={MyAppointments}
   options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
 />
       <Drawer.Screen
         name="CustomerOrders"
         component={CustomerOrders}
+        initialParams={{ email, }}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="clipboard-outline" size={size} color={color} />

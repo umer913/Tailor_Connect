@@ -102,12 +102,7 @@ console.log(CustomerEmail)
       <ScrollView contentContainerStyle={styles.container}>
       <TouchableOpacity
   style={styles.backButton}
-  onPress={() =>
-    navigation.navigate("CustomerDrawer", {
-      screen: "OrderForm",
-      params: { CustomerEmail: CustomerEmail },
-    })
-  }
+ onPress={() => navigation.goBack()}
 >
   <Ionicons name="arrow-back" size={22} color="#fff" />
 </TouchableOpacity>
@@ -130,6 +125,7 @@ console.log(CustomerEmail)
           <TextInput
           color='white'
             placeholder="Full Name"
+            placeholderTextColor={'gray'}
             style={styles.input}
             value={fullName}
             onChangeText={setFullName}
@@ -139,6 +135,7 @@ console.log(CustomerEmail)
           <TextInput
           color='white'
             placeholder="Full Address"
+            placeholderTextColor={'gray'}
             style={styles.input}
             value={address}
             onChangeText={setAddress}
@@ -148,6 +145,7 @@ console.log(CustomerEmail)
           <TextInput
           color='white'
             placeholder="Phone Number"
+            placeholderTextColor={'gray'}
             style={styles.input}
             keyboardType="phone-pad"
             maxLength={11}

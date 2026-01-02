@@ -273,7 +273,7 @@ export default function TailorServices({ route, navigation }) {
                       navigation.navigate("OrderForm", {
                         CustomerEmail: CustomerEmail,
                         tailorEmail: email,
-                        tailorName: name,
+                        name: name,
                         serviceType: type,
                         price: service.price_range,
                         gender: service.gender,

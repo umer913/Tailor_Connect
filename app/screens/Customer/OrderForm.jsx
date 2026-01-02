@@ -145,7 +145,7 @@ const serviceOptionsGrouped = {
 };
 
 export default function OrderForm({ route, navigation }) {
-  const { CustomerEmail, tailorEmail,  price, serviceType, gender, images: passedImages,description } = route.params || {};
+  const { CustomerEmail, tailorEmail,  price, serviceType, gender, images: passedImages,description,name } = route.params || {};
 
   console.log("Customer Email:", CustomerEmail);
   console.log("Tailor=",tailorEmail)
@@ -278,6 +278,7 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
     try {
       const formData = new FormData();
       formData.append("tailor_email", tailorEmail);
+      formData.append("tailor_name", name);
       formData.append("customer_email", CustomerEmail);
       formData.append("service_type", serviceType);
       formData.append("gender", formGender);
@@ -321,7 +322,8 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
       setFabricImage(null);
       navigation.navigate("Form", {
       CustomerEmail: CustomerEmail,
-      tailorEmail:tailorEmail
+      tailorEmail:tailorEmail,
+      name:name,
     })
       // Navigate after successful submission
     } catch (error) {

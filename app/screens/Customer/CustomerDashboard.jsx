@@ -152,7 +152,7 @@ co
 
             <TouchableOpacity
               style={styles.smallButton}
-              onPress={() => alert("My Orders")}
+              onPress={() => navigation.navigate("CustomerOrders", { CustomerEmail: email })}
               disabled={showProfile}
             >
               <Ionicons name="receipt-outline" size={20} color="#fff" />
@@ -161,7 +161,7 @@ co
 
             <TouchableOpacity
               style={[styles.smallButton, { backgroundColor: "#42c3ffff" }]}
-              onPress={() => alert("My Appointments")}
+              onPress={() => navigation.navigate("MyAppointments", { CustomerEmail: email })}
               disabled={showProfile}
             >
               <Ionicons name="calendar-outline" size={20} color="#fff" />

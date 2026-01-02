@@ -390,7 +390,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 app.post("/place-order", upload.single("fabric"), async (req, res) => {
   try {
-    const { customer_email, tailor_email, service_type, gender, price, measurements, options } = req.body;
+    const { customer_email, tailor_email, service_type, gender, price, measurements, options, tailor_name } = req.body;
 
     let fabricImageUrl = null;
 
@@ -439,6 +439,7 @@ app.post("/place-order", upload.single("fabric"), async (req, res) => {
         measurements: parsedMeasurements,
         options: parsedOptions,
         fabric_image_url: fabricImageUrl,
+        tailor_name,
       },
     ]);
 
@@ -599,7 +600,7 @@ app.get("/get-availability", async (req, res) => {
 // ---------------- Book Appointment ----------------
 
 app.post("/book-appointment", async (req, res) => {
-  const { tailor_email, customer_email, day, time } = req.body;
+  const { tailor_email, customer_email, day, time,tailor_name } = req.body;
 
   if (!tailor_email || !customer_email || !day || !time) {
     return res.status(400).json({ error: "Missing fields" });
@@ -607,6 +608,7 @@ app.post("/book-appointment", async (req, res) => {
 
   const { error } = await supabase.from("appointments").insert([
     {
+      tailor_name,
       tailor_email,
       customer_email,
       day,
@@ -619,8 +621,30 @@ app.post("/book-appointment", async (req, res) => {
 
   res.json({ message: "Appointment booked successfully" });
 });
+// ---------------- DELETE APPOINTMENT ----------------
+app.delete("/delete-appointment/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { error } = await supabase
+      .from("appointments")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ message: "Appointment deleted successfully" });
+  } catch (err) {
+    console.error("Delete appointment error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+;
+
 // ---------------- Get Booked Slots ----------------
-// GET /get-booked-slots?email=tailor_email
+
 app.get("/get-booked-slots", async (req, res) => {
   const { email } = req.query;
 
@@ -643,6 +667,114 @@ app.get("/get-booked-slots", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// ---------------- GET CUSTOMER ORDERS ----------------
+app.get("/customer-orders", async (req, res) => {
+  const { email } = req.query;
+
+  if (!email) {
+    return res.status(400).json({ error: "Customer email is required" });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(`
+        id,
+        service_type,
+        tailor_email,
+        price,
+        status,
+        fabric_image_url,
+        created_at,
+        tailor_name
+      `)
+      .eq("customer_email", email)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ orders: data || [] });
+  } catch (err) {
+    console.error("Server error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+// DELETE order by ID
+app.delete("/delete-order/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: "Order ID is required" });
+  }
+
+  try {
+    const { error } = await supabase
+      .from("orders")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ message: "Order deleted successfully" });
+  } catch (err) {
+    console.error("Delete order error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+
+
+// ---------------- GET CUSTOMER APPOINTMENTS ----------------
+app.get("/my-appointments", async (req, res) => {
+  const { email } = req.query;
+
+  if (!email) {
+    return res.status(400).json({ error: "Customer email is required" });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("appointments")
+      .select(`
+        id,
+        day,
+        time,
+        status,
+        created_at,
+        tailor_name
+        )
+      `)
+      .eq("customer_email", email)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    const formatted = (data || []).map(item => ({
+      id: item.id,
+      day: item.day,
+      time: item.time,
+      status: item.status,
+      created_at: item.created_at,
+      tailor_name: item.tailor_name,
+      tailor_email: item.tailor_email
+    }));
+
+    res.json({ appointments: formatted });
+  } catch (err) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 // ---------------- START SERVER ----------------
 const PORT = process.env.PORT;
