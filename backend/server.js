@@ -39,7 +39,7 @@ const transporter = nodemailer.createTransport({//building connection with email
 });
 
 // ---------------- SIGNUP ----------------
-app.post("/signup", async (req, res) => {//pausing function until fetching is completed
+app.post("/signup", async (req, res) => {
   const { email, password, full_name, cnic, role } = req.body;
 
   try {
@@ -238,7 +238,6 @@ app.put("/update-profile", async (req, res) => {
   const { email, full_name, cnic, phone_number, location, password } = req.body;
 
   try {
-    // Update profile fields
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ full_name, cnic, phone_number, location })
@@ -246,7 +245,6 @@ app.put("/update-profile", async (req, res) => {
 
     if (updateError) return res.status(400).json({ error: updateError.message });
 
-    // Update password if provided
     if (password && password.trim() !== "") {
       const hashed = hashPassword(password);
       const { error: pwError } = await supabase
@@ -687,7 +685,9 @@ app.get("/customer-orders", async (req, res) => {
         status,
         fabric_image_url,
         created_at,
-        tailor_name
+        tailor_name,
+        gender,
+        measurements
       `)
       .eq("customer_email", email)
       .order("created_at", { ascending: false });

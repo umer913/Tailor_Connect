@@ -1,3 +1,5 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
@@ -9,12 +11,19 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export default function CustomerOrders({ route }) {
+  const navigation = useNavigation();
   const CustomerEmail = route?.params?.CustomerEmail || "";
+
   const [orders, setOrders] = useState([]);
+  const [expandedId, setExpandedId] = useState(null);
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   /* ---------------- FETCH ORDERS ---------------- */
@@ -44,28 +53,23 @@ export default function CustomerOrders({ route }) {
 
   /* ---------------- DELETE ORDER ---------------- */
   const deleteOrder = (id) => {
-    Alert.alert(
-      "Delete Order",
-      "Are you sure you want to delete this order?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await axios.delete(
-                `http://UF-MacBook-Pro.local:3000/delete-order/${id}`
-              );
-
-              setOrders((prev) => prev.filter((o) => o.id !== id));
-            } catch (err) {
-              console.log("Delete order error", err);
-            }
-          },
+    Alert.alert("Delete Order", "Are you sure?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await axios.delete(
+              `http://UF-MacBook-Pro.local:3000/delete-order/${id}`
+            );
+            setOrders((prev) => prev.filter((o) => o.id !== id));
+          } catch (err) {
+            console.log("Delete error", err);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   /* ---------------- STATUS COLORS ---------------- */
@@ -75,11 +79,9 @@ export default function CustomerOrders({ route }) {
         return "#f59e0b";
       case "accepted":
         return "#3b82f6";
-      case "stitching":
+      case "in_progress":
         return "#8b5cf6";
-      case "ready":
-        return "#10b981";
-      case "delivered":
+      case "completed":
         return "#22c55e";
       default:
         return "#6b7280";
@@ -97,8 +99,13 @@ export default function CustomerOrders({ route }) {
       useNativeDriver: true,
     }).start();
 
+    const isOpen = expandedId === item.id;
+
     return (
-      <Animated.View
+      <AnimatedPressable
+        onPress={() =>
+          setExpandedId(isOpen ? null : item.id)
+        }
         style={[
           styles.card,
           {
@@ -107,7 +114,7 @@ export default function CustomerOrders({ route }) {
           },
         ]}
       >
-        {/* Header */}
+        {/* HEADER */}
         <View style={styles.rowBetween}>
           <Text style={styles.service}>{item.service_type}</Text>
 
@@ -145,15 +152,51 @@ export default function CustomerOrders({ route }) {
             {new Date(item.created_at).toDateString()}
           </Text>
         </View>
-      </Animated.View>
+
+        {/* 🔽 SLIDE DOWN DETAILS */}
+        {isOpen && (
+          <View style={styles.expandBox}>
+            <Text style={styles.detailTitle}>Order Details</Text>
+
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Gender: </Text>
+              {item.gender}
+            </Text>
+
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Service: </Text>
+              {item.service_type}
+            </Text>
+
+            <Text style={styles.detailLabel}>Measurements:</Text>
+
+            {item.measurements &&
+              Object.entries(item.measurements).map(
+                ([key, value]) => (
+                  <Text key={key} style={styles.measurementItem}>
+                    • {key}: {value}
+                  </Text>
+                )
+              )}
+          </View>
+        )}
+      </AnimatedPressable>
     );
   };
 
+  /* ---------------- MAIN ---------------- */
   return (
     <LinearGradient
-      colors={["#1f2933", "#111827"]}
+      colors={["#64769eff", "#3b5998", "#192f6a"]}
       style={styles.container}
     >
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </TouchableOpacity>
+
       <Text style={styles.heading}>My Orders</Text>
 
       {orders.length === 0 ? (
@@ -171,7 +214,7 @@ export default function CustomerOrders({ route }) {
   );
 }
 
-/* ---------------- STYLES (TailorX Theme) ---------------- */
+/* ---------------- STYLES ---------------- */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -179,21 +222,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
+  backButton: {
+    position: "absolute",
+    top: 30,
+    left: 20,
+    padding: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 12,
+    zIndex: 10,
+  },
+
   heading: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#fff",
+    color: "#f8f4f4ff",
     marginBottom: 25,
   },
 
   card: {
-    backgroundColor: "#1f2937",
+    backgroundColor: "rgba(255,255,255,0.95)",
     borderRadius: 20,
     padding: 18,
     marginBottom: 18,
-    shadowColor: "#000",
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
     elevation: 8,
   },
 
@@ -212,12 +262,12 @@ const styles = StyleSheet.create({
   service: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#e5e7eb",
+    color: "#333",
   },
 
   tailor: {
     fontSize: 14,
-    color: "#9ca3af",
+    color: "#666",
     marginVertical: 6,
   },
 
@@ -231,16 +281,16 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#93c5fd",
+    color: "#3b5998",
   },
 
   date: {
     fontSize: 12,
-    color: "#9ca3af",
+    color: "#777",
   },
 
   statusBadge: {
-    paddingVertical: 5,
+    paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 20,
   },
@@ -253,7 +303,7 @@ const styles = StyleSheet.create({
   },
 
   closeBtn: {
-    backgroundColor: "#374151",
+    backgroundColor: "#f2f2f2",
     width: 26,
     height: 26,
     borderRadius: 13,
@@ -262,13 +312,46 @@ const styles = StyleSheet.create({
   },
 
   closeText: {
-    color: "#f87171",
+    color: "#d85b5b",
     fontSize: 14,
     fontWeight: "700",
   },
 
+  /* 🔽 EXPAND STYLES */
+  expandBox: {
+    marginTop: 14,
+    backgroundColor: "#f8fafc",
+    borderRadius: 14,
+    padding: 14,
+  },
+
+  detailTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    marginBottom: 8,
+    color: "#1f2937",
+  },
+
+  detailLabel: {
+    fontWeight: "700",
+    color: "#374151",
+  },
+
+  detailText: {
+    fontSize: 13,
+    color: "#4b5563",
+    marginBottom: 4,
+  },
+
+  measurementItem: {
+    fontSize: 12,
+    color: "#374151",
+    marginLeft: 6,
+    marginTop: 2,
+  },
+
   emptyText: {
-    color: "#9ca3af",
+    color: "#f1f1f1",
     fontSize: 18,
     textAlign: "center",
     marginTop: 120,

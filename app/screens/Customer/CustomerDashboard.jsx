@@ -15,20 +15,28 @@ import {
 
 const CustomerDashboard = ({ route, navigation }) => {
   const { email } = route.params;
-co
+
   const [profile, setProfile] = useState({});
-  const [form, setForm] = useState({});
   const [editMode, setEditMode] = useState(false);
-
-  // Controls profile card visibility state
+  const [fullName, setFullName] = useState("");
+  const [cnic, setCnic] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [location, setLocation] = useState("");
+  const [password, setPassword] = useState("");
   const [showProfile, setShowProfile] = useState(false);
-  const [profileVisible, setProfileVisible] = useState(false); // For animation mount control
+  const [profileVisible, setProfileVisible] = useState(false);
 
-  /* ---------------- ANIMATIONS ---------------- */
+  const tailorImages = [
+    require('../../../assets/images/3Peice.png'),
+    require('../../../assets/images/blazer.png'),
+    require('../../../assets/images/Fsherwani.png'),
+  ];
+  const [currentTailorImageIndex, setCurrentTailorImageIndex] = useState(0);
+
+  /* ---------- ANIMATIONS ---------- */
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(40));
 
-  // Animate card fade and slide on showProfile toggle
   useEffect(() => {
     if (showProfile) {
       setProfileVisible(true);
@@ -44,7 +52,7 @@ co
     }
   }, [showProfile]);
 
-  /* ---------------- FETCH USER ---------------- */
+  /* ---------- FETCH PROFILE ---------- */
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -55,7 +63,11 @@ co
 
         if (data.user) {
           setProfile(data.user);
-          setForm({ ...data.user, password: "" });
+          setFullName(data.user.full_name || "");
+          setCnic(data.user.cnic || "");
+          setPhoneNumber(data.user.phone_number || "");
+          setLocation(data.user.location || "");
+          setPassword("");
         }
       } catch (err) {
         console.log("Fetch Error:", err);
@@ -63,35 +75,57 @@ co
     };
     fetchProfile();
   }, []);
-
-  /* ---------------- SAVE PROFILE ---------------- */
-  const saveProfile = async () => {
-    const { cnic, phone_number, password } = form;
-
-    if (cnic?.length !== 13) return alert("CNIC must be 13 digits.");
-    if (phone_number?.length !== 11) return alert("Phone must be 11 digits.");
+  /* ---------- Update PROFILE ---------- */
+  const updateProfile = async () => {
+    if (cnic.length !== 13) return alert("CNIC must be 13 digits.");
+    if (phoneNumber.length !== 11) return alert("Phone must be 11 digits.");
     if (password && password.length < 7) return alert("Password must be at least 7 characters.");
 
     try {
       const { data } = await axios.put(
         "http://UF-MacBook-Pro.local:3000/update-profile",
-        { email, ...form }
+        {
+          email,
+          full_name: fullName,
+          cnic,
+          phone_number: phoneNumber,
+          location,
+          password
+        }
       );
 
       if (data.error) return alert(data.error);
 
-      setProfile(form);
+      setProfile({
+        ...profile,
+        full_name: fullName,
+        cnic,
+        phone_number: phoneNumber,
+        location
+      });
+
       setEditMode(false);
+      setPassword("");
     } catch (err) {
       console.log("Update Error:", err);
     }
   };
 
-  const change = (key, val) => setForm({ ...form, [key]: val });
+  /* ---------- IMAGE ROTATION ---------- */
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTailorImageIndex(prev => (prev + 1) % tailorImages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <View style={{ flex: 1 }}>
-       <LinearGradient colors={['#64769eff', '#3b5998', '#192f6a']} style={styles.container} pointerEvents={showProfile ? 'none' : 'auto'}>
+      <LinearGradient
+        colors={['#64769eff', '#3b5998', '#192f6a']}
+        style={styles.container}
+        pointerEvents={showProfile ? 'none' : 'auto'}
+      >
 
         <View style={styles.greetingBox}>
           <Text style={styles.greetingSmall}>Welcome back 👋</Text>
@@ -100,19 +134,11 @@ co
           </Text>
         </View>
 
-        {/* ----------- TOP RIGHT BUTTONS ----------- */}
         <View style={styles.topRightContainer}>
-
-          {/* Notification Button */}
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => alert("Notifications")}
-            disabled={showProfile}
-          >
-            <Ionicons name="notifications-outline" size={24} color="rgba(0, 0, 0, 1)" />
+          <TouchableOpacity style={styles.iconButton} disabled={showProfile}>
+            <Ionicons name="chatbubbles-outline" size={28} color="blue" />
           </TouchableOpacity>
 
-          {/* Profile Button */}
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => setShowProfile(true)}
@@ -120,169 +146,106 @@ co
           >
             <Image
               source={require('../../../assets/images/Men.png')}
-              style={{ height: 35, width: 35 }}
-              resizeMode="contain"
+              style={{ height: 40, width: 40 }}
+               resizeMode="contain"
             />
           </TouchableOpacity>
-
         </View>
 
         <View style={styles.verticalContainer}>
-          <TouchableOpacity style={styles.locationBox} onPress={() => alert("Location pressed")} disabled={showProfile}>
-            <Ionicons name="location-outline" size={26} color="rgba(234, 238, 2, 1)" />
+          <TouchableOpacity style={styles.locationBox} disabled={showProfile}>
+            <Ionicons name="location-outline" size={26} color="lightblue" />
             <View style={{ marginLeft: 10 }}>
               <Text style={styles.locationTitle}>My Location</Text>
-              <Text style={styles.locationText}>
-                {profile.location || "Fetching location..."}
-              </Text>
+              <Text style={styles.locationText}>{profile.location}</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tailorBox}   onPress={() => navigation.navigate("BrowseTailors", { CustomerEmail: email })}
-  disabled={showProfile}>
-            <Image
-              source={require('../../../assets/images/3Peice.png')}
-              style={styles.tailorImage}
-              resizeMode="contain"
-            />
+          <TouchableOpacity
+            style={styles.tailorBox}
+            onPress={() => navigation.navigate("BrowseTailors", { CustomerEmail: email })}
+            disabled={showProfile}
+          >
+            <Image source={tailorImages[currentTailorImageIndex]} style={styles.tailorImage} />
             <Text style={styles.tailorText}>Look for a Tailor</Text>
           </TouchableOpacity>
 
-          <View style={styles.horizontalButtons} pointerEvents={showProfile ? 'none' : 'auto'}>
-
+          <View style={styles.horizontalButtons}>
             <TouchableOpacity
               style={styles.smallButton}
               onPress={() => navigation.navigate("CustomerOrders", { CustomerEmail: email })}
-              disabled={showProfile}
             >
-              <Ionicons name="receipt-outline" size={20} color="#fff" />
+              <Ionicons name="receipt-outline" size={23} color="#ffffffff" />
               <Text style={styles.smallButtonText}>My Orders</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.smallButton, { backgroundColor: "#42c3ffff" }]}
+              style={styles.smallButton}
               onPress={() => navigation.navigate("MyAppointments", { CustomerEmail: email })}
-              disabled={showProfile}
             >
-              <Ionicons name="calendar-outline" size={20} color="#fff" />
+              <Ionicons name="calendar-outline" size={23} color="#fff" />
               <Text style={styles.smallButtonText}>My Appointments</Text>
             </TouchableOpacity>
-
           </View>
         </View>
 
-        {/* LOGOUT */}
         <TouchableOpacity
           style={styles.logoutBtn}
           onPress={() => navigation.navigate("Login")}
-          disabled={showProfile}
         >
-          <Ionicons name="log-out-outline" size={24} color="#fff" />
+          <Ionicons name="log-out-outline" size={23} color="#fff" />
           <Text style={styles.logoutText}> Logout</Text>
         </TouchableOpacity>
-
       </LinearGradient>
 
-      {/* Profile overlay + card */}
+      {/* ---------- PROFILE CARD ---------- */}
       {profileVisible && (
         <TouchableWithoutFeedback onPress={() => setShowProfile(false)}>
           <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-            <TouchableWithoutFeedback onPress={e => e.stopPropagation()}>
-              <Animated.View
-                style={[
-                  styles.card,
-                  {
-                    opacity: fadeAnim,
-                    transform: [{ translateY: slideAnim }],
-                  }
-                ]}
-              >
+            <Animated.View style={[styles.card, { transform: [{ translateY: slideAnim }] }]}>
 
-                {!editMode ? (
-                  <>
-                    <Text style={styles.title}>My Profile</Text>
+              {!editMode ? (
+                <>
+                  <Text style={styles.title}>My Profile</Text>
 
-                    {/* Profile Items */}
-                    <View style={styles.itemBox}>
-                      <Text style={styles.label}>Full Name</Text>
-                      <Text style={styles.value}>{profile.full_name}</Text>
-                    </View>
-                    <View style={styles.itemBox}>
-                      <Text style={styles.label}>CNIC</Text>
-                      <Text style={styles.value}>{profile.cnic}</Text>
-                    </View>
-                    <View style={styles.itemBox}>
-                      <Text style={styles.label}>Phone Number</Text>
-                      <Text style={styles.value}>{profile.phone_number}</Text>
-                    </View>
-                    <View style={styles.itemBox}>
-                      <Text style={styles.label}>Location</Text>
-                      <Text style={styles.value}>{profile.location}</Text>
-                    </View>
+                  <View style={styles.itemBox}><Text style={styles.label}>Full Name</Text><Text style={styles.value}>{profile.full_name}</Text></View>
+                  <View style={styles.itemBox}><Text style={styles.label}>CNIC</Text><Text style={styles.value}>{profile.cnic}</Text></View>
+                  <View style={styles.itemBox}><Text style={styles.label}>Phone</Text><Text style={styles.value}>{profile.phone_number}</Text></View>
+                  <View style={styles.itemBox}><Text style={styles.label}>Location</Text><Text style={styles.value}>{profile.location}</Text></View>
 
-                    {/* Edit Button */}
-                    <TouchableOpacity style={[styles.btn, { backgroundColor: "#4a90e2" }]} onPress={() => setEditMode(true)}>
-                      <Text style={styles.btnText}>Edit Details</Text>
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.title}>Edit Profile</Text>
+                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#4a90e2" }]} onPress={() => setEditMode(true)}>
+                    <Text style={styles.btnText}>Edit Details</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.title}>Edit Profile</Text>
 
-                    {/* Inputs */}
-                    <TextInput
-                      placeholder="Full Name"
-                      value={form.full_name}
-                      onChangeText={t => change("full_name", t)}
-                      style={styles.input}
-                    />
-                    <TextInput
-                      placeholder="CNIC"
-                      keyboardType="numeric"
-                      maxLength={13}
-                      value={form.cnic}
-                      onChangeText={t => change("cnic", t)}
-                      style={styles.input}
-                    />
-                    <TextInput
-                      placeholder="Phone Number"
-                      keyboardType="numeric"
-                      maxLength={11}
-                      value={form.phone_number}
-                      onChangeText={t => change("phone_number", t)}
-                      style={styles.input}
-                    />
-                    <TextInput
-                      placeholder="Street, apartment, suite"
-                      value={form.location}
-                      onChangeText={t => change("location", t)}
-                      style={styles.input}
-                    />
-                    <TextInput
-                      placeholder="New Password (optional)"
-                      secureTextEntry
-                      value={form.password}
-                      onChangeText={t => change("password", t)}
-                      style={styles.input}
-                    />
+                  <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Full Name" />
+                  <TextInput style={styles.input} value={cnic} onChangeText={setCnic} placeholder="CNIC" keyboardType="numeric" maxLength={13} />
+                  <TextInput style={styles.input} value={phoneNumber} onChangeText={setPhoneNumber} placeholder="Phone" keyboardType="numeric" maxLength={11} />
+                  <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="Location" />
+                  <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="New Password" secureTextEntry />
 
-                    {/* Save & Cancel */}
-                    <TouchableOpacity style={[styles.btn, { backgroundColor: "#4CAF50" }]} onPress={saveProfile}>
-                      <Text style={styles.btnText}>Save Changes</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.btn, { backgroundColor: "#f05454" }]} onPress={() => setEditMode(false)}>
-                      <Text style={styles.btnText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </Animated.View>
-            </TouchableWithoutFeedback>
+                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#4CAF50" }]} onPress={updateProfile}>
+                    <Text style={styles.btnText}>Save Changes</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#f05454" }]} onPress={() => setEditMode(false)}>
+                    <Text style={styles.btnText}>Cancel</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+            </Animated.View>
           </Animated.View>
         </TouchableWithoutFeedback>
       )}
     </View>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: "center" },
@@ -294,24 +257,16 @@ const styles = StyleSheet.create({
   },
 
   greetingSmall: {
-    fontSize: 15,
+    fontSize: 25,
     color: "#ffffffff",
     fontWeight: "bold",
   },
 
   greetingName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#f8f4f4ff",
+    fontSize: 22,
+    color: "#d8eceeff",
     marginTop: 4,
   },
-
-  greetingSub: {
-    fontSize: 14,
-   color: "#ffffffff",
-    marginTop: 6,
-  },
-
   topRightContainer: {
     position: "absolute",
     marginLeft: 280,
@@ -369,8 +324,8 @@ const styles = StyleSheet.create({
   },
 
   tailorImage: {
-    width: 60,
-    height: 80,
+    width: 80,
+    height: 90,
     marginBottom: 10,
   },
 
@@ -402,7 +357,7 @@ const styles = StyleSheet.create({
 
   smallButtonText: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "700",
     marginLeft: 6,
   },
@@ -419,7 +374,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 3,
     shadowRadius: 20,
     elevation: 10,
-    zIndex: 999,
+
   },
 
   title: {
@@ -478,7 +433,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 998,
   }
 });
 

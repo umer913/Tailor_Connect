@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
-import AdminDashboard from '../screens/AdminDashboard';
+import AdminDashboard from '../screens/Admin/AdminDashboard';
 import Forgot from '../screens/Forgot';
 import Login from '../screens/Login';
 import Signup from '../screens/Signup';

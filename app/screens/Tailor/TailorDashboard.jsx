@@ -15,20 +15,26 @@ import {
 
 const TailorDashboard = ({ route, navigation }) => {
   const { email } = route.params;
-console.log("Tailor Dashboard Email:", email);
+  console.log("Tailor Dashboard Email:", email);
+
   const [profile, setProfile] = useState({});
-  const [form, setForm] = useState({});
   const [editMode, setEditMode] = useState(false);
 
-  // Controls profile card visibility state
+  /* --------- PROFILE STATES (REPLACED form) --------- */
+  const [fullName, setFullName] = useState("");
+  const [cnic, setCnic] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [location, setLocation] = useState("");
+  const [password, setPassword] = useState("");
+
+  /* --------- PROFILE CARD STATES --------- */
   const [showProfile, setShowProfile] = useState(false);
-  const [profileVisible, setProfileVisible] = useState(false); // For animation mount control
+  const [profileVisible, setProfileVisible] = useState(false);
 
   /* ---------------- ANIMATIONS ---------------- */
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(40));
 
-  // Animate card fade and slide on showProfile toggle
   useEffect(() => {
     if (showProfile) {
       setProfileVisible(true);
@@ -44,7 +50,7 @@ console.log("Tailor Dashboard Email:", email);
     }
   }, [showProfile]);
 
-  /* ---------------- FETCH USER ---------------- */
+  /* ---------------- FETCH PROFILE ---------------- */
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -55,7 +61,11 @@ console.log("Tailor Dashboard Email:", email);
 
         if (data.user) {
           setProfile(data.user);
-          setForm({ ...data.user, password: "" });
+          setFullName(data.user.full_name || "");
+          setCnic(data.user.cnic || "");
+          setPhoneNumber(data.user.phone_number || "");
+          setLocation(data.user.location || "");
+          setPassword("");
         }
       } catch (err) {
         console.log("Fetch Error:", err);
@@ -66,55 +76,62 @@ console.log("Tailor Dashboard Email:", email);
 
   /* ---------------- SAVE PROFILE ---------------- */
   const saveProfile = async () => {
-    const { cnic, phone_number, password } = form;
-
-    if (cnic?.length !== 13) return alert("CNIC must be 13 digits.");
-    if (phone_number?.length !== 11) return alert("Phone must be 11 digits.");
+    if (cnic.length !== 13) return alert("CNIC must be 13 digits.");
+    if (phoneNumber.length !== 11) return alert("Phone must be 11 digits.");
     if (password && password.length < 7) return alert("Password must be at least 7 characters.");
 
     try {
       const { data } = await axios.put(
         "http://UF-MacBook-Pro.local:3000/update-profile",
-        { email, ...form }
+        {
+          email,
+          full_name: fullName,
+          cnic,
+          phone_number: phoneNumber,
+          location,
+          password
+        }
       );
 
       if (data.error) return alert(data.error);
 
-      setProfile(form);
+      setProfile({
+        ...profile,
+        full_name: fullName,
+        cnic,
+        phone_number: phoneNumber,
+        location
+      });
+
       setEditMode(false);
       setShowProfile(false);
+      setPassword("");
     } catch (err) {
       console.log("Update Error:", err);
     }
   };
 
-  const change = (key, val) => setForm({ ...form, [key]: val });
-
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient colors={['#2B0F14', '#3A1419', '#4A1C22']} style={styles.container} pointerEvents={showProfile ? 'none' : 'auto'}>
+      <LinearGradient
+        colors={['#2B0F14', '#3A1419', '#4A1C22']}
+        style={styles.container}
+        pointerEvents={showProfile ? 'none' : 'auto'}
+      >
 
         <View style={styles.greetingBox}>
           <Text style={styles.greetingSmall}>Welcome back 👋</Text>
           <Text style={styles.greetingName}>
             {profile.full_name || "Tailor"}
           </Text>
-       
         </View>
 
         {/* ----------- TOP RIGHT BUTTONS ----------- */}
         <View style={styles.topRightContainer}>
-
-          {/* Notification Button */}
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => alert("Notifications")}
-            disabled={showProfile}
-          >
-            <Ionicons name="notifications-outline" size={24} color="rgba(0, 0, 0, 1)" />
+          <TouchableOpacity style={styles.iconButton} disabled={showProfile}>
+            <Ionicons name="notifications-outline" size={24} color="black" />
           </TouchableOpacity>
 
-          {/* Profile Button */}
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => setShowProfile(true)}
@@ -126,166 +143,102 @@ console.log("Tailor Dashboard Email:", email);
               resizeMode="contain"
             />
           </TouchableOpacity>
-
         </View>
 
         <View style={styles.verticalContainer}>
+          <TouchableOpacity style={styles.locationBox} disabled={showProfile}>
+            <Ionicons name="location-outline" size={26} color="rgba(234,238,2,1)" />
+            <View style={{ marginLeft: 10 }}>
+              <Text style={styles.locationTitle}>My Location</Text>
+              <Text style={styles.locationText}>{profile.location}</Text>
+            </View>
+          </TouchableOpacity>
 
-          {/* Example tailor-specific action */}
-          <TouchableOpacity style={styles.locationBox} onPress={() => alert("Location pressed")} disabled={showProfile}>
-                    <Ionicons name="location-outline" size={26} color="rgba(234, 238, 2, 1)" />
-                    <View style={{ marginLeft: 10 }}>
-                      <Text style={styles.locationTitle}>My Location</Text>
-                      <Text style={styles.locationText}>
-                        {profile.location || "Fetching location..."}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
+          <TouchableOpacity style={styles.TruckBox} disabled={showProfile}>
+            <Image
+              source={require('../../../assets/images/Truck.png')}
+              style={styles.TruckImage}
+              resizeMode="contain"
+            />
+            <Text style={styles.TruckText}>My Orders</Text>
+          </TouchableOpacity>
 
-          <TouchableOpacity style={styles.TruckBox} onPress={() => alert("Look for tailor")} disabled={showProfile}>
-                     <Image
-                       source={require('../../../assets/images/Truck.png')}
-                       style={styles.TruckImage}
-                       resizeMode="contain"
-                     />
-                     <Text style={styles.TruckText}>My Orders</Text>
-                   </TouchableOpacity>
-
-          <View style={styles.horizontalButtons} pointerEvents={showProfile ? 'none' : 'auto'}>
-
+          <View style={styles.horizontalButtons}>
             <TouchableOpacity
               style={styles.smallButton}
               onPress={() => navigation.navigate("Appointment", { email })}
-              disabled={showProfile}
             >
               <Ionicons name="calendar-outline" size={20} color="#4A1C22" />
               <Text style={styles.smallButtonText}>Appointments</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.smallButton, { backgroundColor: "#E6B0B0" }]}
-              onPress={() => alert("Earnings")}
-              disabled={showProfile}
-            >
+            <TouchableOpacity style={styles.smallButton}>
               <Ionicons name="cash-outline" size={20} color="#4A1C22" />
               <Text style={styles.smallButtonText}>Earnings</Text>
             </TouchableOpacity>
-
           </View>
         </View>
 
-        {/* LOGOUT */}
         <TouchableOpacity
           style={styles.logoutBtn}
           onPress={() => navigation.navigate("Login")}
-          disabled={showProfile}
         >
           <Ionicons name="log-out-outline" size={24} color="#fff" />
           <Text style={styles.logoutText}> Logout</Text>
         </TouchableOpacity>
-
       </LinearGradient>
 
-      {/* Profile overlay + card */}
+      {/* ----------- PROFILE CARD ----------- */}
       {profileVisible && (
         <TouchableWithoutFeedback onPress={() => setShowProfile(false)}>
           <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-            <TouchableWithoutFeedback onPress={e => e.stopPropagation()}>
-              <Animated.View
-                style={[
-                  styles.card,
-                  {
-                    opacity: fadeAnim,
-                    transform: [{ translateY: slideAnim }],
-                  }
-                ]}
-              >
+            <Animated.View
+              style={[
+                styles.card,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+              ]}
+            >
+              {!editMode ? (
+                <>
+                  <Text style={styles.title}>My Profile</Text>
 
-                {!editMode ? (
-                  <>
-                    <Text style={styles.title}>My Profile</Text>
+                  <View style={styles.itemBox}><Text style={styles.label}>Full Name</Text><Text style={styles.value}>{profile.full_name}</Text></View>
+                  <View style={styles.itemBox}><Text style={styles.label}>CNIC</Text><Text style={styles.value}>{profile.cnic}</Text></View>
+                  <View style={styles.itemBox}><Text style={styles.label}>Phone Number</Text><Text style={styles.value}>{profile.phone_number}</Text></View>
+                  <View style={styles.itemBox}><Text style={styles.label}>Location</Text><Text style={styles.value}>{profile.location}</Text></View>
 
-                    {/* Profile Items */}
-                    <View style={styles.itemBox}>
-                      <Text style={styles.label}>Full Name</Text>
-                      <Text style={styles.value}>{profile.full_name}</Text>
-                    </View>
-                    <View style={styles.itemBox}>
-                      <Text style={styles.label}>CNIC</Text>
-                      <Text style={styles.value}>{profile.cnic}</Text>
-                    </View>
-                    <View style={styles.itemBox}>
-                      <Text style={styles.label}>Phone Number</Text>
-                      <Text style={styles.value}>{profile.phone_number}</Text>
-                    </View>
-                    <View style={styles.itemBox}>
-                      <Text style={styles.label}>Location</Text>
-                      <Text style={styles.value}>{profile.location}</Text>
-                    </View>
+                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#4a90e2" }]} onPress={() => setEditMode(true)}>
+                    <Text style={styles.btnText}>Edit Details</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.title}>Edit Profile</Text>
 
-                    {/* Edit Button */}
-                    <TouchableOpacity style={[styles.btn, { backgroundColor: "#4a90e2" }]} onPress={() => setEditMode(true)}>
-                      <Text style={styles.btnText}>Edit Details</Text>
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.title}>Edit Profile</Text>
+                  <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Full Name" />
+                  <TextInput style={styles.input} value={cnic} onChangeText={setCnic} keyboardType="numeric" maxLength={13} placeholder="CNIC" />
+                  <TextInput style={styles.input} value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="numeric" maxLength={11} placeholder="Phone Number" />
+                  <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="Location" />
+                  <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="New Password (optional)" />
 
-                    {/* Inputs */}
-                    <TextInput
-                      placeholder="Full Name"
-                      value={form.full_name}
-                      onChangeText={t => change("full_name", t)}
-                      style={styles.input}
-                    />
-                    <TextInput
-                      placeholder="CNIC"
-                      keyboardType="numeric"
-                      maxLength={13}
-                      value={form.cnic}
-                      onChangeText={t => change("cnic", t)}
-                      style={styles.input}
-                    />
-                    <TextInput
-                      placeholder="Phone Number"
-                      keyboardType="numeric"
-                      maxLength={11}
-                      value={form.phone_number}
-                      onChangeText={t => change("phone_number", t)}
-                      style={styles.input}
-                    />
-                    <TextInput
-                      placeholder="Location"
-                      value={form.location}
-                      onChangeText={t => change("location", t)}
-                      style={styles.input}
-                    />
-                    <TextInput
-                      placeholder="New Password (optional)"
-                      secureTextEntry
-                      value={form.password}
-                      onChangeText={t => change("password", t)}
-                      style={styles.input}
-                    />
+                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#4CAF50" }]} onPress={saveProfile}>
+                    <Text style={styles.btnText}>Save Changes</Text>
+                  </TouchableOpacity>
 
-                    {/* Save & Cancel */}
-                    <TouchableOpacity style={[styles.btn, { backgroundColor: "#4CAF50" }]} onPress={saveProfile}>
-                      <Text style={styles.btnText}>Save Changes</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.btn, { backgroundColor: "#f05454" }]} onPress={() => setEditMode(false)}>
-                      <Text style={styles.btnText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </Animated.View>
-            </TouchableWithoutFeedback>
+                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#f05454" }]} onPress={() => setEditMode(false)}>
+                    <Text style={styles.btnText}>Cancel</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </Animated.View>
           </Animated.View>
         </TouchableWithoutFeedback>
       )}
     </View>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: "center" },
