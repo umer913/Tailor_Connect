@@ -232,78 +232,62 @@ export default function TailorServices({ route, navigation }) {
       {loading ? (
         <ActivityIndicator size="large" color="#fff" style={{ marginTop: 50 }} />
       ) : (
-        <ScrollView contentContainerStyle={styles.list}>
-          {services.length > 0 ? (
-            services.map((service, serviceIndex) =>
-              service.service_types.map((type, index) => {
-                const genderLower = (service.gender || "").toLowerCase();
+       <ScrollView contentContainerStyle={styles.list}>
+  {services.length > 0 ? (
+    services.map((service) => 
+      service.service_types.map((type, index) => {
+        const gender = (service.gender || "").toLowerCase();
 
-                let imagesToPass = [];
-                let iconImage;
+        // Set default images first
+        let imagesToPass = [defaultImage];
+        let iconImage = defaultImage;
 
-                if (
-                  genderLower === "male" ||
-                  genderLower === "men" ||
-                  genderLower === "both"
-                ) {
-                  imagesToPass =
-                    serviceTypeImagesMale[type] || [defaultImage];
-                  iconImage = serviceImagesMale[type] || defaultImage;
-                } else if (
-                  genderLower === "female" ||
-                  genderLower === "women"
-                ) {
-                  imagesToPass =
-                    serviceTypeImagesFemale[type] || [defaultImage];
-                  iconImage = serviceImagesFemale[type] || defaultImage;
-                } else {
-                  imagesToPass = [defaultImage];
-                  iconImage = defaultImage;
-                }
+        // Assign images based on gender
+        if (gender === "male" || gender === "men" || gender === "both") {
+          imagesToPass = serviceTypeImagesMale[type] || [defaultImage];
+          iconImage = serviceImagesMale[type] || defaultImage;
+        } else if (gender === "female" || gender === "women") {
+          imagesToPass = serviceTypeImagesFemale[type] || [defaultImage];
+          iconImage = serviceImagesFemale[type] || defaultImage;
+        }
 
-                return (
-                  <TouchableOpacity
-                    key={`${service.id}-${index}`}
-                    activeOpacity={0.9}
-                    style={[
-                      styles.card,
-                      { backgroundColor: "#192f6a" },
-                    ]}
-                    onPress={() =>
-                      navigation.navigate("OrderForm", {
-                        CustomerEmail: CustomerEmail,
-                        tailorEmail: email,
-                        name: name,
-                        serviceType: type,
-                        price: service.price_range,
-                        gender: service.gender,
-                        images: imagesToPass,
-                        description: service.description || "",
-                       
-                      })
-                    }
-                  >
-                    <Image source={iconImage} style={styles.image} />
-
-                    <Text style={styles.serviceText}>{type}</Text>
-
-                    <Text style={styles.priceText}>
-                      {service.price_range || "Price not added"}
-                    </Text>
-
-                    <View style={styles.genderBadge}>
-                      <Text style={styles.genderText}>
-                        {service.gender ? service.gender : "All"}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
+        return (
+          <TouchableOpacity
+            key={`${service.id}-${index}`}
+            activeOpacity={0.9}
+            style={[styles.card, { backgroundColor: "#192f6a" }]}
+            onPress={() =>
+              navigation.navigate("OrderForm", {
+                CustomerEmail,
+                tailorEmail: email,
+                name,
+                serviceType: type,
+                price: service.price_range,
+                gender: service.gender,
+                images: imagesToPass,
+                description: service.description || "",
               })
-            )
-          ) : (
-            <Text style={styles.noServices}>No services added.</Text>
-          )}
-        </ScrollView>
+            }
+          >
+            <Image source={iconImage} style={styles.image} />
+            <Text style={styles.serviceText}>{type}</Text>
+            <Text style={styles.priceText}>
+              {service.price_range || "Price not added"}
+            </Text>
+            <View style={styles.genderBadge}>
+              <Text style={styles.genderText}>
+                {service.gender || "All"}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })
+    )
+  ) : (
+    <Text style={styles.noServices}>No services added.</Text>
+  )}
+</ScrollView>
+
       )}
     </LinearGradient>
   );

@@ -4,7 +4,7 @@ import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Animated,
@@ -149,8 +149,7 @@ export default function OrderForm({ route, navigation }) {
 
   console.log("Customer Email:", CustomerEmail);
   console.log("Tailor=",tailorEmail)
-  // now you can use tailorEmail and customerEmail variables in your component
-
+  
   const images = Array.isArray(passedImages) ? passedImages : [];
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -163,7 +162,8 @@ const [fabricImage, setFabricImage] = useState(null);
   const [errors, setErrors] = useState({});
   const [selectedOptionGroups, setSelectedOptionGroups] = useState({});
 
-  const scale = useRef(new Animated.Value(1)).current;
+const [scale] = useState(new Animated.Value(1));
+
   // Define fields and optionGroups based on current selections
 function normalizeGender(gender) {
   if (!gender) return null;
@@ -181,7 +181,7 @@ const fields = measurementFields[serviceType]?.[effectiveGender] || [];
 const optionsGroups = serviceOptionsGrouped[effectiveGender]?.[serviceType] || {};
 
 
-  // Image carousel controls
+  // Image moving controls
   const handleNext = () => {
     if (currentIndex < images.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -300,11 +300,7 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
       const response = await axios.post(
         "http://UF-MacBook-Pro.local:3000/place-order",
         formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+   
       );
 
       if (response.data.error) {
@@ -324,309 +320,422 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
       CustomerEmail: CustomerEmail,
       tailorEmail:tailorEmail,
       name:name,
+      orderId: response.data.order_id,
     })
       // Navigate after successful submission
     } catch (error) {
       Alert.alert("Error", error.message || "Failed to place order.");
     }
   };
-
-
-  return (
-    <>
+  const submitOrderWithoutMeasurements = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("tailor_email", tailorEmail);
+      formData.append("tailor_name", name);
+      formData.append("customer_email", CustomerEmail);
+      formData.append("service_type", serviceType);
+      const genderToSend = normalizeGender(gender) === "both" ? (selectedFormGender || "male") : normalizeGender(gender) || "male";
+      formData.append("gender", genderToSend);
+      formData.append("price", price.toString());
+      formData.append("measurements", JSON.stringify({})); // empty
+      formData.append("options", JSON.stringify({}));      // empty
+  
+      if (fabricImage) {
+        const uriParts = fabricImage.split('.');
+        const fileType = uriParts[uriParts.length - 1];
+        formData.append("fabric", {
+          uri: fabricImage,
+          name: `fabric.${fileType}`,
+          type: `image/${fileType === "jpg" ? "jpeg" : fileType}`,
+        });
+      }
+  
+      const response = await axios.post(
+        "http://UF-MacBook-Pro.local:3000/place-order",
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
+  
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+  
+      Alert.alert(
+        "Order placed",
+        "Your order has been submitted successfully.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              navigation.navigate("Form", {
+                CustomerEmail: CustomerEmail,
+                tailorEmail: tailorEmail,
+                name: name,
+                orderId: response.data.order_id,
+              });
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to place order.");
+    }
+  };
+  
+return (
+  <>
     <LinearGradient
-      colors={['#64769eff', '#3b5998', '#192f6a']}
+      colors={["#64769eff", "#3b5998", "#192f6a"]}
       style={{ flex: 1, padding: 16 }}
     >
+      <ScrollView style={styles.container}>
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() =>
+            navigation.navigate("CustomerDrawer", {
+              screen: "TailorService",
+              params: { CustomerEmail: CustomerEmail },
+            })
+          }
+        >
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </TouchableOpacity>
 
-      <ScrollView  style={styles.container}>
-      <TouchableOpacity
-  style={styles.backButton}
-  onPress={() =>
-    navigation.navigate("CustomerDrawer", {
-      screen: "TailorService",
-      params: { CustomerEmail: CustomerEmail },
-    })
-  }
->
-  <Ionicons name="arrow-back" size={22} color="#fff" />
-</TouchableOpacity>
+        {/* Service Title */}
         <Text style={styles.title}>{serviceType || "Service"}</Text>
+
+        {/* Price */}
         <View style={styles.priceRow}>
           <Text style={styles.newPrice}>Rs. {price}</Text>
         </View>
+
+        {/* Gender */}
         <Text style={styles.genderText}>Gender: {gender || "N/A"}</Text>
 
+        {/* Image Slider */}
         {images.length > 0 ? (
-         <View style={styles.imageWrapper}>
-  <TouchableOpacity
-    style={styles.leftArrow}
-    onPress={handlePrev}
-    disabled={currentIndex === 0}
-  >
-    <Text style={styles.arrowText}>{"<"}</Text>
-  </TouchableOpacity>
+          <View style={styles.imageWrapper}>
+            <TouchableOpacity
+              style={styles.leftArrow}
+              onPress={handlePrev}
+              disabled={currentIndex === 0}
+            >
+              <Text style={styles.arrowText}>{"<"}</Text>
+            </TouchableOpacity>
 
-  <TouchableOpacity
-    activeOpacity={0.9}
-    onPress={() => setZoomVisible(true)}
-    style={{ flex: 1 }}
-  >
-    <Image
-      style={styles.mainImage}
-      source={images[currentIndex]}
-    />
-  </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => setZoomVisible(true)}
+              style={{ flex: 1 }}
+            >
+              <Image
+                style={styles.mainImage}
+                source={images[currentIndex]}
+              />
+            </TouchableOpacity>
 
-  <TouchableOpacity
-    style={styles.rightArrow}
-    onPress={handleNext}
-    disabled={currentIndex === images.length - 1}
-  >
-    <Text style={styles.arrowText}>{">"}</Text>
-  </TouchableOpacity>
-</View>
-
+            <TouchableOpacity
+              style={styles.rightArrow}
+              onPress={handleNext}
+              disabled={currentIndex === images.length - 1}
+            >
+              <Text style={styles.arrowText}>{">"}</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <Text style={{ textAlign: "center", marginVertical: 20 }}>
             No images available
           </Text>
         )}
 
+        {/* Buy Button */}
         <TouchableOpacity
-  style={styles.buyButton}
-onPress={() => {
-  if (noMeasurementServices.includes(serviceType)) {
-    Alert.alert(
-      "Order placed",
-      "Your order has been submitted successfully."
-    );
-    return;
-  }
+          style={styles.buyButton}
+          onPress={() => {
+            if (noMeasurementServices.includes(serviceType)) {
+              submitOrderWithoutMeasurements();
+              return;
+            }
 
-  const lowerGender = normalizeGender(gender);
-  setSelectedFormGender(
-    lowerGender === "male" || lowerGender === "female" ? lowerGender : null
-  );
-  setBuyModalVisible(true);
-}}
->
-  <Text style={styles.buyText}>Buy It Now</Text>
-</TouchableOpacity>
-<View style={styles.descriptionCard}>
-  <Text style={styles.descriptionTitle}>Description</Text>
-  <Text style={styles.descriptionText}>
-    {description }
-  </Text>
-</View>
+            const lowerGender = normalizeGender(gender);
+            setSelectedFormGender(
+              lowerGender === "male" || lowerGender === "female"
+                ? lowerGender
+                : null
+            );
+            setBuyModalVisible(true);
+          }}
+        >
+          <Text style={styles.buyText}>Buy It Now</Text>
+        </TouchableOpacity>
+
+        {/* Description */}
+        <View style={styles.descriptionCard}>
+          <Text style={styles.descriptionTitle}>Description</Text>
+          <Text style={styles.descriptionText}>{description}</Text>
+        </View>
 
         <View style={{ height: 30 }} />
       </ScrollView>
-      </LinearGradient>
+    </LinearGradient>
 
-      {/* Zoom Modal */}
-      <Modal visible={zoomVisible} transparent animationType="fade">
-        <View style={styles.modalBackground}>
-          <PinchGestureHandler
-            onGestureEvent={Animated.event([{ nativeEvent: { scale: scale } }], { useNativeDriver: true })}
-            onHandlerStateChange={(event) => {
-              if (event.nativeEvent.oldState === State.ACTIVE) {
-                let newScale = event.nativeEvent.scale;
-                if (newScale < 1 || newScale > 4) {
-                  Animated.spring(scale, {
-                    toValue: Math.min(Math.max(newScale, 1), 4),
-                    useNativeDriver: true,
-                  }).start();
-                }
+    {/* Zoom Modal */}
+    <Modal visible={zoomVisible} transparent animationType="fade">
+      <View style={styles.modalBackground}>
+        <PinchGestureHandler
+          onGestureEvent={Animated.event(
+            [{ nativeEvent: { scale: scale } }],
+            { useNativeDriver: true }
+          )}
+          onHandlerStateChange={(event) => {
+            if (event.nativeEvent.oldState === State.ACTIVE) {
+              let newScale = event.nativeEvent.scale;
+              if (newScale < 1 || newScale > 4) {
+                Animated.spring(scale, {
+                  toValue: Math.min(Math.max(newScale, 1), 4),
+                  useNativeDriver: true,
+                }).start();
               }
-            }}
-          >
-            <Animated.Image
-              source={images[currentIndex]}
-              style={[styles.zoomedImage, { transform: [{ scale }] }]}
-            />
-          </PinchGestureHandler>
-
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => {
-              setZoomVisible(false);
-              scale.setValue(1);
-            }}
-          >
-            <Text style={styles.closeText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
-
-      {/* Buy Modal */}
-      <Modal visible={buyModalVisible} transparent animationType="slide">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.buyModalOverlay}>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-              style={styles.buyModalContainer}
-            >
-              <View style={styles.buyCard}>
-                <Text style={styles.buyTitle}>Place Order — Measurements</Text>
-
-                {/* Gender selector if needed */}
-                {((gender || "").toLowerCase() === "both" || (gender || "").trim() === "") && (
-                  <View style={styles.selectorRow}>
-                    {["male", "female"].map((genderKey) => (
-                      <TouchableOpacity
-                        key={genderKey}
-                        style={[
-                          styles.selectorBtn,
-                          selectedFormGender === genderKey && styles.selectorBtnActive,
-                        ]}
-                        onPress={() => {
-                          setSelectedFormGender(genderKey);
-                          setErrors({});
-                          setSelectedOptionGroups({});
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.selectorText,
-                            selectedFormGender === genderKey && styles.selectorTextActive,
-                          ]}
-                        >
-                          {genderKey === "male" ? "Men" : "Women"}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-
-                <ScrollView   >
-                  {/* Measurement Inputs */}
-                  {fields.length > 0 ? (
-                    <>
-                      {fields.map((field) => {
-                        const key = field.toLowerCase().replace(/\s+/g, "");
-                        const value = measurements[selectedFormGender]?.[key] || "";
-                        const hasError = errors[key];
-
-                        return (
-                          
-                          <View key={key} style={{ marginBottom: 8 }}>
-                            <TextInput
-                              placeholder={`${field} (${measurementRanges[field] || "inches"} in)`}
-                              placeholderTextColor="#777"
-                              value={value}
-                             onChangeText={(v) => {
-                             const numericValue = v.replace(/[^0-9.]/g, "");
-                             setField(selectedFormGender, field, numericValue);
+            }
           }}
-                              maxLength={4}
-                              keyboardType="numeric"
-                              style={[styles.input, hasError && { borderColor: "red" }]}
-                            />
-                            {hasError && (
-                              <Text style={{ color: "red", fontSize: 12, marginTop: -8, marginBottom: 8 }}>
-                                This field is required
-                              </Text>
-                            )}
-                          </View>
-                        );
-                      })}
+        >
+          <Animated.Image
+            source={images[currentIndex]}
+            style={[styles.zoomedImage, { transform: [{ scale }] }]}
+          />
+        </PinchGestureHandler>
 
-                      {/* Dropdown single select options */}
-                      {Object.entries(optionsGroups).map(([groupName, options]) => (
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => {
+            setZoomVisible(false);
+            scale.setValue(1);
+          }}
+        >
+          <Text style={styles.closeText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+
+    {/* Buy Modal */}
+    <Modal visible={buyModalVisible} transparent animationType="slide">
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.buyModalOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={styles.buyModalContainer}
+          >
+            <View style={styles.buyCard}>
+              <Text style={styles.buyTitle}>
+                Place Order — Measurements
+              </Text>
+
+              {/* Gender Selector */}
+              {((gender || "").toLowerCase() === "both" ||
+                (gender || "").trim() === "") && (
+                <View style={styles.selectorRow}>
+                  {["male", "female"].map((genderKey) => (
+                    <TouchableOpacity
+                      key={genderKey}
+                      style={[
+                        styles.selectorBtn,
+                        selectedFormGender === genderKey &&
+                          styles.selectorBtnActive,
+                      ]}
+                      onPress={() => {
+                        setSelectedFormGender(genderKey);
+                        setErrors({});
+                        setSelectedOptionGroups({});
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.selectorText,
+                          selectedFormGender === genderKey &&
+                            styles.selectorTextActive,
+                        ]}
+                      >
+                        {genderKey === "male" ? "Men" : "Women"}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              <ScrollView>
+                {/* Measurement Fields */}
+                {fields.length > 0 ? (
+                  <>
+                    {fields.map((field) => {
+                      const key = field
+                        .toLowerCase()
+                        .replace(/\s+/g, "");
+                      const value =
+                        measurements[selectedFormGender]?.[key] || "";
+                      const hasError = errors[key];
+
+                      return (
+                        <View key={key} style={{ marginBottom: 8 }}>
+                          <TextInput
+                            placeholder={`${field} (${measurementRanges[field] || "inches"} in)`}
+                            placeholderTextColor="#777"
+                            value={value}
+                            onChangeText={(v) => {
+                              const numericValue = v.replace(
+                                /[^0-9.]/g,
+                                ""
+                              );
+                              setField(
+                                selectedFormGender,
+                                field,
+                                numericValue
+                              );
+                            }}
+                            maxLength={4}
+                            keyboardType="numeric"
+                            style={[
+                              styles.input,
+                              hasError && { borderColor: "red" },
+                            ]}
+                          />
+                          {hasError && (
+                            <Text
+                              style={{
+                                color: "red",
+                                fontSize: 12,
+                                marginTop: -8,
+                                marginBottom: 8,
+                              }}
+                            >
+                              This field is required
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+
+                    {/* Options */}
+                    {Object.entries(optionsGroups).map(
+                      ([groupName, options]) => (
                         <View key={groupName} style={{ marginBottom: 16 }}>
-                          <Text style={{ fontWeight: "700", marginBottom: 6 }}>{groupName}</Text>
-                          <View style={[styles.pickerContainer, selectedOptionGroups[groupName] == null && { borderColor: "red" }]}>
+                          <Text
+                            style={{ fontWeight: "700", marginBottom: 6 }}
+                          >
+                            {groupName}
+                          </Text>
+                          <View
+                            style={[
+                              styles.pickerContainer,
+                              selectedOptionGroups[groupName] == null && {
+                                borderColor: "red",
+                              },
+                            ]}
+                          >
                             <Picker
-                              selectedValue={selectedOptionGroups[groupName] || ""}
+                              selectedValue={
+                                selectedOptionGroups[groupName] || ""
+                              }
                               onValueChange={(value) => {
                                 setSelectedOptionGroups((prev) => ({
                                   ...prev,
                                   [groupName]: value,
                                 }));
                               }}
-                            
-                             itemStyle={{ fontSize: 15,color:"#000" }}     
+                              itemStyle={{ fontSize: 15, color: "#000" }}
                             >
-                              <Picker.Item label={`Select ${groupName}`} value="" />
+                              <Picker.Item
+                                label={`Select ${groupName}`}
+                                value=""
+                              />
                               {options.map((opt) => (
-                                <Picker.Item key={opt} label={opt} value={opt} />
+                                <Picker.Item
+                                  key={opt}
+                                  label={opt}
+                                  value={opt}
+                                />
                               ))}
                             </Picker>
                           </View>
                         </View>
-                      ))}
+                      )
+                    )}
+                  </>
+                ) : (
+                  <Text style={{ textAlign: "center", marginTop: 20 }}>
+                    No measurement fields available for this service.
+                  </Text>
+                )}
+              </ScrollView>
+
+              {/* Fabric Upload */}
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                  Upload Fabric Picture
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.fabricUploadBox}
+                  onPress={pickFabricImage}
+                  activeOpacity={0.8}
+                >
+                  {fabricImage ? (
+                    <>
+                      <Image
+                        source={{ uri: fabricImage }}
+                        style={styles.fabricImage}
+                      />
+                      <TouchableOpacity
+                        style={styles.removeImageBtn}
+                        onPress={() => setFabricImage(null)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.removeImageText}>Remove</Text>
+                      </TouchableOpacity>
                     </>
                   ) : (
-                    <Text style={{ textAlign: "center", marginTop: 20 }}>
-                      No measurement fields available for this service.
+                    <Text style={{ color: "#777", textAlign: "center" }}>
+                      Tap to upload fabric image
                     </Text>
                   )}
-                </ScrollView>
-<View style={{ marginBottom: 16 }}>
-  <Text style={{ fontWeight: "700", marginBottom: 6 }}>
-    Upload Fabric Picture
-  </Text>
-
-  <TouchableOpacity
-    style={styles.fabricUploadBox}
-    onPress={pickFabricImage}
-    activeOpacity={0.8}
-  >
-    {fabricImage ? (
-      <>
-        <Image source={{ uri: fabricImage }} style={styles.fabricImage} />
-        <TouchableOpacity
-          style={styles.removeImageBtn}
-          onPress={() => setFabricImage(null)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.removeImageText}>Remove</Text>
-        </TouchableOpacity>
-      </>
-    ) : (
-      <Text style={{ color: "#777", textAlign: "center" }}>
-        Tap to upload fabric image
-      </Text>
-    )}
-  </TouchableOpacity>
-</View>
-
-                <View style={styles.buyButtonsRow}>
-                  <TouchableOpacity
-                    style={[styles.modalBtn, styles.modalBtnCancel]}
-                    onPress={() => {
-                      setBuyModalVisible(false);
-                      setSelectedFormGender(null);
-                      setErrors({});
-                      setSelectedOptionGroups({});
-                    }}
-                  >
-                    
-                    <Text style={styles.modalBtnTextCancel}>Cancel</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.modalBtn,
-                      styles.modalBtnSubmit,
-                      { opacity: isFormValid() ? 1 : 0.6 },
-                    ]}
-                    onPress={handleSubmitOrder}
-                    disabled={!isFormValid()}
-                  >
-                    <Text style={styles.modalBtnTextSubmit}>Next</Text>
-                  </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               </View>
-            </KeyboardAvoidingView>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-    </>
-    
-  );
-   
+
+              {/* Buttons */}
+              <View style={styles.buyButtonsRow}>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnCancel]}
+                  onPress={() => {
+                    setBuyModalVisible(false);
+                    setSelectedFormGender(null);
+                    setErrors({});
+                    setSelectedOptionGroups({});
+                  }}
+                >
+                  <Text style={styles.modalBtnTextCancel}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.modalBtn,
+                    styles.modalBtnSubmit,
+                    { opacity: isFormValid() ? 1 : 0.6 },
+                  ]}
+                  onPress={handleSubmitOrder}
+                  disabled={!isFormValid()}
+                >
+                  <Text style={styles.modalBtnTextSubmit}>Next</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  </>
+);
 }
 
 const styles = StyleSheet.create({

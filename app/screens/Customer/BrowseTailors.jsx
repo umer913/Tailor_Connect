@@ -11,15 +11,10 @@ import {
   View
 } from "react-native";
 
-export default function BrowseTailors({ navigation, route }) {
+const BrowseTailors = ({ navigation, route }) => {
 const CustomerEmail = route?.params?.email || "";
 
-
-
   console.log("Customer Email:", CustomerEmail);
-  
-
-  // Get email from navigation params
   const [tailors, setTailors] = useState([]);
 
   const fetchTailors = async () => {
@@ -52,7 +47,6 @@ const CustomerEmail = route?.params?.email || "";
         <TouchableOpacity
           key={tailor.id}
           style={styles.card}
-          activeOpacity={0.85}
           onPress={() =>
             navigation.navigate("TailorServices", {
               CustomerEmail: CustomerEmail,
@@ -129,6 +123,7 @@ const CustomerEmail = route?.params?.email || "";
 );
 }
 
+export default BrowseTailors;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -170,7 +165,7 @@ const styles = StyleSheet.create({
   },
 
   imageCircle: {
-    backgroundColor: "#64769eff",
+    backgroundColor: "#3b5998",
     padding: 18,
     borderRadius: 18,
     marginBottom: 12,

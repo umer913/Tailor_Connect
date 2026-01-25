@@ -136,7 +136,7 @@ const CustomerDashboard = ({ route, navigation }) => {
 
         <View style={styles.topRightContainer}>
           <TouchableOpacity style={styles.iconButton} disabled={showProfile}>
-            <Ionicons name="chatbubbles-outline" size={28} color="blue" />
+            <Ionicons name="chatbubbles-outline" size={35} color="blue" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 8,
     backgroundColor: "rgba(244, 244, 244, 1)",
-    borderRadius: 30,
+    borderRadius: 25,
     marginLeft: 12,
   },
 

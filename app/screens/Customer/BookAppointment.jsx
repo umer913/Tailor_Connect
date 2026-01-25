@@ -26,24 +26,27 @@ export default function BookAppointment({ route, navigation }) {
   }, []);
 
   const loadData = async () => {
-    setLoading(true);
-    try {
-      const availRes = await axios.get(
-        `http://UF-MacBook-Pro.local:3000/get-availability?email=${encodeURIComponent(email)}`
-      );
+  setLoading(true);
+  try {
+    // Fetch availability
+    const availRes = await axios.get("http://UF-MacBook-Pro.local:3000/get-availability", {
+      params: { email }
+    });
 
-      const bookedRes = await axios.get(
-        `http://UF-MacBook-Pro.local:3000/get-booked-slots?email=${encodeURIComponent(email)}`
-      );
+    // Fetch booked slots
+    const bookedRes = await axios.get("http://UF-MacBook-Pro.local:3000/get-booked-slots", {
+      params: { email }
+    });
 
-      setAvailability(availRes.data.availability || {});
-      setBookedSlots(bookedRes.data.booked || []);
-    } catch (error) {
-      console.log("Load error", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setAvailability(availRes.data.availability || {});
+    setBookedSlots(bookedRes.data.booked || []);
+
+  } catch (error) {
+    console.log("Load error", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const isBooked = (day, time) => {
     return bookedSlots.some((b) => b.day === day && b.time === time);
@@ -85,7 +88,7 @@ export default function BookAppointment({ route, navigation }) {
     );
   }
   
-  if (!availability || Object.keys(availability).length === 0) {
+  if (!availability) {
     return (
       <View style={styles.centered}>
     <TouchableOpacity
@@ -125,6 +128,7 @@ export default function BookAppointment({ route, navigation }) {
 
 
       <ScrollView contentContainerStyle={styles.container}>
+        
       <TouchableOpacity
           style={styles.backButton}
            onPress={() => navigation.goBack()}
@@ -185,9 +189,9 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 60,
+    top: 30,
     left: 20,
-    backgroundColor: 'rgba(72, 83, 144, 0.85)', // semi-transparent dark blue
+    backgroundColor: 'rgba(72, 83, 144, 0.85)', 
     padding: 10,
     borderRadius: 30,
     shadowColor: '#283d89',

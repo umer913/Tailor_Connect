@@ -52,7 +52,7 @@ const Login = ({ navigation }) => {
 
   const handleLogin = async () => {
   setError("");
-  console.log("Login pressed ✅");
+
 
   if (!email || !password) {
     setError("All fields are required");

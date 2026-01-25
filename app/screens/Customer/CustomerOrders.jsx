@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Animated,
@@ -23,35 +23,30 @@ export default function CustomerOrders({ route }) {
 
   const [orders, setOrders] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
+  const [fadeAnim] = useState(new Animated.Value(0));
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  /* ---------------- FETCH ORDERS ---------------- */
   useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const { data } = await axios.get(
+          "http://UF-MacBook-Pro.local:3000/get-orders",
+          { params: { email: CustomerEmail } }
+        );
+        if (data.orders) {
+          setOrders(data.orders);
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }).start();
+        }
+      } catch (err) {
+        console.log("Fetch Orders Error:", err);
+      }
+    };
     fetchOrders();
   }, []);
 
-  const fetchOrders = async () => {
-    try {
-      const { data } = await axios.get(
-        "http://UF-MacBook-Pro.local:3000/customer-orders",
-        { params: { email: CustomerEmail } }
-      );
-
-      if (data.orders) {
-        setOrders(data.orders);
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }).start();
-      }
-    } catch (err) {
-      console.log("Fetch Orders Error:", err);
-    }
-  };
-
-  /* ---------------- DELETE ORDER ---------------- */
   const deleteOrder = (id) => {
     Alert.alert("Delete Order", "Are you sure?", [
       { text: "Cancel", style: "cancel" },
@@ -72,7 +67,6 @@ export default function CustomerOrders({ route }) {
     ]);
   };
 
-  /* ---------------- STATUS COLORS ---------------- */
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
@@ -88,126 +82,113 @@ export default function CustomerOrders({ route }) {
     }
   };
 
-  /* ---------------- ORDER CARD ---------------- */
-  const renderItem = ({ item, index }) => {
-    const slideAnim = new Animated.Value(40);
-
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 400,
-      delay: index * 80,
-      useNativeDriver: true,
-    }).start();
-
-    const isOpen = expandedId === item.id;
-
-    return (
-      <AnimatedPressable
-        onPress={() =>
-          setExpandedId(isOpen ? null : item.id)
-        }
-        style={[
-          styles.card,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
-        ]}
-      >
-        {/* HEADER */}
-        <View style={styles.rowBetween}>
-          <Text style={styles.service}>{item.service_type}</Text>
-
-          <View style={styles.rightHeader}>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusColor(item.status) },
-              ]}
-            >
-              <Text style={styles.statusText}>{item.status}</Text>
-            </View>
-
-            <Pressable
-              style={styles.closeBtn}
-              onPress={() => deleteOrder(item.id)}
-            >
-              <Text style={styles.closeText}>✕</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <Text style={styles.tailor}>Tailor: {item.tailor_name}</Text>
-
-        {item.fabric_image_url && (
-          <Image
-            source={{ uri: item.fabric_image_url }}
-            style={styles.fabricImage}
-          />
-        )}
-
-        <View style={styles.rowBetween}>
-          <Text style={styles.price}>Rs. {item.price}</Text>
-          <Text style={styles.date}>
-            {new Date(item.created_at).toDateString()}
-          </Text>
-        </View>
-
-        {/* 🔽 SLIDE DOWN DETAILS */}
-        {isOpen && (
-          <View style={styles.expandBox}>
-            <Text style={styles.detailTitle}>Order Details</Text>
-
-            <Text style={styles.detailText}>
-              <Text style={styles.detailLabel}>Gender: </Text>
-              {item.gender}
-            </Text>
-
-            <Text style={styles.detailText}>
-              <Text style={styles.detailLabel}>Service: </Text>
-              {item.service_type}
-            </Text>
-
-            <Text style={styles.detailLabel}>Measurements:</Text>
-
-            {item.measurements &&
-              Object.entries(item.measurements).map(
-                ([key, value]) => (
-                  <Text key={key} style={styles.measurementItem}>
-                    • {key}: {value}
-                  </Text>
-                )
-              )}
-          </View>
-        )}
-      </AnimatedPressable>
-    );
-  };
-
-  /* ---------------- MAIN ---------------- */
   return (
     <LinearGradient
       colors={["#64769eff", "#3b5998", "#192f6a"]}
       style={styles.container}
     >
+      {/* Back Button */}
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => navigation.goBack()}
+        onPress={() =>
+          navigation.navigate("CustomerDashboard", { CustomerEmail })
+        }
       >
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </TouchableOpacity>
 
+      {/* Heading */}
       <Text style={styles.heading}>My Orders</Text>
 
+      {/* Orders List */}
       {orders.length === 0 ? (
         <Text style={styles.emptyText}>No orders found</Text>
       ) : (
         <FlatList
           data={orders}
           keyExtractor={(item) => item.id}
-          renderItem={renderItem}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 40 }}
+          renderItem={({ item }) => {
+            const slideAnim = new Animated.Value(40);
+            Animated.timing(slideAnim, {
+              toValue: 0,
+              duration: 700,
+              useNativeDriver: true,
+            }).start();
+
+            const isOpen = expandedId === item.id;
+
+            return (
+              <AnimatedPressable
+                onPress={() => setExpandedId(isOpen ? null : item.id)}
+                style={[
+                  styles.card,
+                  { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+                ]}
+              >
+                {/* Card Header */}
+                <View style={styles.rowBetween}>
+                  <Text style={styles.service}>{item.service_type}</Text>
+                  <View style={styles.rightHeader}>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: getStatusColor(item.status) },
+                      ]}
+                    >
+                      <Text style={styles.statusText}>{item.status}</Text>
+                    </View>
+                    <Pressable
+                      style={styles.closeBtn}
+                      onPress={() => deleteOrder(item.id)}
+                    >
+                      <Text style={styles.closeText}>✕</Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                {/* Tailor & Image */}
+                <Text style={styles.tailor}>Tailor: {item.tailor_name}</Text>
+                {item.fabric_image_url && (
+                  <Image
+                    source={{ uri: item.fabric_image_url }}
+                    style={styles.fabricImage}
+                  />
+                )}
+
+                {/* Price & Date */}
+                <View style={styles.rowBetween}>
+                  <Text style={styles.price}>Rs. {item.price}</Text>
+                  <Text style={styles.date}>
+                    {new Date(item.created_at).toDateString()}
+                  </Text>
+                </View>
+
+                {/* Expanded Details */}
+                {isOpen && (
+                  <View style={styles.expandBox}>
+                    <Text style={styles.detailTitle}>Order Details</Text>
+                    <Text style={styles.detailText}>
+                      <Text style={styles.detailLabel}>Gender: </Text>
+                      {item.gender}
+                    </Text>
+                    <Text style={styles.detailText}>
+                      <Text style={styles.detailLabel}>Service: </Text>
+                      {item.service_type}
+                    </Text>
+                    <Text style={styles.detailLabel}>Measurements:</Text>
+                    {item.measurements &&
+                      Object.entries(item.measurements).map(([key, value]) => (
+                        <Text key={key} style={styles.measurementItem}>
+                          • {key}: {value}
+                        </Text>
+                      ))}
+                  </View>
+                )}
+              </AnimatedPressable>
+            );
+          }}
         />
       )}
     </LinearGradient>

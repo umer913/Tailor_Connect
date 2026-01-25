@@ -3,6 +3,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import AdminDashboard from '../screens/Admin/AdminDashboard';
+import ManageCustomers from '../screens/Admin/ManageCustomers';
+import ManageOrders from '../screens/Admin/ManageOrders';
+import ManageTailors from '../screens/Admin/ManageTailors';
+
 import Forgot from '../screens/Forgot';
 import Login from '../screens/Login';
 import Signup from '../screens/Signup';
@@ -172,9 +176,11 @@ const App = () => {
         <Stack.Screen options={{ headerShown: false }} name="TailorDrawer" component={TailorDrawer} />
         <Stack.Screen  name="OrderForm" component={OrderForm} />
         <Stack.Screen options={{ headerShown: false }} name="AdminDashboard" component={AdminDashboard} />
-        <Stack.Screen name="Appointment" component={Appointment} />
+        <Stack.Screen   options={{ headerShown: false }} name="Appointment" component={Appointment} />
          <Stack.Screen options={{ headerShown: false }} name="BookAppointment" component={BookAppointment} />
-         
+          <Stack.Screen name="ManageTailors" component={ManageTailors} />
+          <Stack.Screen name="ManageCustomers" component={ManageCustomers} />
+          <Stack.Screen name="ManageOrders" component={ManageOrders} />
         <Stack.Screen name="Forgot" component={Forgot} />
          <Stack.Screen options={{ headerShown: false }} name="Form"  component={Form} />
         <Stack.Screen options={{ headerShown: false }} name="Start" component={Start} />

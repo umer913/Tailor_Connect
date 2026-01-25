@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,11 +19,38 @@ export default function MyAppointment({ route, navigation }) {
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+const statusStyle = (status) => {
+  switch (status?.toLowerCase()) {
+    case "confirmed":
+      return { backgroundColor: "#4CAF50" };
+    case "pending":
+      return { backgroundColor: "#FFC107" };
+    case "cancelled":
+      return { backgroundColor: "#F44336" };
+    default:
+      return { backgroundColor: "#9E9E9E" };
+  }
+};
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  // ✅ fade animation using useState instead of useRef
+  const [fadeAnim] = useState(new Animated.Value(0));
 
-  /* ---------------- FETCH ---------------- */
   useEffect(() => {
+    const fetchAppointments = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(
+          "http://UF-MacBook-Pro.local:3000/my-appointments",
+          { params: { email: customerEmail } }
+        );
+        setAppointments(res.data.appointments || []);
+      } catch (err) {
+        console.log("Appointment fetch error", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchAppointments();
 
     Animated.timing(fadeAnim, {
@@ -33,148 +60,114 @@ export default function MyAppointment({ route, navigation }) {
     }).start();
   }, []);
 
-  const fetchAppointments = async () => {
-    try {
-      const res = await axios.get(
-        `http://UF-MacBook-Pro.local:3000/my-appointments?email=${customerEmail}`
-      );
-      setAppointments(res.data.appointments || []);
-    } catch (err) {
-      console.log("Appointment fetch error", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* ---------------- DELETE ---------------- */
   const deleteAppointment = (id) => {
-    Alert.alert(
-      "Delete Appointment",
-      "Are you sure you want to delete this appointment?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await axios.delete(
-                `http://UF-MacBook-Pro.local:3000/delete-appointment/${id}`
-              );
-              setAppointments((prev) =>
-                prev.filter((item) => item.id !== id)
-              );
-            } catch (err) {
-              console.log("Delete appointment error", err);
-            }
-          },
+    Alert.alert("Delete Appointment", "Are you sure?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await axios.delete(
+              `http://UF-MacBook-Pro.local:3000/delete-appointment/${id}`
+            );
+            setAppointments((prev) =>
+              prev.filter((item) => item.id !== id)
+            );
+          } catch (err) {
+            console.log("Delete appointment error", err);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  /* ---------------- ITEM ---------------- */
-  const renderItem = ({ item, index }) => {
-    const slideAnim = new Animated.Value(40);
-
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 400,
-      delay: index * 80,
-      useNativeDriver: true,
-    }).start();
-
-    return (
-      <Animated.View
-        style={[
-          styles.card,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
-        ]}
-      >
-        <View style={styles.header}>
-          <Text style={styles.tailorName}>
-            {item.tailor_name || "Unknown Tailor"}
-          </Text>
-
-          <View style={styles.rightHeader}>
-            <View
-              style={[
-                styles.statusBadge,
-                statusStyle(item.status),
-              ]}
-            >
-              <Text style={styles.statusText}>
-                {item.status.toUpperCase()}
-              </Text>
-            </View>
-
-            <Pressable
-              style={styles.closeBtn}
-              onPress={() => deleteAppointment(item.id)}
-            >
-              <Text style={styles.closeText}>✕</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <Text style={styles.info}>📅 Day: {item.day}</Text>
-        <Text style={styles.info}>⏰ Time: {item.time}</Text>
-      </Animated.View>
-    );
-  };
-
-  /* ---------------- LOADER ---------------- */
-  if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
-
-  /* ---------------- MAIN ---------------- */
   return (
     <LinearGradient
       colors={["#64769eff", "#3b5998", "#192f6a"]}
       style={styles.container}
     >
-      {/* 🔙 SINGLE BACK BUTTON */}
+      {/* Back Button */}
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => navigation.goBack()}
+        onPress={() =>
+          navigation.navigate("CustomerDashboard", { customerEmail })
+        }
       >
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </TouchableOpacity>
 
+      {/* Title */}
       <Text style={styles.title}>My Appointments</Text>
 
-      {appointments.length === 0 ? (
+      {/* Loader / Empty / List */}
+      {loading ? (
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color="#fff" />
+        </View>
+      ) : appointments.length === 0 ? (
         <Text style={styles.empty}>No appointments found</Text>
       ) : (
         <FlatList
           data={appointments}
           keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          renderItem={({ item }) => {
+            const slideAnim = new Animated.Value(40);
+
+            Animated.timing(slideAnim, {
+              toValue: 0,
+              duration: 700,
+              useNativeDriver: true,
+            }).start();
+
+            return (
+              <Animated.View
+                style={[
+                  styles.card,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{ translateY: slideAnim }],
+                  },
+                ]}
+              >
+                <View style={styles.header}>
+                  <Text style={styles.tailorName}>
+                    {item.tailor_name || "Unknown Tailor"}
+                  </Text>
+
+                  <View style={styles.rightHeader}>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        statusStyle(item.status),
+                      ]}
+                    >
+                      <Text style={styles.statusText}>
+                        {item.status.toUpperCase()}
+                      </Text>
+                    </View>
+
+                    <Pressable
+                      style={styles.closeBtn}
+                      onPress={() => deleteAppointment(item.id)}
+                    >
+                      <Text style={styles.closeText}>✕</Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                <Text style={styles.info}>📅 Day: {item.day}</Text>
+                <Text style={styles.info}>⏰ Time: {item.time}</Text>
+              </Animated.View>
+            );
+          }}
         />
       )}
     </LinearGradient>
   );
 }
-
-/* ---------------- STATUS COLORS ---------------- */
-const statusStyle = (status) => ({
-  backgroundColor:
-    status === "accepted"
-      ? "#4CAF50"
-      : status === "rejected"
-      ? "#d85b5b"
-      : "#f59e0b",
-});
 
 /* ---------------- STYLES ---------------- */
 const styles = StyleSheet.create({
@@ -199,7 +192,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#f8f4f4ff",
     marginBottom: 25,
-    marginLeft: 45,
+    marginLeft: 75,
   },
 
   card: {

@@ -19,7 +19,7 @@ const serviceOptions = [
   "Pico","Overlock","Button Hole"
 ];
 
-export default function AddServices({ route }) {
+const AddServices = ({ route }) => {
   const { email } = route.params;
 
   const [services, setServices] = useState([]);
@@ -36,14 +36,24 @@ export default function AddServices({ route }) {
     fetchServices();
   }, []);
 
-  const toggleServiceType = (type) => {
-    const types = [...newService.service_types];
-    if (types.includes(type)) {
-      setNewService({ ...newService, service_types: types.filter(t => t !== type) });
-    } else {
-      setNewService({ ...newService, service_types: [...types, type] });
-    }
-  };
+const toggleServiceType = (type) => {
+  let updatedTypes;
+
+  if (newService.service_types.includes(type)) {
+    // remove service
+    updatedTypes = newService.service_types.filter(t => t !== type);
+  } else {
+    // add service
+    updatedTypes = [...newService.service_types, type];
+  }
+
+  setNewService({
+    ...newService,
+    service_types: updatedTypes
+  });
+};
+
+
 
   const addService = async () => {
     if (newService.service_types.length === 0) {
@@ -131,6 +141,7 @@ export default function AddServices({ route }) {
         </View>
 
         {showAddForm ? (
+          // Add Service Form View
           <>
             <Text style={styles.title}>Add New Service</Text>
 
@@ -185,7 +196,7 @@ export default function AddServices({ route }) {
 
             <TextInput
               style={styles.input}
-              placeholder="Price Range"
+              placeholder="Price"
               placeholderTextColor="#C9A3A3"
               value={newService.price_range}
               onChangeText={(t) => setNewService({ ...newService, price_range: t })}
@@ -195,7 +206,9 @@ export default function AddServices({ route }) {
               <Text style={styles.btnText}>Add Service</Text>
             </TouchableOpacity>
           </>
-        ) : (
+        ) 
+        //My Services View
+        : (
           <>
             <Text style={styles.title}>My Services</Text>
 
@@ -236,7 +249,7 @@ export default function AddServices({ route }) {
     </LinearGradient>
   );
 }
-
+export default AddServices;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContainer: { padding: 20 },

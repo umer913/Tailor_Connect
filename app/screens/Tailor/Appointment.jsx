@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
@@ -8,7 +9,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 const days = [
@@ -37,7 +38,7 @@ const timeSlots = [
   "10:00 PM",
 ];
 
-export default function Appointment({ route }) {
+const Appointment = ({ route,navigation }) => {
   const { email } = route.params;
 
   const [availability, setAvailability] = useState({});
@@ -48,12 +49,12 @@ export default function Appointment({ route }) {
   useEffect(() => {
     async function fetchAvailability() {
       try {
-        const res = await axios.get(
-          `http://UF-MacBook-Pro.local:3000/get-availability/${encodeURIComponent(email)}`
-        );
+            const res = await axios.get('http://UF-MacBook-Pro.local:3000/get-availability', {
+        params: { email }
+      });
+
         setAvailability(res.data.availability || {});
       } catch (error) {
-        console.log("Error fetching availability:", error);
         Alert.alert("Error", "Failed to load availability");
       } finally {
         setLoading(false);
@@ -65,10 +66,10 @@ export default function Appointment({ route }) {
   const toggleSlot = (day, time) => {
     const daySlots = availability[day] || [];
     const updatedSlots = daySlots.includes(time)
-      ? daySlots.filter((t) => t !== time)
-      : [...daySlots, time];
+      ? daySlots.filter((t) => t !== time)//if time is selected remove it from list 
+      : [...daySlots, time];//if time is not selected add it to list
 
-    // Remove day key if no slots left for cleaner data
+   
     const newAvailability = { ...availability };
     if (updatedSlots.length === 0) {
       delete newAvailability[day];
@@ -80,10 +81,7 @@ export default function Appointment({ route }) {
   };
 
   const saveAvailability = async () => {
-    if (!email) {
-      Alert.alert("Error", "Email not found.");
-      return;
-    }
+   
     setSaving(true);
 
     try {
@@ -114,7 +112,15 @@ export default function Appointment({ route }) {
 
   return (
     <LinearGradient colors={["#2B0F14", "#3A1419", "#4A1C22"]} style={styles.container}>
+          
       <ScrollView contentContainerStyle={styles.scroll}>
+      <TouchableOpacity
+          style={styles.backButton}
+          onPress={() =>navigation.navigate("TailorDrawer", {
+            email: email})}
+        >
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </TouchableOpacity>
         <Text style={styles.title}>Weekly Availability</Text>
         <Text style={styles.subtitle}>Select the time slots you are available (10 AM – 10 PM)</Text>
 
@@ -174,7 +180,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#F2E6E6",
     textAlign: "center",
-    marginBottom: 8,
+    marginTop: 90,
   },
 
   subtitle: {
@@ -245,6 +251,14 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 10,
   },
+  backButton: {
+    position: "absolute",
+    left: 40,
+    top: 50,
+    padding: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 12,
+  },
 
   saveText: {
     color: "#fff",
@@ -252,3 +266,4 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 });
+export default Appointment;

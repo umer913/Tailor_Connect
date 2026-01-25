@@ -96,7 +96,7 @@ const TailorDashboard = ({ route, navigation }) => {
       if (data.error) return alert(data.error);
 
       setProfile({
-        ...profile,
+        ...profile,//Spread operator overwrites data and copy previous data
         full_name: fullName,
         cnic,
         phone_number: phoneNumber,
@@ -116,7 +116,7 @@ const TailorDashboard = ({ route, navigation }) => {
       <LinearGradient
         colors={['#2B0F14', '#3A1419', '#4A1C22']}
         style={styles.container}
-        pointerEvents={showProfile ? 'none' : 'auto'}
+        pointerEvents={showProfile ? 'none' : 'auto'}//make screen unclickable when profile is open
       >
 
         <View style={styles.greetingBox}>
@@ -147,7 +147,7 @@ const TailorDashboard = ({ route, navigation }) => {
 
         <View style={styles.verticalContainer}>
           <TouchableOpacity style={styles.locationBox} disabled={showProfile}>
-            <Ionicons name="location-outline" size={26} color="rgba(234,238,2,1)" />
+            <Ionicons name="location-outline" size={26} color="#4A1C22" />
             <View style={{ marginLeft: 10 }}>
               <Text style={styles.locationTitle}>My Location</Text>
               <Text style={styles.locationText}>{profile.location}</Text>
@@ -430,11 +430,10 @@ const styles = StyleSheet.create({
   logoutText: { color: "#fff", fontSize: 18, fontWeight: "700", marginLeft: 6 },
 
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFillObject,//A Transparent layer on the screen 
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 998,
   }
 });
 

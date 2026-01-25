@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,19 +16,60 @@ import {
 } from "react-native";
 
 export default function Form({ route, navigation }) {
-  const { CustomerEmail,tailorEmail } = route.params;
-console.log(tailorEmail)
-console.log(CustomerEmail)
+  const { CustomerEmail, tailorEmail, orderId } = route.params;
+
   const [stage, setStage] = useState("idle");
-  const truckX = useRef(new Animated.Value(-80)).current;
-  const successScale = useRef(new Animated.Value(0.6)).current;
-  const successOpacity = useRef(new Animated.Value(0)).current;
+
+  // Animated values in useState
+  const [truckX] = useState(new Animated.Value(-80));
+  const [successScale] = useState(new Animated.Value(0.6));
+  const [successOpacity] = useState(new Animated.Value(0));
 
   const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Reset animation values when stage resets to idle
+  useEffect(() => {
+    if (stage === "idle") {
+      truckX.setValue(-80);
+      successScale.setValue(0.6);
+      successOpacity.setValue(0);
+    }
+  }, [stage]);
+
+  // Trigger animations based on stage changes
+  useEffect(() => {
+    if (stage === "loading") {
+      Animated.timing(truckX, {
+        toValue: 260,
+        duration: 2000,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }).start(() => {
+        setStage("done");
+      });
+    }
+
+    if (stage === "done") {
+      Animated.parallel([
+        Animated.spring(successScale, {
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(successOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setTimeout(() => navigation.goBack(), 900);
+      });
+    }
+  }, [stage]);
+
+  // Autofill user profile from server
   const autofillProfile = async () => {
     try {
       setLoading(true);
@@ -47,6 +88,7 @@ console.log(CustomerEmail)
     }
   };
 
+  // Submit order details to server
   const submitPersonalDetails = async () => {
     if (!fullName || !address || !phone) {
       Alert.alert("Validation Error", "Fill all fields");
@@ -55,42 +97,24 @@ console.log(CustomerEmail)
 
     try {
       setLoading(true);
-      await axios.post("http://UF-MacBook-Pro.local:3000/place-order2", {
-        CustomerEmail,
-        tailorEmail,
+
+      const response = await axios.post("http://UF-MacBook-Pro.local:3000/place-order2", {
         full_name: fullName,
         address,
         phone,
+        CustomerEmail,
+        tailorEmail,
+        orderId,
       });
+
+      console.log("✅ Order updated:", response.data);
+
       setLoading(false);
-
-      setStage("loading");
-
-      Animated.timing(truckX, {
-        toValue: 260,
-        duration: 2000,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
-      }).start(() => {
-        setStage("done");
-
-        Animated.parallel([
-          Animated.spring(successScale, {
-            toValue: 1,
-            useNativeDriver: true,
-          }),
-          Animated.timing(successOpacity, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          setTimeout(() => navigation.goBack(), 900);
-        });
-      });
-    } catch {
+      setStage("loading"); // start animation
+    } catch (error) {
       setLoading(false);
-      Alert.alert("Error", "Order failed");
+      Alert.alert("Error", "Failed to place order");
+      console.error("❌ Order placement error:", error);
     }
   };
 
@@ -100,12 +124,12 @@ console.log(CustomerEmail)
       style={{ flex: 1 }}
     >
       <ScrollView contentContainerStyle={styles.container}>
-      <TouchableOpacity
-  style={styles.backButton}
- onPress={() => navigation.goBack()}
->
-  <Ionicons name="arrow-back" size={22} color="#fff" />
-</TouchableOpacity>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </TouchableOpacity>
 
         <View style={styles.card}>
           <TouchableOpacity
@@ -123,9 +147,9 @@ console.log(CustomerEmail)
           <Text style={styles.sectionTitle}>Delivery Details</Text>
 
           <TextInput
-          color='white'
+            color="white"
             placeholder="Full Name"
-            placeholderTextColor={'gray'}
+            placeholderTextColor="gray"
             style={styles.input}
             value={fullName}
             onChangeText={setFullName}
@@ -133,9 +157,9 @@ console.log(CustomerEmail)
           />
 
           <TextInput
-          color='white'
+            color="white"
             placeholder="Full Address"
-            placeholderTextColor={'gray'}
+            placeholderTextColor="gray"
             style={styles.input}
             value={address}
             onChangeText={setAddress}
@@ -143,9 +167,9 @@ console.log(CustomerEmail)
           />
 
           <TextInput
-          color='white'
+            color="white"
             placeholder="Phone Number"
-            placeholderTextColor={'gray'}
+            placeholderTextColor="gray"
             style={styles.input}
             keyboardType="phone-pad"
             maxLength={11}
