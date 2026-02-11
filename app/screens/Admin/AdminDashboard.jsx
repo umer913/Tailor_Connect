@@ -1,123 +1,124 @@
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef } from "react";
 import {
   Animated,
   Dimensions,
   StyleSheet,
   Text,
-  TouchableOpacity
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const { width } = Dimensions.get("window");
 
 const AdminDashboard = ({ navigation }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
+  const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    Animated.spring(anim, {
+      toValue: 1,
+      friction: 6,
+      useNativeDriver: true,
+    }).start();
   }, []);
 
-  const handleLogout = () => {
-    navigation.navigate("Login");
-  };
+  const scale = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.9, 1],
+  });
+
+  const Card = ({ title, icon, screen }) => (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={() => navigation.navigate(screen)}
+    >
+      <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+        <Ionicons name={icon} size={34} color="#fff" />
+        <Text style={styles.cardText}>{title}</Text>
+      </Animated.View>
+    </TouchableOpacity>
+  );
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        },
-      ]}
-    >
-      <Text style={styles.title}>Welcome Admin</Text>
+    <LinearGradient colors={["#0f2027", "#203a43", "#2c5364"]} style={{ flex: 1 }}>
+      <View style={styles.container}>
 
-      <TouchableOpacity
-        style={styles.button}
-        activeOpacity={0.8}
-        onPress={() => navigation.navigate("ManageTailors")}
-      >
-        <Text style={styles.buttonText}>Manage Tailors</Text>
-      </TouchableOpacity>
+        <Text style={styles.title}>Admin Panel</Text>
+        <Text style={styles.sub}>TailorX Management</Text>
 
-      <TouchableOpacity
-        style={styles.button}
-        activeOpacity={0.8}
-        onPress={() => navigation.navigate("ManageCustomers")}
-      >
-        <Text style={styles.buttonText}>Manage Customers</Text>
-      </TouchableOpacity>
+        <Card title="Tailors" icon="cut-outline" screen="ManageTailors" />
+        <Card title="Customers" icon="people-outline" screen="ManageCustomers" />
+        <Card title="Orders" icon="reader-outline" screen="ManageOrders" />
+        <Card title="Complain-Box" icon="alert-circle-outline" screen="ManageComplain" />
 
-      <TouchableOpacity
-        style={styles.button}
-        activeOpacity={0.8}
-        onPress={() => navigation.navigate("ManageOrders")}
-      >
-        <Text style={styles.buttonText}>Manage Orders</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Login")}
+          style={styles.logout}
+        >
+          <Ionicons name="log-out-outline" size={22} color="#fff" />
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.button, styles.logoutButton]}
-        activeOpacity={0.8}
-        onPress={handleLogout}
-      >
-        <Text style={styles.buttonText}>Logout</Text>
-      </TouchableOpacity>
-    </Animated.View>
+      </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1e1e2f",
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
   },
+
   title: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#f5f6fa",
-    marginBottom: 50,
-    letterSpacing: 1.2,
+    fontSize: 34,
+    fontWeight: "800",
+    color: "#fff",
+    marginBottom: 6,
   },
-  button: {
-    backgroundColor: "#5c6bc0",
-    paddingVertical: 16,
-    paddingHorizontal: 50,
-    borderRadius: 12,
+
+  sub: {
+    color: "#aaa",
+    marginBottom: 40,
+  },
+
+  card: {
+    width: width * 0.78,
+    height: 85,
+    borderRadius: 22,
     marginVertical: 12,
-    width: width * 0.75,
+    paddingHorizontal: 25,
+    flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#4f5bd5",
-    shadowOpacity: 0.5,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 15,
-    elevation: 10,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
   },
-  buttonText: {
-    color: "#f1f1f1",
+
+  cardText: {
+    color: "#fff",
     fontSize: 20,
-    fontWeight: "700",
-    textTransform: "uppercase",
+    fontWeight: "600",
+    marginLeft: 20,
   },
-  logoutButton: {
-    backgroundColor: "#ef5350",
-    shadowColor: "#d84315",
-    marginTop: 40,
+
+  logout: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 50,
+    backgroundColor: "#ff5252",
+    paddingHorizontal: 40,
+    paddingVertical: 14,
+    borderRadius: 40,
+  },
+
+  logoutText: {
+    color: "#fff",
+    fontSize: 16,
+    marginLeft: 10,
+    fontWeight: "600",
   },
 });
 

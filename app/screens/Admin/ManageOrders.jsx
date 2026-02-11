@@ -3,14 +3,13 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function ManageOrders() {
@@ -26,7 +25,7 @@ export default function ManageOrders() {
       const res = await axios.get("http://UF-MacBook-Pro.local:3000/get-orders");
       setOrders(res.data.orders || []);
     } catch (err) {
-      console.log("Fetch orders error:", err);
+      console.log(err);
     }
   };
 
@@ -41,7 +40,7 @@ export default function ManageOrders() {
             await axios.delete(`http://UF-MacBook-Pro.local:3000/remove-order/${id}`);
             setOrders((prev) => prev.filter((o) => o.id !== id));
           } catch (err) {
-            console.log("Delete error:", err);
+            console.log(err);
           }
         },
       },
@@ -53,67 +52,53 @@ export default function ManageOrders() {
 
     return (
       <TouchableOpacity
-        style={styles.card}
         activeOpacity={0.85}
         onPress={() => setOpenId(isOpen ? null : item.id)}
+        style={styles.card}
       >
-        {/* Header Row */}
-        <View style={styles.row}>
-          <Text style={styles.name}>Customer: {item.full_name || "Customer"}</Text>
-          <TouchableOpacity
-            style={styles.removeBtn}
-            onPress={() => removeOrder(item.id)}
-          >
-            <Ionicons name="close" size={22} color="#fff" />
+        <View style={styles.header}>
+          <View style={styles.avatar}>
+            <Ionicons name="receipt-outline" size={22} color="#fff" />
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>{item.full_name || "Customer"}</Text>
+            <Text style={styles.sub}>Tailor: {item.tailor_name || "N/A"}</Text>
+          </View>
+
+          <TouchableOpacity onPress={() => removeOrder(item.id)} style={styles.delete}>
+            <Ionicons name="trash-outline" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        {/* Tailor Name */}
-        <Text style={styles.tailorName}>Tailor: {item.tailor_name || "N/A"}</Text>
-
-        {/* Expandable Details */}
         {isOpen && (
           <View style={styles.details}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ flexDirection: "row", gap: 20 }}>
-                <View>
-                  <Text style={styles.detailLabel}>Service Type:</Text>
-                  <Text style={styles.detailText}>{item.service_type || "N/A"}</Text>
-                </View>
-                <View>
-                  <Text style={styles.detailLabel}>Gender:</Text>
-                  <Text style={styles.detailText}>{item.gender || "N/A"}</Text>
-                </View>
-                <View>
-                  <Text style={styles.detailLabel}>Price:</Text>
-                  <Text style={styles.detailText}>Rs. {item.price || "N/A"}</Text>
-                </View>
-                <View>
-                  <Text style={styles.detailLabel}>Options:</Text>
-                  <Text style={styles.detailText}>
-                    {item.options ? JSON.stringify(item.options) : "N/A"}
-                  </Text>
-                </View>
-              </View>
-            </ScrollView>
 
-            <View style={{ marginTop: 14 }}>
-              <Text style={styles.detailLabel}>Measurements:</Text>
-              {item.measurements
-                ? Object.entries(item.measurements).map(([key, val]) => (
-                    <Text key={key} style={styles.measurementText}>
-                      • {key}: {val}
-                    </Text>
-                  ))
-                : <Text style={styles.detailText}>N/A</Text>}
-            </View>
+            <Info label="Service" value={item.service_type} />
+            <Info label="Gender" value={item.gender} />
+            <Info label="Price" value={`Rs. ${item.price}`} />
+            <Info label="Status" value={item.status} />
+            <Info label="Customer Email" value={item.customer_email} />
+            <Info label="Tailor Email" value={item.tailor_email} />
+           
+            <Info label="Created At" value={new Date(item.created_at).toLocaleString()} />
+
+            {item.measurements && (
+              <>
+                <Text style={styles.section}>Measurements</Text>
+                {Object.entries(item.measurements).map(([k, v]) => (
+                  <Text key={k} style={styles.measure}>• {k}: {v}</Text>
+                ))}
+              </>
+            )}
 
             {item.fabric_image_url && (
-              <Image
-                source={{ uri: item.fabric_image_url }}
-                style={styles.fabricImage}
-              />
+              <>
+                <Text style={styles.section}>Fabric</Text>
+                <Image source={{ uri: item.fabric_image_url }} style={styles.image} />
+              </>
             )}
+
           </View>
         )}
       </TouchableOpacity>
@@ -121,23 +106,35 @@ export default function ManageOrders() {
   };
 
   return (
-    <LinearGradient colors={["#1e1e2f", "#3b3f56"]} style={styles.container}>
-      <Text style={styles.heading}>Manage Orders</Text>
+    <LinearGradient colors={["#0f2027", "#203a43", "#2c5364"]} style={{ flex: 1 }}>
+      <View style={styles.container}>
 
-      {orders.length === 0 ? (
-        <Text style={styles.emptyText}>No orders found</Text>
-      ) : (
+        <Text style={styles.heading}>Manage Orders</Text>
+        <Text style={styles.subTitle}>TailorX Admin</Text>
+
         <FlatList
           data={orders}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 50 }}
         />
-      )}
+
+        {orders.length === 0 && (
+          <Text style={styles.empty}>No Orders Found</Text>
+        )}
+
+      </View>
     </LinearGradient>
   );
 }
+
+const Info = ({ label, value }) => (
+  <View style={styles.infoRow}>
+    <Text style={styles.label}>{label}</Text>
+    <Text style={styles.value}>{value || "N/A"}</Text>
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -147,99 +144,103 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#f1f1f1",
-    marginBottom: 25,
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#fff",
     textAlign: "center",
-    letterSpacing: 1.2,
+  },
+
+  subTitle: {
+    color: "#aaa",
+    textAlign: "center",
+    marginBottom: 30,
   },
 
   card: {
-    backgroundColor: "#2b2f44",
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 12,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
   },
 
-  row: {
+  header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+  },
+
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#5c6bc0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
 
   name: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#e1e4f2",
-  },
-
-  tailorName: {
-    marginTop: 8,
-    fontSize: 16,
+    color: "#fff",
+    fontSize: 18,
     fontWeight: "600",
-    color: "#b0b5d9",
   },
 
-  removeBtn: {
-    backgroundColor: "#ef5350",
-    padding: 10,
+  sub: {
+    color: "#bbb",
+    fontSize: 13,
+  },
+
+  delete: {
+    backgroundColor: "#ff5252",
+    padding: 8,
     borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    width: 40,
-    height: 40,
-    shadowColor: "#d84315",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 12,
   },
 
   details: {
-    marginTop: 15,
+    marginTop: 14,
     borderTopWidth: 1,
-    borderTopColor: "#444a6a",
-    paddingTop: 14,
+    borderTopColor: "rgba(255,255,255,0.2)",
+    paddingTop: 12,
   },
 
-  detailLabel: {
-    color: "#99a0c4",
-    fontWeight: "700",
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+
+  label: {
+    color: "#aaa",
+  },
+
+  value: {
+    color: "#fff",
+  },
+
+  section: {
+    color: "#aaa",
+    marginTop: 12,
+    marginBottom: 6,
+    fontWeight: "600",
+  },
+
+  measure: {
+    color: "#ddd",
     fontSize: 14,
-    marginBottom: 4,
   },
 
-  detailText: {
-    fontSize: 15,
-    color: "#c1c5d7",
-    letterSpacing: 0.4,
-  },
-
-  measurementText: {
-    fontSize: 14,
-    color: "#a3a8c1",
-    marginBottom: 2,
-  },
-
-  fabricImage: {
-    marginTop: 16,
+  image: {
     width: "100%",
     height: 160,
     borderRadius: 14,
+    marginTop: 8,
   },
 
-  emptyText: {
-    color: "rgba(255, 255, 255, 0.6)",
-    fontSize: 20,
+  empty: {
+    color: "#aaa",
     textAlign: "center",
-    marginTop: 140,
-    fontWeight: "700",
+    marginTop: 120,
+    fontSize: 18,
   },
 });

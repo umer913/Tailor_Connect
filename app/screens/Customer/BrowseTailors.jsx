@@ -33,7 +33,7 @@ const CustomerEmail = route?.params?.email || "";
   return (
     
   <LinearGradient
-    colors={["#64769eff", "#3b5998", "#192f6a"]}
+    colors={["#1b254f", "#0c1435", "#080927"]}
     style={styles.container}
   >
     {/* Header */}
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
 
   headerSub: {
     fontSize: 14,
-    color: "#eaeaea",
+    color: "#d1d9ff",
   },
 
   list: {
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "#ffffff",
     borderRadius: 22,
     padding: 18,
     marginBottom: 20,
@@ -165,14 +165,14 @@ const styles = StyleSheet.create({
   },
 
   imageCircle: {
-    backgroundColor: "#3b5998",
+    backgroundColor: "#ffffff",
     padding: 18,
     borderRadius: 18,
     marginBottom: 12,
   },
 
   image: {
-    height: 80,
+    height: 100,
     width: 180,
   },
 

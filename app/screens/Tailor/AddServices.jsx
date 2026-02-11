@@ -25,6 +25,9 @@ const AddServices = ({ route }) => {
   const [services, setServices] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
 
+  const [editingId, setEditingId] = useState(null);
+  const [editingData, setEditingData] = useState({});
+
   const [newService, setNewService] = useState({
     service_types: [],
     gender: 'both',
@@ -111,6 +114,25 @@ const toggleServiceType = (type) => {
     } catch (err) {
       Alert.alert('Error', 'Failed to delete service');
     }
+  };
+
+  // Edit handlers: only allow editing when a card is in edit mode
+  const startEdit = (service) => {
+    setEditingId(service.id);
+    setEditingData({ ...service });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingData({});
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
+    await updateService(editingData);
+    setEditingId(null);
+    setEditingData({});
+    fetchServices();
   };
 
   return (
@@ -212,37 +234,54 @@ const toggleServiceType = (type) => {
           <>
             <Text style={styles.title}>My Services</Text>
 
-            {services.map(s => (
-              <View key={s.id} style={styles.card}>
-                <Text style={styles.cardTitle}>{s.service_types.join(", ")}</Text>
+            {services.map(s => {
+              const isEditing = editingId === s.id;
+              return (
+                <View key={s.id} style={styles.card}>
+                  <Text style={styles.cardTitle}>{s.service_types.join(", ")}</Text>
 
-                <TextInput
-                  style={styles.input}
-                  value={s.description}
-                  onChangeText={(t) => {
-                    s.description = t;
-                    setServices([...services]);
-                  }}
-                />
+                  <TextInput
+                    style={styles.input}
+                    value={isEditing ? (editingData.description || '') : (s.description || '')}
+                    editable={isEditing}
+                    onChangeText={(t) => {
+                      if (!isEditing) return;
+                      setEditingData({ ...editingData, description: t });
+                    }}
+                  />
 
-                <TextInput
-                  style={styles.input}
-                  value={s.price_range}
-                  onChangeText={(t) => {
-                    s.price_range = t;
-                    setServices([...services]);
-                  }}
-                />
+                  <TextInput
+                    style={styles.input}
+                    value={isEditing ? (editingData.price_range || '') : (s.price_range || '')}
+                    editable={isEditing}
+                    onChangeText={(t) => {
+                      if (!isEditing) return;
+                      setEditingData({ ...editingData, price_range: t });
+                    }}
+                  />
 
-                <TouchableOpacity style={styles.saveBtn} onPress={() => updateService(s)}>
-                  <Text style={styles.btnText}>Save</Text>
-                </TouchableOpacity>
+                  {isEditing ? (
+                    <>
+                      <TouchableOpacity style={styles.saveBtn} onPress={saveEdit}>
+                        <Text style={styles.btnText}>Save</Text>
+                      </TouchableOpacity>
 
-                <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteService(s.id)}>
-                  <Text style={styles.btnText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+                      <TouchableOpacity style={styles.cancelBtn} onPress={cancelEdit}>
+                        <Text style={styles.btnText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <TouchableOpacity style={styles.editBtn} onPress={() => startEdit(s)}>
+                      <Text style={styles.btnText}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteService(s.id)}>
+                    <Text style={styles.btnText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
           </>
         )}
       </ScrollView>
@@ -302,6 +341,20 @@ const styles = StyleSheet.create({
   },
 
   saveBtn: {
+    backgroundColor: '#ffffffff',
+    padding: 14,
+    borderRadius: 18,
+    marginTop: 10,
+  },
+
+  editBtn: {
+    backgroundColor: '#ffffff',
+    padding: 14,
+    borderRadius: 18,
+    marginTop: 10,
+  },
+
+  cancelBtn: {
     backgroundColor: '#ffffffff',
     padding: 14,
     borderRadius: 18,

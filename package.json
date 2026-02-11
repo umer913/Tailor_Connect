@@ -13,6 +13,7 @@
   "type": "module",
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
+    "@react-native-community/datetimepicker": "^8.6.0",
     "@react-native-picker/picker": "^2.11.4",
     "@react-navigation/bottom-tabs": "^7.4.8",
     "@react-navigation/drawer": "^7.7.2",
@@ -47,6 +48,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "^0.81.5",
+    "react-native-dropdown-picker": "^5.4.6",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-image-picker": "^8.2.1",
     "react-native-reanimated": "~4.1.1",

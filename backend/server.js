@@ -450,10 +450,15 @@ app.post("/place-order", upload.single("fabric"), async (req, res) => {
       service_type,
       gender,
       price,
+      quantity,
       measurements,
       options,
       tailor_name,
     } = req.body;
+
+    // Debug: Log received data
+    console.log("Received quantity from frontend:", quantity, "Type:", typeof quantity);
+    console.log("All request body:", req.body);
 
     // 2️⃣ Default fabric image URL
     let fabricImageUrl = null;
@@ -484,6 +489,9 @@ app.post("/place-order", upload.single("fabric"), async (req, res) => {
       ? JSON.parse(options)
       : {};
 
+    const finalQuantity = quantity ? parseInt(quantity, 10) : 1;
+    console.log("Final quantity to save:", finalQuantity, "Type:", typeof finalQuantity);
+
     // 5️⃣ Save order in database
     const { data, error } = await supabase
       .from("orders")
@@ -493,6 +501,7 @@ app.post("/place-order", upload.single("fabric"), async (req, res) => {
         service_type,
         gender,
         price,
+        quantity: finalQuantity,
         measurements: parsedMeasurements,
         options: parsedOptions,
         fabric_image_url: fabricImageUrl,
@@ -605,29 +614,7 @@ app.get("/get-booked-slots", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-// ---------------- Book Appointment ----------------
-app.post("/book-appointment", async (req, res) => {
-  const { tailor_email, customer_email, day, time,tailor_name } = req.body;
-
-  if (!tailor_email || !customer_email || !day || !time) {
-    return res.status(400).json({ error: "Missing fields" });
-  }
-
-  const { error } = await supabase.from("appointments").insert([
-    {
-      tailor_name,
-      tailor_email,
-      customer_email,
-      day,
-      time,
-      status: "pending",
-    },
-  ]);
-
-  if (error) return res.status(500).json({ error: error.message });
-
-  res.json({ message: "Appointment booked successfully" });
-});
+// Removed old endpoint - replaced by updated version below
 // ---------------- DELETE APPOINTMENT ----------------
 app.delete("/delete-appointment/:id", async (req, res) => {
   const { id } = req.params;
@@ -650,25 +637,33 @@ app.delete("/delete-appointment/:id", async (req, res) => {
 });
 // ---------------- GET CUSTOMER ORDERS ----------------
 app.get('/get-orders', async (req, res) => {
+  const { email } = req.query;
   try {
- const { data, error } = await supabase
-  .from('orders')
-  .select(`
-    id,
-    customer_email,
-    tailor_email,
-    service_type,
-    gender,
-    price,
-    measurements,
-    options,
-    fabric_image_url,
-    status,
-    created_at,
-    full_name,
-    tailor_name
-  `)
-  .order('created_at', { ascending: false });
+    const query = supabase
+      .from('orders')
+      .select(`
+        id,
+        customer_email,
+        tailor_email,
+        service_type,
+        gender,
+        price,
+        quantity,
+        measurements,
+        options,
+        fabric_image_url,
+        status,
+        created_at,
+        full_name,
+        tailor_name
+      `);
+
+    // Filter by customer email if provided
+    if (email) {
+      query = query.eq('customer_email', email);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) throw error;
 
@@ -698,6 +693,46 @@ app.delete("/delete-order/:id", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+// ✅ Updated Book Appointment Endpoint
+app.post("/book-appointment", async (req, res) => {
+  console.log("Received body:", req.body);
+
+  const { tailor_email, customer_email, datetime, tailor_name } = req.body;
+
+  // Validation
+  if (!tailor_email || !customer_email || !datetime || !tailor_name) {
+    console.error("Missing fields:", { tailor_email, customer_email, datetime, tailor_name });
+    return res.status(400).json({ 
+      success: false,
+      message: "Missing required fields (tailor_email, customer_email, datetime, tailor_name)" 
+    });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("appointments")
+      .insert([{ 
+        tailor_email, 
+        customer_email, 
+        datetime, 
+        tailor_name,
+        status: "pending"
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Supabase insert error:", error);
+      return res.status(500).json({ success: false, message: error.message });
+    }
+
+    res.json({ success: true, message: "Appointment booked successfully", appointment: data });
+  } catch (error) {
+    console.error("Server error:", error);
+    res.status(500).json({ success: false, message: error.message || "Server error" });
+  }
+});
+
 // ---------------- GET CUSTOMER APPOINTMENTS ----------------
 app.get("/my-appointments", async (req, res) => {
   const { email } = req.query;
@@ -705,7 +740,7 @@ app.get("/my-appointments", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("appointments")
-      .select("*") // select all columns
+      .select("*") 
       .eq("customer_email", email)
       .order("created_at", { ascending: false });
 
@@ -821,6 +856,55 @@ app.delete("/remove-order/:id", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+// ---------- UPDATE ORDER ----------
+app.put("/update-order", upload.single("fabric"), async (req, res) => {
+  try {
+    const { orderId, measurements, quantity } = req.body;
+
+    if (!orderId || !measurements) {
+      return res.status(400).json({ error: "Missing data" });
+    }
+
+    const updateData = {
+      measurements: JSON.parse(measurements),
+      updated_at: new Date().toISOString(), // ✅ timestamp
+    };
+
+    // Add quantity if provided
+    if (quantity) {
+      updateData.quantity = parseInt(quantity, 10);
+    }
+
+    // Upload fabric image if provided
+    if (req.file) {
+      const fileName = `${orderId}_${Date.now()}.jpg`;
+
+      await supabase.storage
+        .from("Fabric")
+        .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: true,
+        });
+
+      const { data } = supabase.storage
+        .from("Fabric")
+        .getPublicUrl(fileName);
+
+      updateData.fabric_image_url = data.publicUrl;
+    }
+
+    await supabase
+      .from("orders")
+      .update(updateData)
+      .eq("id", orderId);
+
+    res.json({ message: "Order updated successfully!" });
+  } catch (err) {
+    console.error("Update failed:", err);
+    res.status(500).json({ error: "Update failed" });
+  }
+});
+
 // ---------------- START SERVER ----------------
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

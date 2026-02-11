@@ -19,6 +19,26 @@ export default function MyAppointment({ route, navigation }) {
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Format datetime to: "9/January/2025 time="
+  const formatDateTime = (datetime) => {
+    if (!datetime) return "Not set";
+    try {
+      const date = new Date(datetime);
+      const day = date.getDate();
+      const monthName = date.toLocaleString("en-US", { month: "long" });
+      const year = date.getFullYear();
+      const time = date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+      return `${day}/${monthName}/${year} time=${time}`;
+    } catch (e) {
+      return datetime;
+    }
+  };
+
 const statusStyle = (status) => {
   switch (status?.toLowerCase()) {
     case "confirmed":
@@ -84,7 +104,7 @@ const statusStyle = (status) => {
 
   return (
     <LinearGradient
-      colors={["#64769eff", "#3b5998", "#192f6a"]}
+      colors={["#1b254f", "#0c1435", "#080927"]}
       style={styles.container}
     >
       {/* Back Button */}
@@ -158,8 +178,8 @@ const statusStyle = (status) => {
                   </View>
                 </View>
 
-                <Text style={styles.info}>📅 Day: {item.day}</Text>
-                <Text style={styles.info}>⏰ Time: {item.time}</Text>
+                <Text style={styles.info}>📅 Timing: {formatDateTime(item.datetime)}</Text>
+               
               </Animated.View>
             );
           }}
@@ -190,7 +210,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#f8f4f4ff",
+    color: "#d1d9ff",
     marginBottom: 25,
     marginLeft: 75,
   },

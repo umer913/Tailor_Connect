@@ -14,7 +14,8 @@ import {
 
 export default function TailorServices({ route, navigation }) {
  
-  const { CustomerEmail, email, name } = route.params;
+  const { CustomerEmail, email = "", name = "" } = route.params || {};
+
   console.log("Customer Email:", CustomerEmail);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -212,7 +213,7 @@ export default function TailorServices({ route, navigation }) {
 
   return (
     <LinearGradient
-      colors={["#64769eff", "#3b5998", "#192f6a"]}
+      colors={["#1b254f", "#0c1435", "#000000"]}
       style={styles.container}
     >
       {/* Header */}
@@ -255,7 +256,7 @@ export default function TailorServices({ route, navigation }) {
           <TouchableOpacity
             key={`${service.id}-${index}`}
             activeOpacity={0.9}
-            style={[styles.card, { backgroundColor: "#192f6a" }]}
+            style={[styles.card, { backgroundColor: "#2b2a74ff" }]}
             onPress={() =>
               navigation.navigate("OrderForm", {
                 CustomerEmail,
@@ -322,7 +323,7 @@ const styles = StyleSheet.create({
 
   subtitle: {
     fontSize: 14,
-    color: "#eaeaea",
+    color: "#8e9ccf",
     marginTop: 4,
   },
 

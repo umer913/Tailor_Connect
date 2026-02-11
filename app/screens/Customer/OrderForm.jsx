@@ -3,8 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
+
 import {
   Alert,
   Animated,
@@ -151,11 +151,13 @@ export default function OrderForm({ route, navigation }) {
   console.log("Tailor=",tailorEmail)
   
   const images = Array.isArray(passedImages) ? passedImages : [];
+const [openGroup, setOpenGroup] = useState(null);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [zoomVisible, setZoomVisible] = useState(false);
   const [buyModalVisible, setBuyModalVisible] = useState(false);
   const [selectedFormGender, setSelectedFormGender] = useState(null);
+  const [orderQuantity, setOrderQuantity] = useState(1);
 const [fabricImage, setFabricImage] = useState(null);
 
   const [measurements, setMeasurements] = useState({ male: {}, female: {} });
@@ -283,6 +285,7 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
       formData.append("service_type", serviceType);
       formData.append("gender", formGender);
       formData.append("price", price.toString());
+      formData.append("quantity", orderQuantity.toString());
       formData.append("measurements", JSON.stringify(measurements[formGender]));
       formData.append("options", JSON.stringify(selectedOptionGroups));
 
@@ -337,6 +340,7 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
       const genderToSend = normalizeGender(gender) === "both" ? (selectedFormGender || "male") : normalizeGender(gender) || "male";
       formData.append("gender", genderToSend);
       formData.append("price", price.toString());
+      formData.append("quantity", orderQuantity.toString());
       formData.append("measurements", JSON.stringify({})); // empty
       formData.append("options", JSON.stringify({}));      // empty
   
@@ -386,23 +390,16 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
   
 return (
   <>
-    <LinearGradient
-      colors={["#64769eff", "#3b5998", "#192f6a"]}
-      style={{ flex: 1, padding: 16 }}
-    >
-      <ScrollView style={styles.container}>
-        {/* Back Button */}
-        <TouchableOpacity
+ <TouchableOpacity
           style={styles.backButton}
-          onPress={() =>
-            navigation.navigate("CustomerDrawer", {
-              screen: "TailorService",
-              params: { CustomerEmail: CustomerEmail },
-            })
-          }
+         onPress={() => navigation.navigate("TailorServices", { CustomerEmail, email: tailorEmail,   // VERY IMPORTANT
+  name, })}
         >
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
+      <ScrollView style={styles.container}>
+     
+        
 
         {/* Service Title */}
         <Text style={styles.title}>{serviceType || "Service"}</Text>
@@ -470,6 +467,7 @@ return (
           }}
         >
           <Text style={styles.buyText}>Buy It Now</Text>
+          
         </TouchableOpacity>
 
         {/* Description */}
@@ -480,7 +478,7 @@ return (
 
         <View style={{ height: 30 }} />
       </ScrollView>
-    </LinearGradient>
+   
 
     {/* Zoom Modal */}
     <Modal visible={zoomVisible} transparent animationType="fade">
@@ -533,6 +531,28 @@ return (
                 Place Order — Measurements
               </Text>
 
+              {/* Quantity Selector */}
+              <View style={styles.quantitySection}>
+                <Text style={styles.quantityLabel}>Quantity: How many do you want to stitch?</Text>
+                <View style={styles.quantityControlRow}>
+                  <TouchableOpacity
+                    style={styles.decrementBtn}
+                    onPress={() => setOrderQuantity(Math.max(1, orderQuantity - 1))}
+                  >
+                    <Text style={styles.decrementText}>−</Text>
+                  </TouchableOpacity>
+                  <View style={styles.quantityDisplayBox}>
+                    <Text style={styles.quantityDisplayText}>{orderQuantity}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.incrementBtn}
+                    onPress={() => setOrderQuantity(Math.min(15, orderQuantity + 1))}
+                  >
+                    <Text style={styles.incrementText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
               {/* Gender Selector */}
               {((gender || "").toLowerCase() === "both" ||
                 (gender || "").trim() === "") && (
@@ -579,6 +599,7 @@ return (
 
                       return (
                         <View key={key} style={{ marginBottom: 8 }}>
+                          <Text style={{ fontWeight: "700", marginBottom: 4 }}>{field}</Text>
                           <TextInput
                             placeholder={`${field} (${measurementRanges[field] || "inches"} in)`}
                             placeholderTextColor="#777"
@@ -834,6 +855,71 @@ const styles = StyleSheet.create({
     marginTop: -8,
     marginBottom: 8,
   },
+  quantitySection: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  quantityLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 10,
+  },
+  quantityControlRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+  decrementBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: "#e74c3c",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#c0392b",
+  },
+  decrementText: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  incrementBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: "#27ae60",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#229954",
+  },
+  incrementText: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  quantityDisplayBox: {
+    minWidth: 80,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#333",
+  },
+  quantityDisplayText: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#333",
+  },
 descriptionCard: {
   backgroundColor: "#fafafa",
   borderRadius: 12,
@@ -993,7 +1079,7 @@ rightArrow: {
     borderColor: "#aaa",
     borderRadius: 8,
     overflow: "hidden",
-    height: 24,
+    height: 44,
     justifyContent: "center",
     width: "100%",
     alignSelf: "center",
@@ -1019,16 +1105,16 @@ rightArrow: {
   backButton: {
     position: "absolute",
     left: 16,
-    top: 400,
+    top: 14,
     padding: 8,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "#2b2a74ff",
     borderRadius: 12,
   },
   removeImageBtn: {
     position: "absolute",
     bottom: 8,
     right: 8,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgb(0, 0, 0)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,

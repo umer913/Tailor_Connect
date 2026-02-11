@@ -1,16 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Easing,
   Image,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
 } from 'react-native';
 
 const CustomerDashboard = ({ route, navigation }) => {
@@ -32,27 +33,47 @@ const CustomerDashboard = ({ route, navigation }) => {
     require('../../../assets/images/Fsherwani.png'),
   ];
   const [currentTailorImageIndex, setCurrentTailorImageIndex] = useState(0);
+  const fadeTailorImage = useRef(new Animated.Value(1)).current;
 
   /* ---------- ANIMATIONS ---------- */
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [slideAnim] = useState(new Animated.Value(40));
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const scaleBtnAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (showProfile) {
       setProfileVisible(true);
       Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          speed: 15,
+          bounciness: 12,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.out(Easing.exp),
+          useNativeDriver: true,
+        }),
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 40, duration: 300, useNativeDriver: true }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 250,
+          easing: Easing.in(Easing.exp),
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 50,
+          duration: 250,
+          useNativeDriver: true,
+        }),
       ]).start(() => setProfileVisible(false));
     }
   }, [showProfile]);
 
-  /* ---------- FETCH PROFILE ---------- */
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -75,7 +96,7 @@ const CustomerDashboard = ({ route, navigation }) => {
     };
     fetchProfile();
   }, []);
-  /* ---------- Update PROFILE ---------- */
+
   const updateProfile = async () => {
     if (cnic.length !== 13) return alert("CNIC must be 13 digits.");
     if (phoneNumber.length !== 11) return alert("Phone must be 11 digits.");
@@ -111,94 +132,128 @@ const CustomerDashboard = ({ route, navigation }) => {
     }
   };
 
-  /* ---------- IMAGE ROTATION ---------- */
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTailorImageIndex(prev => (prev + 1) % tailorImages.length);
-    }, 3000);
+      Animated.timing(fadeTailorImage, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        setCurrentTailorImageIndex(prev => (prev + 1) % tailorImages.length);
+        Animated.timing(fadeTailorImage, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
+  // Button press animation without haptic feedback
+  const onPressWithScale = (callback) => {
+    Animated.sequence([
+      Animated.timing(scaleBtnAnim, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+      Animated.timing(scaleBtnAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start(() => {
+      if (callback) callback();
+    });
+  };
+
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#0c1435' }}>
       <LinearGradient
-        colors={['#64769eff', '#3b5998', '#192f6a']}
+        colors={['#1b254f', '#0c1435', '#080927']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
         style={styles.container}
         pointerEvents={showProfile ? 'none' : 'auto'}
       >
-
         <View style={styles.greetingBox}>
-          <Text style={styles.greetingSmall}>Welcome back 👋</Text>
+          <Text style={styles.greetingSmall}>Welcome back </Text>
           <Text style={styles.greetingName}>
             {profile.full_name || "Customer"}
           </Text>
         </View>
 
         <View style={styles.topRightContainer}>
-          <TouchableOpacity style={styles.iconButton} disabled={showProfile}>
-            <Ionicons name="chatbubbles-outline" size={35} color="blue" />
+          <TouchableOpacity
+            style={[styles.iconButton, { backgroundColor: 'rgba(255,255,255,0.12)' }]}
+            disabled={showProfile}
+            onPress={() => onPressWithScale(() => alert("Chat coming soon!"))}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chatbubbles-outline" size={36} color="#99aaff" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setShowProfile(true)}
+            style={[styles.iconButton, { backgroundColor: 'rgba(255,255,255,0.12)' }]}
+            onPress={() => onPressWithScale(() => setShowProfile(true))}
             disabled={showProfile}
+            activeOpacity={0.8}
           >
             <Image
               source={require('../../../assets/images/Men.png')}
-              style={{ height: 40, width: 40 }}
-               resizeMode="contain"
+              style={styles.profileIcon}
+              resizeMode="contain"
             />
           </TouchableOpacity>
         </View>
 
         <View style={styles.verticalContainer}>
           <TouchableOpacity style={styles.locationBox} disabled={showProfile}>
-            <Ionicons name="location-outline" size={26} color="lightblue" />
-            <View style={{ marginLeft: 10 }}>
+            <Ionicons name="location-outline" size={28} color="#8fa1cc" />
+            <View style={{ marginLeft: 14 }}>
               <Text style={styles.locationTitle}>My Location</Text>
-              <Text style={styles.locationText}>{profile.location}</Text>
+              <Text style={styles.locationText}>{profile.location || "Unknown"}</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.tailorBox}
-            onPress={() => navigation.navigate("BrowseTailors", { CustomerEmail: email })}
+            onPress={() => onPressWithScale(() => navigation.navigate("BrowseTailors", { CustomerEmail: email }))}
             disabled={showProfile}
+            activeOpacity={0.9}
           >
-            <Image source={tailorImages[currentTailorImageIndex]} style={styles.tailorImage} />
+            <Animated.Image
+              source={tailorImages[currentTailorImageIndex]}
+              style={[styles.tailorImage, { opacity: fadeTailorImage }]}
+              resizeMode="contain"
+            />
             <Text style={styles.tailorText}>Look for a Tailor</Text>
           </TouchableOpacity>
 
           <View style={styles.horizontalButtons}>
-            <TouchableOpacity
-              style={styles.smallButton}
-              onPress={() => navigation.navigate("CustomerOrders", { CustomerEmail: email })}
+            <AnimatedTouchable
+              style={[styles.smallButton, { backgroundColor: '#2a3c72', transform: [{ scale: scaleBtnAnim }] }]}
+              onPress={() => onPressWithScale(() => navigation.navigate("CustomerOrders", { CustomerEmail: email }))}
+              activeOpacity={0.85}
             >
-              <Ionicons name="receipt-outline" size={23} color="#ffffffff" />
+              <Ionicons name="receipt-outline" size={24} color="#ccd9ff" />
               <Text style={styles.smallButtonText}>My Orders</Text>
-            </TouchableOpacity>
+            </AnimatedTouchable>
 
-            <TouchableOpacity
-              style={styles.smallButton}
-              onPress={() => navigation.navigate("MyAppointments", { CustomerEmail: email })}
+            <AnimatedTouchable
+              style={[styles.smallButton, { backgroundColor: '#2a3c72', transform: [{ scale: scaleBtnAnim }] }]}
+              onPress={() => onPressWithScale(() => navigation.navigate("MyAppointments", { CustomerEmail: email }))}
+              activeOpacity={0.85}
             >
-              <Ionicons name="calendar-outline" size={23} color="#fff" />
+              <Ionicons name="calendar-outline" size={24} color="#ccd9ff" />
               <Text style={styles.smallButtonText}>My Appointments</Text>
-            </TouchableOpacity>
+            </AnimatedTouchable>
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.logoutBtn}
-          onPress={() => navigation.navigate("Login")}
+        <AnimatedTouchable
+          style={[styles.logoutBtn, { backgroundColor: '#111a3a', transform: [{ scale: scaleBtnAnim }] }]}
+          onPress={() => onPressWithScale(() => navigation.navigate("Login"))}
+          activeOpacity={0.85}
         >
-          <Ionicons name="log-out-outline" size={23} color="#fff" />
+          <Ionicons name="log-out-outline" size={24} color="#8899cc" />
           <Text style={styles.logoutText}> Logout</Text>
-        </TouchableOpacity>
+        </AnimatedTouchable>
       </LinearGradient>
 
-      {/* ---------- PROFILE CARD ---------- */}
       {profileVisible && (
         <TouchableWithoutFeedback onPress={() => setShowProfile(false)}>
           <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
@@ -208,12 +263,28 @@ const CustomerDashboard = ({ route, navigation }) => {
                 <>
                   <Text style={styles.title}>My Profile</Text>
 
-                  <View style={styles.itemBox}><Text style={styles.label}>Full Name</Text><Text style={styles.value}>{profile.full_name}</Text></View>
-                  <View style={styles.itemBox}><Text style={styles.label}>CNIC</Text><Text style={styles.value}>{profile.cnic}</Text></View>
-                  <View style={styles.itemBox}><Text style={styles.label}>Phone</Text><Text style={styles.value}>{profile.phone_number}</Text></View>
-                  <View style={styles.itemBox}><Text style={styles.label}>Location</Text><Text style={styles.value}>{profile.location}</Text></View>
+                  <View style={styles.itemBox}>
+                    <Text style={styles.label}>Full Name</Text>
+                    <Text style={styles.value}>{profile.full_name}</Text>
+                  </View>
+                  <View style={styles.itemBox}>
+                    <Text style={styles.label}>CNIC</Text>
+                    <Text style={styles.value}>{profile.cnic}</Text>
+                  </View>
+                  <View style={styles.itemBox}>
+                    <Text style={styles.label}>Phone</Text>
+                    <Text style={styles.value}>{profile.phone_number}</Text>
+                  </View>
+                  <View style={styles.itemBox}>
+                    <Text style={styles.label}>Location</Text>
+                    <Text style={styles.value}>{profile.location}</Text>
+                  </View>
 
-                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#4a90e2" }]} onPress={() => setEditMode(true)}>
+                  <TouchableOpacity
+                    style={[styles.btn, { backgroundColor: "#2a3c72" }]}
+                    onPress={() => onPressWithScale(() => setEditMode(true))}
+                    activeOpacity={0.85}
+                  >
                     <Text style={styles.btnText}>Edit Details</Text>
                   </TouchableOpacity>
                 </>
@@ -221,17 +292,65 @@ const CustomerDashboard = ({ route, navigation }) => {
                 <>
                   <Text style={styles.title}>Edit Profile</Text>
 
-                  <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Full Name" />
-                  <TextInput style={styles.input} value={cnic} onChangeText={setCnic} placeholder="CNIC" keyboardType="numeric" maxLength={13} />
-                  <TextInput style={styles.input} value={phoneNumber} onChangeText={setPhoneNumber} placeholder="Phone" keyboardType="numeric" maxLength={11} />
-                  <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="Location" />
-                  <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="New Password" secureTextEntry />
+                  <TextInput
+                    style={styles.input}
+                    value={fullName}
+                    onChangeText={setFullName}
+                    placeholder="Full Name"
+                    placeholderTextColor="#667799"
+                    selectionColor="#aabbff"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={cnic}
+                    onChangeText={setCnic}
+                    placeholder="CNIC"
+                    keyboardType="numeric"
+                    maxLength={13}
+                    placeholderTextColor="#667799"
+                    selectionColor="#aabbff"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    placeholder="Phone"
+                    keyboardType="numeric"
+                    maxLength={11}
+                    placeholderTextColor="#667799"
+                    selectionColor="#aabbff"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={location}
+                    onChangeText={setLocation}
+                    placeholder="Location"
+                    placeholderTextColor="#667799"
+                    selectionColor="#aabbff"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="New Password"
+                    secureTextEntry
+                    placeholderTextColor="#667799"
+                    selectionColor="#aabbff"
+                  />
 
-                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#4CAF50" }]} onPress={updateProfile}>
+                  <TouchableOpacity
+                    style={[styles.btn, { backgroundColor: "#1f2a59" }]}
+                    onPress={() => onPressWithScale(updateProfile)}
+                    activeOpacity={0.85}
+                  >
                     <Text style={styles.btnText}>Save Changes</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#f05454" }]} onPress={() => setEditMode(false)}>
+                  <TouchableOpacity
+                    style={[styles.btn, { backgroundColor: "#6a2e2e" }]}
+                    onPress={() => onPressWithScale(() => setEditMode(false))}
+                    activeOpacity={0.85}
+                  >
                     <Text style={styles.btnText}>Cancel</Text>
                   </TouchableOpacity>
                 </>
@@ -245,195 +364,234 @@ const CustomerDashboard = ({ route, navigation }) => {
   );
 };
 
-
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center" },
+  container: {
+    flex: 1,
+    alignItems: "center",
+    paddingTop: 90,
+    paddingHorizontal: 20,
+  },
   greetingBox: {
-    width: "90%",
-    marginTop: 90,
+    width: "100%",
     marginBottom: 20,
-    marginLeft:46
   },
-
   greetingSmall: {
-    fontSize: 25,
-    color: "#ffffffff",
-    fontWeight: "bold",
+    fontSize: 28,
+    color: "#8e9ccf",
+    fontWeight: "700",
+    letterSpacing: 1.2,
   },
-
   greetingName: {
-    fontSize: 22,
-    color: "#d8eceeff",
-    marginTop: 4,
+    fontSize: 26,
+    color: "#d1d9ff",
+    marginTop: 6,
+    fontWeight: "800",
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 4,
   },
   topRightContainer: {
     position: "absolute",
-    marginLeft: 280,
+    top: 45,
+    right: 20,
     flexDirection: "row",
-    padding: 20,
+    padding: 6,
+    zIndex: 10,
   },
-
   iconButton: {
-    padding: 8,
-    backgroundColor: "rgba(244, 244, 244, 1)",
-    borderRadius: 25,
-    marginLeft: 12,
+    padding: 10,
+    borderRadius: 30,
+    marginLeft: 14,
+    shadowColor: "#18294a",
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 8,
   },
-
+  profileIcon: {
+    height: 42,
+    width: 42,
+  },
   verticalContainer: {
-    width: "80%",
-    alignSelf: "center",
-    marginTop: 35,
+    width: "100%",
+    marginTop: 40,
   },
-
   locationBox: {
     flexDirection: "row",
     alignItems: "center",
-  backgroundColor: "#201f52ff",
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 18,
-    marginBottom: 25,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    backgroundColor: "rgba(38, 52, 90, 0.4)",
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderRadius: 22,
+    marginBottom: 30,
+    shadowColor: "#1a2a5a",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
-
   locationTitle: {
-    color: "#fff",
+    color: "#aab6ff",
     fontSize: 14,
     fontWeight: "600",
   },
-
   locationText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-
-  tailorBox: {
-    backgroundColor: "#201f52ff",
-    height: 150,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-  },
-
-  tailorImage: {
-    width: 80,
-    height: 90,
-    marginBottom: 10,
-  },
-
-  tailorText: {
-    color: "#fff",
-    fontSize: 20,
+    color: "#d1d9ff",
+    fontSize: 14,
     fontWeight: "700",
   },
-
+  tailorBox: {
+    backgroundColor: "rgba(38, 52, 90, 0.45)",
+    height: 160,
+    borderRadius: 26,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#18294a",
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 7,
+    marginBottom: 30,
+  },
+  tailorImage: {
+    width: 90,
+    height: 110,
+    marginBottom: 12,
+    borderRadius: 12,
+  },
+  tailorText: {
+    color: "#d1d9ff",
+    fontSize: 22,
+    fontWeight: "900",
+    letterSpacing: 1.1,
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 6,
+  },
   horizontalButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 25,
   },
-
   smallButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#42c3ffff",
-    paddingVertical: 24,
-    borderRadius: 16,
-    marginRight: 10,
-    shadowColor: "#1b3344ff",
-    shadowOpacity: 2,
-    shadowRadius: 5,
+    paddingVertical: 22,
+    borderRadius: 18,
+    marginRight: 14,
+    shadowOpacity: 0.7,
+    shadowRadius: 12,
+    elevation: 10,
   },
-
   smallButtonText: {
-    color: "#fff",
+    color: "#ccd9ff",
     fontSize: 14,
     fontWeight: "700",
-    marginLeft: 6,
+    marginLeft: 8,
+    letterSpacing: 0.7,
   },
-
   card: {
     position: "absolute",
-    top: '20%',
+    top: '22%',
     alignSelf: "center",
     width: "88%",
-    padding: 20,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    borderRadius: 20,
-    shadowColor: '#6C63FF',
-    shadowOpacity: 3,
-    shadowRadius: 20,
-    elevation: 10,
-
+    padding: 24,
+    backgroundColor: "rgba(23, 34, 67, 0.95)",
+    borderRadius: 24,
+    shadowColor: '#18294a',
+    shadowOpacity: 0.85,
+    shadowRadius: 24,
+    elevation: 22,
   },
-
   title: {
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#444",
-    marginBottom: 20,
+    color: "#b0c2ff",
+    marginBottom: 24,
+    letterSpacing: 0.8,
+    textAlign: 'center',
   },
-
   itemBox: {
-    marginBottom: 12,
-    padding: 12,
-    borderRadius: 10,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#eee",
-  },
-
-  label: { fontSize: 13, color: "#777" },
-  value: { fontSize: 17, fontWeight: "700", color: "#333" },
-
-  input: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    backgroundColor: "#fff",
-    marginBottom: 10,
-    fontSize: 16,
-  },
-
-  btn: {
+    marginBottom: 14,
     padding: 14,
     borderRadius: 14,
-    alignItems: "center",
-    marginTop: 10,
+    backgroundColor: "rgba(38, 52, 90, 0.6)",
+    borderWidth: 1,
+    borderColor: "rgba(102, 126, 234, 0.5)",
+    shadowColor: "#3b4f90",
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
   },
-
-  btnText: { color: "#fff", fontSize: 17, fontWeight: "700" },
-
+  label: {
+    fontSize: 14,
+    color: "#889acc",
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  value: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#c3d1ff",
+  },
+  input: {
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#506ba9",
+    borderRadius: 14,
+    backgroundColor: "rgba(20, 28, 54, 0.7)",
+    marginBottom: 14,
+    fontSize: 16,
+    color: "#c3d1ff",
+    shadowColor: "#506ba9",
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+  },
+  btn: {
+    padding: 16,
+    borderRadius: 18,
+    alignItems: "center",
+    marginTop: 14,
+    shadowColor: "#3957a6",
+    shadowOpacity: 0.75,
+    shadowRadius: 14,
+    elevation: 12,
+  },
+  btnText: {
+    color: "#e6ebff",
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
   logoutBtn: {
     marginTop: 160,
     bottom: 40,
-    backgroundColor: "#d85b5b",
-    paddingVertical: 14,
-    paddingHorizontal: 35,
-    borderRadius: 30,
+    backgroundColor: "#101d43",
+    paddingVertical: 16,
+    paddingHorizontal: 44,
+    borderRadius: 32,
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "center",
+    shadowColor: "#1e2d67",
+    shadowOpacity: 0.9,
+    shadowRadius: 18,
+    elevation: 16,
   },
-
-  logoutText: { color: "#fff", fontSize: 18, fontWeight: "700", marginLeft: 6 },
-
+  logoutText: {
+    color: "#9bb3ff",
+    fontSize: 20,
+    fontWeight: "800",
+    marginLeft: 10,
+    letterSpacing: 0.8,
+  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(4, 10, 35, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-  }
+    zIndex: 999,
+  },
 });
 
 export default CustomerDashboard;

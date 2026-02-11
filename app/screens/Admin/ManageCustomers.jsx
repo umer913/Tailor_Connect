@@ -8,9 +8,8 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
-
 
 export default function ManageCustomers() {
   const [customers, setCustomers] = useState([]);
@@ -22,12 +21,10 @@ export default function ManageCustomers() {
 
   const fetchCustomers = async () => {
     try {
-      const res = await axios.get(
-        "http://UF-MacBook-Pro.local:3000/get-customers"
-      );
+      const res = await axios.get("http://UF-MacBook-Pro.local:3000/get-customers");
       setCustomers(res.data.customers || []);
     } catch (err) {
-      console.log("Fetch error:", err);
+      console.log(err);
     }
   };
 
@@ -39,23 +36,16 @@ export default function ManageCustomers() {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete(
-              "http://UF-MacBook-Pro.local:3000/remove-customer",
-              { data: { email } }
-            );
-            setCustomers((prev) =>
-              prev.filter((c) => c.email !== email)
-            );
+            await axios.delete("http://UF-MacBook-Pro.local:3000/remove-customer", {
+              data: { email },
+            });
+            setCustomers((prev) => prev.filter((c) => c.email !== email));
           } catch (err) {
-            console.log("Delete error:", err);
+            console.log(err);
           }
         },
       },
     ]);
-  };
-
-  const toggleOpen = (email) => {
-    setOpenEmail((prev) => (prev === email ? null : email));
   };
 
   const renderItem = ({ item }) => {
@@ -63,32 +53,30 @@ export default function ManageCustomers() {
 
     return (
       <TouchableOpacity
-        style={styles.card}
-        onPress={() => toggleOpen(item.email)}
         activeOpacity={0.85}
+        onPress={() => setOpenEmail(isOpen ? null : item.email)}
+        style={styles.card}
       >
-        {/* HEADER */}
-        <View style={styles.row}>
+        <View style={styles.header}>
+          <View style={styles.avatar}>
+            <Ionicons name="person-outline" size={22} color="#fff" />
+          </View>
+
           <Text style={styles.name}>{item.full_name}</Text>
 
           <TouchableOpacity
-            style={styles.removeBtn}
             onPress={() => removeCustomer(item.email)}
+            style={styles.delete}
           >
-            <Ionicons name="close" size={22} color="#fff" />
+            <Ionicons name="trash-outline" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        {/* DETAILS */}
         {isOpen && (
           <View style={styles.details}>
-            <Text style={styles.detailText}>Email: {item.email}</Text>
-            <Text style={styles.detailText}>
-              Phone: {item.phone_number || "N/A"}
-            </Text>
-            <Text style={styles.detailText}>
-              Location: {item.location || "N/A"}
-            </Text>
+            <Info icon="mail-outline" text={item.email} />
+            <Info icon="call-outline" text={item.phone_number || "N/A"} />
+            <Info icon="location-outline" text={item.location || "N/A"} />
           </View>
         )}
       </TouchableOpacity>
@@ -96,23 +84,35 @@ export default function ManageCustomers() {
   };
 
   return (
-    <LinearGradient colors={["#1e1e2f", "#3b3f56"]} style={styles.container}>
-      <Text style={styles.heading}>Manage Customers</Text>
+    <LinearGradient colors={["#0f2027", "#203a43", "#2c5364"]} style={{ flex: 1 }}>
+      <View style={styles.container}>
 
-      {customers.length === 0 ? (
-        <Text style={styles.emptyText}>No customers found</Text>
-      ) : (
+        <Text style={styles.heading}>Manage Customers</Text>
+        <Text style={styles.sub}>TailorX Admin</Text>
+
         <FlatList
           data={customers}
           keyExtractor={(item) => item.email}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 50 }}
         />
-      )}
+
+        {customers.length === 0 && (
+          <Text style={styles.empty}>No Customers Found</Text>
+        )}
+
+      </View>
     </LinearGradient>
   );
 }
+
+const Info = ({ icon, text }) => (
+  <View style={styles.infoRow}>
+    <Ionicons name={icon} size={18} color="#bbb" />
+    <Text style={styles.info}>{text}</Text>
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -122,71 +122,78 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#f1f1f1",
-    marginBottom: 25,
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#fff",
     textAlign: "center",
-    letterSpacing: 1.2,
+  },
+
+  sub: {
+    color: "#aaa",
+    textAlign: "center",
+    marginBottom: 30,
   },
 
   card: {
-    backgroundColor: "#2b2f44",
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 12,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
   },
 
-  row: {
+  header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+  },
+
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#5c6bc0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
 
   name: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#e1e4f2",
+    flex: 1,
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
   },
 
-  removeBtn: {
-    backgroundColor: "#ef5350",
-    padding: 10,
+  delete: {
+    backgroundColor: "#ff5252",
+    padding: 8,
     borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    width: 40,
-    height: 40,
-    shadowColor: "#d84315",
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 12,
   },
 
   details: {
     marginTop: 15,
     borderTopWidth: 1,
-    borderTopColor: "#444a6a",
-    paddingTop: 14,
+    borderTopColor: "rgba(255,255,255,0.2)",
+    paddingTop: 12,
   },
 
-  detailText: {
-    fontSize: 16,
-    color: "#c1c5d7",
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
-    letterSpacing: 0.4,
   },
 
-  emptyText: {
-    color: "rgba(255, 255, 255, 0.6)",
-    fontSize: 20,
+  info: {
+    color: "#ddd",
+    marginLeft: 10,
+    fontSize: 15,
+  },
+
+  empty: {
+    color: "#aaa",
     textAlign: "center",
-    marginTop: 140,
-    fontWeight: "700",
+    marginTop: 120,
+    fontSize: 18,
   },
 });
