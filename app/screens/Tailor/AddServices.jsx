@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  cardTitle: { color: '#000000ff', fontSize: 20, fontWeight: '800' },
+  cardTitle: { color: '#000000ff', fontSize: 20, fontWeight: '800',marginBottom: 12 },
 
   label: { color: '#EADDDD', marginBottom: 6 },
 

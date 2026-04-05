@@ -16,6 +16,7 @@ import {
 
 export default function MyAppointment({ route, navigation }) {
   const customerEmail = route?.params?.email || "";
+  console.log("Customer email in MyAppointments:", customerEmail);
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,14 +42,18 @@ export default function MyAppointment({ route, navigation }) {
 
 const statusStyle = (status) => {
   switch (status?.toLowerCase()) {
-    case "confirmed":
+    case "accepted":
       return { backgroundColor: "#4CAF50" };
+    case "rejected":
+      return { backgroundColor: "#F44336" };
     case "pending":
       return { backgroundColor: "#FFC107" };
+    case "confirmed":
+      return { backgroundColor: "#4CAF50" };
     case "cancelled":
       return { backgroundColor: "#F44336" };
     default:
-      return { backgroundColor: "#9E9E9E" };
+      return { backgroundColor: "#4CAF50" }; // Default to green instead of gray
   }
 };
 
@@ -202,8 +207,10 @@ const styles = StyleSheet.create({
     top: 30,
     left: 20,
     padding: 10,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(42,60,114,0.5)",
     borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(155,179,255,0.12)",
     zIndex: 10,
   },
 
@@ -212,18 +219,16 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#d1d9ff",
     marginBottom: 25,
-    marginLeft: 75,
+    textAlign: "center",
   },
 
   card: {
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "rgba(38,52,90,0.5)",
     padding: 18,
     borderRadius: 20,
     marginBottom: 18,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: "rgba(102,126,234,0.15)",
   },
 
   header: {
@@ -242,7 +247,7 @@ const styles = StyleSheet.create({
   tailorName: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#333",
+    color: "#d1d9ff",
   },
 
   statusBadge: {
@@ -258,7 +263,7 @@ const styles = StyleSheet.create({
   },
 
   closeBtn: {
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "rgba(216,91,91,0.2)",
     width: 26,
     height: 26,
     borderRadius: 13,
@@ -274,7 +279,7 @@ const styles = StyleSheet.create({
 
   info: {
     fontSize: 15,
-    color: "#555",
+    color: "#8e9ccf",
     marginTop: 4,
     fontWeight: "600",
   },
@@ -283,13 +288,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 18,
     marginTop: 120,
-    color: "#f1f1f1",
+    color: "#8e9ccf",
   },
 
   loader: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#192f6a",
   },
 });

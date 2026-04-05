@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import AdminDashboard from '../screens/Admin/AdminDashboard';
+import ManageComplain from '../screens/Admin/ManageComplain';
 import ManageCustomers from '../screens/Admin/ManageCustomers';
 import ManageOrders from '../screens/Admin/ManageOrders';
 import ManageTailors from '../screens/Admin/ManageTailors';
@@ -14,21 +15,23 @@ import Start from '../screens/Start';
 import AddServices from '../screens/Tailor/AddServices';
 import Appointment from '../screens/Tailor/Appointment';
 import TailorChatbox from '../screens/Tailor/TailorChatbox';
+import TailorComplainbox from '../screens/Tailor/TailorComplainbox';
 import TailorDashboard from '../screens/Tailor/TailorDashboard';
-import TailorOrders from '../screens/Tailor/TailorOrders';
-
 // 👇 NEW imports for Drawer
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { StyleSheet } from 'react-native';
 import BookAppointment from '../screens/Customer/BookAppointment';
 import BrowseTailors from '../screens/Customer/BrowseTailors';
 import CustomerChatbox from '../screens/Customer/CustomerChatbox';
+import CustomerComplainbox from '../screens/Customer/CustomerComplainbox';
 import CustomerDashboard from '../screens/Customer/CustomerDashboard';
 import CustomerOrders from '../screens/Customer/CustomerOrders';
 import Form from '../screens/Customer/Form';
 import MyAppointments from '../screens/Customer/MyAppointments';
+import NotificationScreen from '../screens/Customer/NotificationScreen';
 import OrderForm from '../screens/Customer/OrderForm';
 import TailorServices from '../screens/Customer/TailorServices';
+import MyOrders from '../screens/Tailor/MyOrders';
 // Create Drawer
 const Drawer = createDrawerNavigator();
 
@@ -55,36 +58,37 @@ function CustomerDrawer({ route }) {
           ),
         }}
       />
-        
+
       <Drawer.Screen
         name="BrowseTailors"
         component={BrowseTailors}
         initialParams={{ email }}
         options={{
+          headerShown: false,
           drawerIcon: ({ color, size }) => (
             <Ionicons name="search-outline" size={size} color={color} />
           ),
         }}
       />
-        
-<Drawer.Screen
-  name="TailorServices"
-  initialParams={{ email }}
-  component={TailorServices}
-  options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
-/>
-<Drawer.Screen
-  name="OrderForm"
-  initialParams={{ email }}
-  component={OrderForm}
-  options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
-/>
-<Drawer.Screen
-  name="MyAppointments"
-  initialParams={{ email }}
-  component={MyAppointments}
-  options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
-/>
+
+      <Drawer.Screen
+        name="TailorServices"
+        initialParams={{ email }}
+        component={TailorServices}
+        options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
+      />
+      <Drawer.Screen
+        name="OrderForm"
+        initialParams={{ email }}
+        component={OrderForm}
+        options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
+      />
+      <Drawer.Screen
+        name="MyAppointments"
+        initialParams={{ email }}
+        component={MyAppointments}
+        options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
+      />
       <Drawer.Screen
         name="CustomerOrders"
         component={CustomerOrders}
@@ -98,17 +102,34 @@ function CustomerDrawer({ route }) {
       <Drawer.Screen
         name="CustomerChatbox"
         component={CustomerChatbox}
+        initialParams={{ email }}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
           ),
         }}
       />
+      <Drawer.Screen
+        name="CustomerComplainbox"
+        component={CustomerComplainbox}
+        initialParams={{ email }}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="alert-circle-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="NotificationScreen"
+        component={NotificationScreen}
+        initialParams={{ email }}
+        options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
+      />
     </Drawer.Navigator>
   );
 }
-function TailorDrawer({route}) {
-   const email = route.params?.email;
+function TailorDrawer({ route }) {
+  const email = route.params?.email;
   return (
     <Drawer.Navigator
       initialRouteName="TailorDashboard"
@@ -122,7 +143,7 @@ function TailorDrawer({route}) {
       <Drawer.Screen
         name="TailorDashboard"
         component={TailorDashboard}
-         initialParams={{ email }}
+        initialParams={{ email }}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
@@ -141,8 +162,9 @@ function TailorDrawer({route}) {
         }}
       />
       <Drawer.Screen
-        name="TailorOrders"
-        component={TailorOrders}
+        name="MyOrders"
+        component={MyOrders}
+        initialParams={{ email }}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="clipboard-outline" size={size} color={color} />
@@ -152,9 +174,20 @@ function TailorDrawer({route}) {
       <Drawer.Screen
         name="TailorChatbox"
         component={TailorChatbox}
+        initialParams={{ email }}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="TailorComplainbox"
+        initialParams={{ email }}
+        component={TailorComplainbox}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="alert-circle-outline" size={size} color={color} />
           ),
         }}
       />
@@ -174,15 +207,19 @@ const App = () => {
         <Stack.Screen options={{ headerShown: false }} name="CustomerDrawer" component={CustomerDrawer} />
         {/* Use the Tailor Drawer for tailors */}
         <Stack.Screen options={{ headerShown: false }} name="TailorDrawer" component={TailorDrawer} />
-        <Stack.Screen  name="OrderForm" component={OrderForm} />
+        <Stack.Screen name="OrderForm" component={OrderForm} />
         <Stack.Screen options={{ headerShown: false }} name="AdminDashboard" component={AdminDashboard} />
-        <Stack.Screen   options={{ headerShown: false }} name="Appointment" component={Appointment} />
-         <Stack.Screen options={{ headerShown: false }} name="BookAppointment" component={BookAppointment} />
-          <Stack.Screen name="ManageTailors" component={ManageTailors} />
-          <Stack.Screen name="ManageCustomers" component={ManageCustomers} />
-          <Stack.Screen name="ManageOrders" component={ManageOrders} />
+        <Stack.Screen options={{ headerShown: false }} name="Appointment" component={Appointment} />
+        <Stack.Screen options={{ headerShown: false }} name="BookAppointment" component={BookAppointment} />
+        <Stack.Screen name="ManageTailors" component={ManageTailors} />
+        <Stack.Screen name="ManageCustomers" component={ManageCustomers} />
+        <Stack.Screen name="ManageOrders" component={ManageOrders} />
+        <Stack.Screen name="ManageComplain" component={ManageComplain} />
+        <Stack.Screen options={{ headerShown: false }} name="TailorServices" component={TailorServices} />
         <Stack.Screen name="Forgot" component={Forgot} />
-         <Stack.Screen options={{ headerShown: false }} name="Form"  component={Form} />
+
+        <Stack.Screen options={{ headerShown: false }} name="MyOrders" component={MyOrders} />
+        <Stack.Screen options={{ headerShown: false }} name="Form" component={Form} />
         <Stack.Screen options={{ headerShown: false }} name="Start" component={Start} />
       </Stack.Navigator>
     </NavigationContainer>

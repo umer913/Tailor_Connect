@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Location from 'expo-location';
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -118,9 +119,38 @@ export default function Form({ route, navigation }) {
     }
   };
 
+  const fetchLocation = async () => {
+    try {
+      setLoading(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location permission is required to fetch your address.');
+        setLoading(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const geocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      if (geocode.length > 0) {
+        const { city, country, street, name } = geocode[0];
+        setAddress(`${name || ''} ${street || ''}, ${city || ''}, ${country || ''}`.trim());
+      } else {
+        Alert.alert('Error', 'Unable to fetch address.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An error occurred while fetching location.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <LinearGradient
-      colors={['#64769eff', '#3b5998', '#192f6a']}
+      colors={['#1b254f', '#0c1435', '#080927']}
       style={{ flex: 1 }}
     >
       <ScrollView contentContainerStyle={styles.container}>
@@ -146,37 +176,55 @@ export default function Form({ route, navigation }) {
 
           <Text style={styles.sectionTitle}>Delivery Details</Text>
 
-          <TextInput
-            color="white"
-            placeholder="Full Name"
-            placeholderTextColor="gray"
-            style={styles.input}
-            value={fullName}
-            onChangeText={setFullName}
-            editable={!loading}
-          />
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Full Name</Text>
+            <TextInput
+              color="white"
+              placeholder="Full Name"
+              placeholderTextColor="gray"
+              style={styles.input}
+              value={fullName}
+              onChangeText={setFullName}
+              editable={!loading}
+            />
+          </View>
 
-          <TextInput
-            color="white"
-            placeholder="Full Address"
-            placeholderTextColor="gray"
-            style={styles.input}
-            value={address}
-            onChangeText={setAddress}
-            editable={!loading}
-          />
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Address</Text>
+            <View style={styles.addressContainer}>
+              <TextInput
+                color="white"
+                placeholder="Full Address"
+                placeholderTextColor="gray"
+                style={[styles.input, { flex: 1 }]}
+                value={address}
+                onChangeText={setAddress}
+                editable={!loading}
+              />
+              <TouchableOpacity
+                style={styles.locationButton}
+                onPress={fetchLocation}
+                disabled={loading}
+              >
+                <Ionicons name="location" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
 
-          <TextInput
-            color="white"
-            placeholder="Phone Number"
-            placeholderTextColor="gray"
-            style={styles.input}
-            keyboardType="phone-pad"
-            maxLength={11}
-            value={phone}
-            onChangeText={(v) => setPhone(v.replace(/[^0-9]/g, ""))}
-            editable={!loading}
-          />
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Phone</Text>
+            <TextInput
+              color="white"
+              placeholder="Phone Number"
+              placeholderTextColor="gray"
+              style={styles.input}
+              keyboardType="phone-pad"
+              maxLength={11}
+              value={phone}
+              onChangeText={(v) => setPhone(v.replace(/[^0-9]/g, ""))}
+              editable={!loading}
+            />
+          </View>
 
           <View style={{ height: 64, marginTop: 30 }}>
             {stage === "idle" && (
@@ -228,22 +276,20 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "rgba(38,52,90,0.5)",
     borderRadius: 24,
     padding: 22,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
+    borderWidth: 1,
+    borderColor: "rgba(102,126,234,0.15)",
   },
   autofillBtn: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#2a3c72",
     paddingVertical: 12,
     borderRadius: 28,
     alignItems: "center",
   },
   autofillBtnText: {
-    color: "#fff",
+    color: "#d1d9ff",
     fontSize: 16,
     fontWeight: "700",
   },
@@ -251,31 +297,34 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "800",
     marginVertical: 18,
-    color: "#111",
+    color: "#d1d9ff",
   },
   input: {
-    backgroundColor: "#444",
+    backgroundColor: "rgba(20,28,54,0.7)",
     borderRadius: 14,
     padding: 14,
     fontSize: 15,
     marginTop: 12,
+    color: "#c3d1ff",
+    borderWidth: 1,
+    borderColor: "#506ba9",
   },
   btn: {
     height: 56,
-    backgroundColor: "#2563eb",
+    backgroundColor: "#3957a6",
     borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
   },
   btnText: {
-    color: "#fff",
+    color: "#d1d9ff",
     fontSize: 17,
     fontWeight: "800",
   },
   loadingBtn: {
     height: 56,
     borderRadius: 30,
-    backgroundColor: "#dbeafe",
+    backgroundColor: "rgba(38,52,90,0.5)",
     justifyContent: "center",
     overflow: "hidden",
   },
@@ -284,8 +333,10 @@ const styles = StyleSheet.create({
     left: 20,
     top: 100,
     padding: 8,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 12,
+    backgroundColor: "rgba(42,60,114,0.5)",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(155,179,255,0.12)",
   },
   truck: {
     position: "absolute",
@@ -294,7 +345,7 @@ const styles = StyleSheet.create({
   successBtn: {
     height: 56,
     borderRadius: 30,
-    backgroundColor: "#16a34a",
+    backgroundColor: "#22c55e",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -302,5 +353,28 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "900",
+  },
+  addressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  locationButton: {
+    backgroundColor: '#2a3c72',
+    marginTop: 11,
+    padding: 10,
+    borderRadius: 8,
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inputContainer: {
+    marginBottom: 7,
+  },
+  label: {
+    color: '#d1d9ff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
   },
 });

@@ -1,9 +1,8 @@
-
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from "@react-native-picker/picker";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from "axios";
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Alert,
@@ -11,9 +10,7 @@ import {
   Dimensions,
   Image,
   Keyboard,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,7 +20,7 @@ import {
   View
 } from "react-native";
 import { PinchGestureHandler, State } from "react-native-gesture-handler";
- 
+
 const window = Dimensions.get("window");
 
 const measurementFields = {
@@ -163,8 +160,48 @@ const [fabricImage, setFabricImage] = useState(null);
   const [measurements, setMeasurements] = useState({ male: {}, female: {} });
   const [errors, setErrors] = useState({});
   const [selectedOptionGroups, setSelectedOptionGroups] = useState({});
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [cartModalVisible, setCartModalVisible] = useState(false);
+  const [activeCartItem, setActiveCartItem] = useState(null);
 
 const [scale] = useState(new Animated.Value(1));
+
+  // Load cart from AsyncStorage on mount
+  useEffect(() => {
+    const loadCart = async () => {
+      try {
+        const stored = await AsyncStorage.getItem('customer_cart');
+        if (stored) setCart(JSON.parse(stored));
+      } catch (e) { /* ignore */ }
+    };
+    loadCart();
+  }, []);
+
+  const saveCart = async (newCart) => {
+    setCart(newCart);
+    await AsyncStorage.setItem('customer_cart', JSON.stringify(newCart));
+  };
+
+  const addToCart = () => {
+    const item = {
+      id: Date.now().toString(),
+      serviceType,
+      price,
+      gender,
+      tailorEmail,
+      tailorName: name,
+      image: images.length > 0 ? images[0] : null,
+    };
+    const newCart = [...cart, item];
+    saveCart(newCart);
+    Alert.alert('Added to Cart', `${serviceType} has been added to your cart.`);
+  };
+
+  const removeFromCart = (id) => {
+    const newCart = cart.filter((item) => item.id !== id);
+    saveCart(newCart);
+  };
 
   // Define fields and optionGroups based on current selections
 function normalizeGender(gender) {
@@ -179,8 +216,14 @@ function normalizeGender(gender) {
 const normalizedGender = normalizeGender(gender);
 const effectiveGender = selectedFormGender || normalizedGender;
 
-const fields = measurementFields[serviceType]?.[effectiveGender] || [];
-const optionsGroups = serviceOptionsGrouped[effectiveGender]?.[serviceType] || {};
+// Use activeCartItem data when ordering from cart, otherwise page-level props
+const activeServiceType = activeCartItem ? activeCartItem.serviceType : serviceType;
+const activeGenderRaw = activeCartItem ? activeCartItem.gender : gender;
+const activeNormalizedGender = normalizeGender(activeGenderRaw);
+const activeEffectiveGender = selectedFormGender || activeNormalizedGender;
+
+const fields = measurementFields[activeServiceType]?.[activeEffectiveGender] || [];
+const optionsGroups = serviceOptionsGrouped[activeEffectiveGender]?.[activeServiceType] || {};
 
 
   // Image moving controls
@@ -240,14 +283,15 @@ console.log("fields:", fields);
   };
 
   const isFormValid = () => {
-    if (!selectedFormGender || !serviceType || !measurementFields[serviceType]) return false;
-    const requiredFields = measurementFields[serviceType][selectedFormGender];
+    const svcType = activeCartItem ? activeCartItem.serviceType : serviceType;
+    if (!selectedFormGender || !svcType || !measurementFields[svcType]) return false;
+    const requiredFields = measurementFields[svcType][selectedFormGender];
     const allMeasurementsFilled = requiredFields.every((field) => {
       const key = field.toLowerCase().replace(/\s+/g, "");
       return measurements[selectedFormGender][key] && measurements[selectedFormGender][key].trim() !== "";
     });
 
-    const optionGroups = serviceOptionsGrouped[selectedFormGender]?.[serviceType];
+    const optionGroups = serviceOptionsGrouped[selectedFormGender]?.[svcType];
     if (!optionGroups) return allMeasurementsFilled;
 
     const allOptionsSelected = Object.keys(optionGroups).every(
@@ -258,7 +302,8 @@ console.log("fields:", fields);
   };
 
   const handleSubmitOrder = async () => {
-const finalGenderRaw = (gender || "").toLowerCase();
+const srcGender = activeCartItem ? activeCartItem.gender : gender;
+const finalGenderRaw = (srcGender || "").toLowerCase();
 const finalGender = normalizeGender(finalGenderRaw);
 const formGender = finalGender === "both" ? selectedFormGender : finalGender;
 
@@ -279,12 +324,12 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
 
     try {
       const formData = new FormData();
-      formData.append("tailor_email", tailorEmail);
-      formData.append("tailor_name", name);
+      formData.append("tailor_email", activeCartItem ? activeCartItem.tailorEmail : tailorEmail);
+      formData.append("tailor_name", activeCartItem ? activeCartItem.tailorName : name);
       formData.append("customer_email", CustomerEmail);
-      formData.append("service_type", serviceType);
+      formData.append("service_type", activeCartItem ? activeCartItem.serviceType : serviceType);
       formData.append("gender", formGender);
-      formData.append("price", price.toString());
+      formData.append("price", (activeCartItem ? activeCartItem.price : price).toString());
       formData.append("quantity", orderQuantity.toString());
       formData.append("measurements", JSON.stringify(measurements[formGender]));
       formData.append("options", JSON.stringify(selectedOptionGroups));
@@ -312,6 +357,11 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
 
      
 
+      // If ordering from cart, remove item from cart
+      if (activeCartItem) {
+        removeFromCart(activeCartItem.id);
+      }
+
       // Reset form state
       setBuyModalVisible(false);
       setSelectedFormGender(null);
@@ -319,10 +369,11 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
       setErrors({});
       setSelectedOptionGroups({});
       setFabricImage(null);
+      setActiveCartItem(null);
       navigation.navigate("Form", {
       CustomerEmail: CustomerEmail,
-      tailorEmail:tailorEmail,
-      name:name,
+      tailorEmail: activeCartItem ? activeCartItem.tailorEmail : tailorEmail,
+      name: activeCartItem ? activeCartItem.tailorName : name,
       orderId: response.data.order_id,
     })
       // Navigate after successful submission
@@ -397,6 +448,19 @@ return (
         >
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
+
+        {/* Cart Icon */}
+        <TouchableOpacity
+          style={styles.cartIconButton}
+          onPress={() => setCartModalVisible(true)}
+        >
+          <Ionicons name="cart" size={24} color="#fff" />
+          {cart.length > 0 && (
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cart.length}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       <ScrollView style={styles.container}>
      
         
@@ -452,6 +516,7 @@ return (
         <TouchableOpacity
           style={styles.buyButton}
           onPress={() => {
+            setActiveCartItem(null);
             if (noMeasurementServices.includes(serviceType)) {
               submitOrderWithoutMeasurements();
               return;
@@ -467,7 +532,15 @@ return (
           }}
         >
           <Text style={styles.buyText}>Buy It Now</Text>
-          
+        </TouchableOpacity>
+
+        {/* Add to Cart Button */}
+        <TouchableOpacity
+          style={styles.addToCartButton}
+          onPress={addToCart}
+        >
+          <Ionicons name="cart-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={styles.addToCartText}>Add to Cart</Text>
         </TouchableOpacity>
 
         {/* Description */}
@@ -518,17 +591,67 @@ return (
       </View>
     </Modal>
 
+    {/* Cart Modal */}
+    <Modal visible={cartModalVisible} transparent animationType="slide">
+      <View style={styles.buyModalOverlay}>
+        <View style={[styles.buyModalContainer, { alignItems: 'center' }]}>
+          <View style={[styles.buyCard, { maxHeight: '70%' }]}>
+            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.buyTitle}>My Cart</Text>
+              <TouchableOpacity onPress={() => setCartModalVisible(false)}>
+                <Ionicons name="close-circle" size={28} color="#d92323" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView>
+              {cart.length === 0 ? (
+                <Text style={{ textAlign: 'center', color: '#888', marginTop: 20 }}>Your cart is empty.</Text>
+              ) : (
+                cart.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.cartItem}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      const itemGender = normalizeGender(item.gender);
+                      setActiveCartItem(item);
+                      setSelectedFormGender(
+                        itemGender === 'male' || itemGender === 'female' ? itemGender : null
+                      );
+                      setMeasurements({ male: {}, female: {} });
+                      setErrors({});
+                      setSelectedOptionGroups({});
+                      setFabricImage(null);
+                      setCartModalVisible(false);
+                      setBuyModalVisible(true);
+                    }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontWeight: '700', fontSize: 15 }}>{item.serviceType}</Text>
+                      <Text style={{ color: '#555', fontSize: 13 }}>Rs. {item.price}</Text>
+                      <Text style={{ color: '#888', fontSize: 12 }}>{item.tailorName}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => removeFromCart(item.id)} style={{ marginRight: 10 }}>
+                      <Ionicons name="trash-outline" size={22} color="#d92323" />
+                    </TouchableOpacity>
+                    <Ionicons name="chevron-forward" size={20} color="#2b2a74ff" />
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+  
+          </View>
+        </View>
+      </View>
+    </Modal>
+
     {/* Buy Modal */}
     <Modal visible={buyModalVisible} transparent animationType="slide">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.buyModalOverlay}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={styles.buyModalContainer}
-          >
+          <View style={styles.buyModalContainer}>
             <View style={styles.buyCard}>
               <Text style={styles.buyTitle}>
-                Place Order — Measurements
+                Place Order — {activeServiceType || 'Measurements'}
               </Text>
 
               {/* Quantity Selector */}
@@ -554,10 +677,13 @@ return (
               </View>
 
               {/* Gender Selector */}
-              {((gender || "").toLowerCase() === "both" ||
-                (gender || "").trim() === "") && (
+              {((activeGenderRaw || "").toLowerCase() === "both" ||
+                (activeGenderRaw || "").trim() === "") && (
                 <View style={styles.selectorRow}>
-                  {["male", "female"].map((genderKey) => (
+                  {[
+                    "male",
+                    "female"
+                  ].map((genderKey) => (
                     <TouchableOpacity
                       key={genderKey}
                       style={[
@@ -642,51 +768,69 @@ return (
                     {Object.entries(optionsGroups).map(
                       ([groupName, options]) => (
                         <View key={groupName} style={{ marginBottom: 16 }}>
-                          <Text
-                            style={{ fontWeight: "700", marginBottom: 6 }}
-                          >
+                          <Text style={{ fontWeight: "700", marginBottom: 8, fontSize: 14 }}>
                             {groupName}
                           </Text>
-                          <View
+                          
+                          {/* Custom Dropdown Button */}
+                          <TouchableOpacity
                             style={[
-                              styles.pickerContainer,
-                              selectedOptionGroups[groupName] == null && {
-                                borderColor: "red",
-                              },
+                              styles.dropdownButton,
+                              selectedOptionGroups[groupName] == null && { borderColor: "#FF6B6B" },
                             ]}
+                            onPress={() => setOpenDropdown(openDropdown === groupName ? null : groupName)}
                           >
-                            <Picker
-                              selectedValue={
-                                selectedOptionGroups[groupName] || ""
-                              }
-                              onValueChange={(value) => {
-                                setSelectedOptionGroups((prev) => ({
-                                  ...prev,
-                                  [groupName]: value,
-                                }));
-                              }}
-                              itemStyle={{ fontSize: 15, color: "#000" }}
-                            >
-                              <Picker.Item
-                                label={`Select ${groupName}`}
-                                value=""
-                              />
+                            <Text style={[
+                              styles.dropdownButtonText,
+                              !selectedOptionGroups[groupName] && { color: "#999" }
+                            ]}>
+                              {selectedOptionGroups[groupName] || `Select ${groupName}`}
+                            </Text>
+                            <Ionicons 
+                              name={openDropdown === groupName ? "chevron-up" : "chevron-down"} 
+                              size={20} 
+                              color="#E6B0B0" 
+                            />
+                          </TouchableOpacity>
+
+                          {/* Dropdown Menu */}
+                          {openDropdown === groupName && (
+                            <View style={styles.dropdownMenu}>
                               {options.map((opt) => (
-                                <Picker.Item
+                                <TouchableOpacity
                                   key={opt}
-                                  label={opt}
-                                  value={opt}
-                                />
+                                  style={[
+                                    styles.dropdownOption,
+                                    selectedOptionGroups[groupName] === opt && styles.dropdownOptionSelected,
+                                  ]}
+                                  onPress={() => {
+                                    setSelectedOptionGroups((prev) => ({
+                                      ...prev,
+                                      [groupName]: opt,
+                                    }));
+                                    setOpenDropdown(null);
+                                  }}
+                                >
+                                  <Text style={[
+                                    styles.dropdownOptionText,
+                                    selectedOptionGroups[groupName] === opt && styles.dropdownOptionTextSelected,
+                                  ]}>
+                                    {opt}
+                                  </Text>
+                                  {selectedOptionGroups[groupName] === opt && (
+                                    <Ionicons name="checkmark-circle" size={18} color="#E6B0B0" />
+                                  )}
+                                </TouchableOpacity>
                               ))}
-                            </Picker>
-                          </View>
+                            </View>
+                          )}
                         </View>
                       )
                     )}
                   </>
                 ) : (
                   <Text style={{ textAlign: "center", marginTop: 20 }}>
-                    No measurement fields available for this service.
+                  
                   </Text>
                 )}
               </ScrollView>
@@ -733,6 +877,7 @@ return (
                     setSelectedFormGender(null);
                     setErrors({});
                     setSelectedOptionGroups({});
+                    setActiveCartItem(null);
                   }}
                 >
                   <Text style={styles.modalBtnTextCancel}>Cancel</Text>
@@ -751,7 +896,7 @@ return (
                 </TouchableOpacity>
               </View>
             </View>
-          </KeyboardAvoidingView>
+          </View>
         </View>
       </TouchableWithoutFeedback>
     </Modal>
@@ -859,7 +1004,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
     borderRadius: 10,
     padding: 14,
-    marginBottom: 16,
+    marginBottom: 1,
     borderWidth: 1,
     borderColor: "#ddd",
   },
@@ -876,8 +1021,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   decrementBtn: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height:30,
     borderRadius: 8,
     backgroundColor: "#e74c3c",
     justifyContent: "center",
@@ -886,13 +1031,13 @@ const styles = StyleSheet.create({
     borderColor: "#c0392b",
   },
   decrementText: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: "700",
     color: "#fff",
   },
   incrementBtn: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height:30,
     borderRadius: 8,
     backgroundColor: "#27ae60",
     justifyContent: "center",
@@ -901,13 +1046,13 @@ const styles = StyleSheet.create({
     borderColor: "#229954",
   },
   incrementText: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: "700",
     color: "#fff",
   },
   quantityDisplayBox: {
-    minWidth: 80,
-    height: 50,
+    minWidth: 50,
+    height: 42,
     borderRadius: 8,
     backgroundColor: "#f0f0f0",
     justifyContent: "center",
@@ -916,7 +1061,7 @@ const styles = StyleSheet.create({
     borderColor: "#333",
   },
   quantityDisplayText: {
-    fontSize: 24,
+    fontSize: 14,
     fontWeight: "800",
     color: "#333",
   },
@@ -982,6 +1127,7 @@ descriptionText: {
     padding: 18,
     borderRadius: 22,
     margin: 20,
+marginBottom: 100,
     maxHeight: "80%",
     width: "90%",
   },
@@ -1004,6 +1150,7 @@ descriptionText: {
     paddingVertical: 8,
     paddingHorizontal: 20,
     marginHorizontal: 6,
+    marginVertical: 12,
   },
   imageWrapper: {
   position: "relative",
@@ -1066,6 +1213,7 @@ rightArrow: {
   modalBtnTextCancel: {
     color: "#444",
     fontWeight: "700",
+  
     textAlign: "center",
   },
   modalBtnTextSubmit: {
@@ -1102,6 +1250,98 @@ rightArrow: {
     borderRadius: 8,
     resizeMode: "cover",
   },
+  addToCartButton: {
+    marginTop: 10,
+    backgroundColor: '#2b2a74ff',
+    paddingVertical: 14,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addToCartText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  closeButton: {
+    marginTop: 10,
+    backgroundColor: '#fff',
+    paddingVertical: 14,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#d92323',
+  },
+  closeButtonText: {
+    color: '#d92323',
+    fontSize: 27,
+    fontWeight: '700',
+  },
+  cartIconButton: {
+    position: 'absolute',
+    right: 16,
+    top: 14,
+    padding: 8,
+    backgroundColor: '#2b2a74ff',
+    borderRadius: 12,
+    zIndex: 100,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#d92323',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cartBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  cartItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  cartMeasurementBox: {
+    backgroundColor: '#f5f5ff',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#2b2a74ff',
+  },
+  cartMeasurementTitle: {
+    fontWeight: '700',
+    fontSize: 14,
+    color: '#2b2a74ff',
+    marginBottom: 8,
+  },
+  cartMeasurementRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e8e8e8',
+  },
+  cartMeasurementLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  cartMeasurementRange: {
+    fontSize: 13,
+    color: '#666',
+  },
   backButton: {
     position: "absolute",
     left: 16,
@@ -1124,5 +1364,52 @@ rightArrow: {
     color: "#fff",
     fontWeight: "700",
     fontSize: 14,
+  },
+  dropdownButton: {
+    borderWidth: 1,
+    borderColor: "#E6B0B0",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  dropdownButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2B0F14",
+    flex: 1,
+  },
+  dropdownMenu: {
+    borderWidth: 1,
+    borderColor: "#E6B0B0",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    marginTop: 4,
+    overflow: "hidden",
+  },
+  dropdownOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  dropdownOptionSelected: {
+    backgroundColor: "#f8f0f0",
+  },
+  dropdownOptionText: {
+    fontSize: 14,
+    color: "#2B0F14",
+    fontWeight: "500",
+    flex: 1,
+  },
+  dropdownOptionTextSelected: {
+    fontWeight: "700",
+    color: "#E6B0B0",
   },
 });

@@ -22,7 +22,6 @@ const timeSlots = [
 export default function BookAppointment({ route, navigation }) {
   // Ensure the keys here match the backend keys exactly
   const {email, CustomerEmail, tailor_name } = route.params;
-console.log("Received params:", { email, CustomerEmail, tailor_name });
   const tailor_email = email; // Renamed for clarity
 const customer_email = CustomerEmail; // Renamed for clarity
   const [date, setDate] = useState(new Date());
@@ -88,7 +87,7 @@ const customer_email = CustomerEmail; // Renamed for clarity
   }
 
   return (
-    <LinearGradient colors={["#0f172a", "#1b254f"]} style={styles.screen}>
+    <LinearGradient colors={["#1b254f", "#0c1435", "#080927"]} style={styles.screen}>
 
       {/* Header */}
       <View style={styles.header}>
@@ -99,8 +98,6 @@ const customer_email = CustomerEmail; // Renamed for clarity
       </View>
 
       <ScrollView contentContainerStyle={styles.container}>
-
-        <Text style={styles.tailor}>{tailor_name}</Text>
 
         {/* Date Card */}
         <View style={styles.card}>
@@ -171,12 +168,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   backBtn: {
-    backgroundColor: "#3b4ca3",
+    backgroundColor: "rgba(42,60,114,0.5)",
     padding: 10,
-    borderRadius: 30,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(155,179,255,0.12)",
   },
   headerTitle: {
-    color: "#fff",
+    color: "#d1d9ff",
     fontSize: 22,
     fontWeight: "700",
     marginLeft: 20,
@@ -185,22 +184,16 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 60,
   },
-  tailor: {
-    color: "#92a6e8",
-    fontSize: 18,
-    textAlign: "center",
-    marginBottom: 20,
-  },
   card: {
-    backgroundColor: "#24306a",
-    borderRadius: 22,
+    backgroundColor: "rgba(38,52,90,0.5)",
+    borderRadius: 20,
     padding: 18,
     marginBottom: 22,
-    shadowOpacity: 0.4,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: "rgba(102,126,234,0.15)",
   },
   sectionTitle: {
-    color: "#fff",
+    color: "#d1d9ff",
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 14,
@@ -208,12 +201,14 @@ const styles = StyleSheet.create({
   dateBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1b254f",
+    backgroundColor: "rgba(20,28,54,0.7)",
     padding: 14,
     borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(102,126,234,0.15)",
   },
   dateText: {
-    color: "#fff",
+    color: "#c3d1ff",
     marginLeft: 12,
     fontSize: 16,
   },
@@ -222,45 +217,50 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   slot: {
-    backgroundColor: "#1b254f",
+    backgroundColor: "rgba(20,28,54,0.7)",
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 14,
     marginRight: 10,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "rgba(102,126,234,0.15)",
   },
   slotActive: {
-    backgroundColor: "#64769e",
+    backgroundColor: "#3957a6",
+    borderColor: "#506ba9",
   },
   slotText: {
-    color: "#92a6e8",
+    color: "#8e9ccf",
     fontWeight: "600",
   },
   slotTextActive: {
-    color: "#fff",
+    color: "#d1d9ff",
     fontWeight: "700",
   },
   summary: {
-    backgroundColor: "#1b254f",
+    backgroundColor: "rgba(38,52,90,0.5)",
     padding: 18,
-    borderRadius: 18,
+    borderRadius: 20,
     marginBottom: 25,
+    borderWidth: 1,
+    borderColor: "rgba(102,126,234,0.15)",
   },
   summaryText: {
-    color: "#fff",
+    color: "#c3d1ff",
     fontSize: 16,
     marginBottom: 4,
   },
   confirmBtn: {
-    backgroundColor: "#64769e",
+    backgroundColor: "#2a3c72",
     paddingVertical: 18,
-    borderRadius: 28,
+    borderRadius: 20,
     alignItems: "center",
-    shadowOpacity: 0.8,
-    elevation: 12,
+    borderWidth: 1,
+    borderColor: "rgba(102,126,234,0.15)",
   },
   confirmText: {
-    color: "#fff",
+    color: "#d1d9ff",
     fontSize: 18,
     fontWeight: "700",
   },

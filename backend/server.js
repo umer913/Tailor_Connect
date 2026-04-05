@@ -26,7 +26,7 @@ function hashPassword(password) {
 //function hashPassword(password) { return crypto.createHash("sha256").update(password).digest("hex"); }more secure hash-sha256
 
 function generateOTP() {
-  return Math.floor( Math.random() * 900000).toString(); //generates 6-digit OTP ,math.random selects any value between 0-1 decimals imcluded,math.floor eleminates decimals
+  return Math.floor(Math.random() * 900000).toString(); //generates 6-digit OTP ,math.random selects any value between 0-1 decimals imcluded,math.floor eleminates decimals
 }
 
 
@@ -49,8 +49,8 @@ app.post("/signup", async (req, res) => {
       .eq("email", email)
       .single();
 
-    if (existing) 
-    return res.status(400).json({ error: "User already exists" });
+    if (existing)
+      return res.status(400).json({ error: "User already exists" });
 
     // Hash password manually
     const hashed = hashPassword(password);
@@ -112,7 +112,7 @@ app.post("/verify-otp", async (req, res) => {
 });
 
 // ---------------- LOGIN ----------------
-app.post("/login", async (req, res) => { 
+app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -207,7 +207,7 @@ app.post("/reset-password", async (req, res) => {
     // update password & clear OTP
     await supabase
       .from("profiles")
-      .update({ password: hashed,verified:true, otp: null })
+      .update({ password: hashed, verified: true, otp: null })
       .eq("email", email);
 
     res.json({ message: "Password reset successfully!" });
@@ -223,7 +223,7 @@ app.get("/get-profile", async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from("profiles")
-      .select("full_name, cnic, phone_number, location") 
+      .select("full_name, cnic, phone_number, location")
       .eq("email", email)
       .single();
     if (error) return res.status(400).json({ error: error.message });
@@ -344,65 +344,6 @@ app.delete("/delete-service/:id", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-// ---------------- Save Availability ----------------
-app.post("/save-availability", async (req, res) => {
-  try {
-    const { email, availability } = req.body;
-
-    
-    if (!availability ) {
-      // Delete availability if no slot iis selected
-      const { error: deleteError } = await supabase
-        .from("availability")
-        .delete()
-        .eq("tailor_email", email);
-
-      if (deleteError) {
-        return res.status(500).json({ error: "Database delete error" });
-      }
-
-      return res.json({ message: "Availability deleted" });
-    }
-
-    // Upsert availability
-    const { data, error } = await supabase
-      .from("availability")
-      .upsert(
-        {
-          tailor_email: email,
-          availability,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "tailor_email" }//update if you find more then 1 row with same email
-      )
-      .select();
-
-    if (error) {
-      return res.status(500).json({ error: "Database error" });
-    }
-
-    res.json({ message: "Availability saved", data });
-  } catch (err) {
-    console.error("Server error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-// ---------------- Get Availability(Tailor) ----------------
-app.get("/get-availability", async (req, res) => {
-      const email = req.query.email; 
-  try {
-    const { data, error } = await supabase
-      .from("availability")
-      .select("availability")
-      .eq("tailor_email", email)
-      .single();
-    res.json({ availability: data ? data.availability : {} });
-  } catch (err) {
-    console.error("Server error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
 
 //Customer
 // ---------------- BrowseTailors ----------------
@@ -420,6 +361,51 @@ app.get("/get-tailors", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+app.get("/get-tailors-with-services", async (req, res) => {
+  try {
+    const { data: tailors, error: tailorsError } = await supabase
+      .from("profiles")
+      .select("id, full_name, location, phone_number, email")
+      .eq("role", "tailor");
+
+    if (tailorsError) {
+      return res.status(400).json({ error: tailorsError.message });
+    }
+
+    const { data: services, error: servicesError } = await supabase
+      .from("services")
+      .select("id, tailor_email, service_types, price_range, gender, description");
+
+    if (servicesError) {
+      return res.status(400).json({ error: servicesError.message });
+    }
+
+    const servicesByTailorEmail = (services || []).reduce((acc, service) => {
+      const email = service.tailor_email;
+      if (!email) {
+        return acc;
+      }
+
+      if (!acc[email]) {
+        acc[email] = [];
+      }
+
+      acc[email].push(service);
+      return acc;
+    }, {});
+
+    const tailorsWithServices = (tailors || []).map((tailor) => ({
+      ...tailor,
+      services: servicesByTailorEmail[tailor.email] || [],
+    }));
+
+    res.json({ tailors: tailorsWithServices });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 // ---------------- Get Tailors Service ----------------
 app.get('/get-tailor-services', async (req, res) => {
   const { email } = req.query;
@@ -428,11 +414,11 @@ app.get('/get-tailor-services', async (req, res) => {
     const { data, error } = await supabase
       .from('services')
       .select('*')
-      .eq('tailor_email', email); 
+      .eq('tailor_email', email);
 
     if (error) throw error;
 
-    res.json({ services: data }); 
+    res.json({ services: data });
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: 'Failed to fetch tailor services' });
@@ -441,6 +427,284 @@ app.get('/get-tailor-services', async (req, res) => {
 // ---------------- PLACE ORDER ----------------
 const upload = multer({ storage: multer.memoryStorage() });// Configure multer to store uploaded files temporarily in memory as buffers,
 // so we can directly upload them to cloud storage without saving to disk.
+
+const CHATBOX_TABLE_CANDIDATES = ["chatbox", "Chatbox"];
+const CHAT_PREFIX_REGEX = /^\[\[(customer|tailor)\]\]/i;
+
+const encodeChatMessage = (senderRole, message) => {
+  const normalizedRole = senderRole === "tailor" ? "tailor" : "customer";
+  return `[[${normalizedRole}]]${String(message || "").trim()}`;
+};
+
+const decodeChatMessage = (storedMessage) => {
+  const rawValue = String(storedMessage || "");
+  const prefixMatch = rawValue.match(CHAT_PREFIX_REGEX);
+
+  if (!prefixMatch) {
+    return {
+      sender_role: null,
+      message: rawValue,
+    };
+  }
+
+  return {
+    sender_role: prefixMatch[1].toLowerCase(),
+    message: rawValue.slice(prefixMatch[0].length),
+  };
+};
+
+const getConversationKey = (tailorEmail, customerEmail) => `${tailorEmail || ""}::${customerEmail || ""}`;
+
+const runChatboxQuery = async (queryFactory) => {
+  let lastResult = null;
+
+  for (const tableName of CHATBOX_TABLE_CANDIDATES) {
+    const result = await queryFactory(tableName);
+    lastResult = result;
+
+    if (!result?.error) {
+      return { ...result, tableName };
+    }
+
+    const normalizedMessage = String(result.error.message || "").toLowerCase();
+    const isMissingTableError = normalizedMessage.includes("relation") && normalizedMessage.includes("does not exist");
+
+    if (!isMissingTableError) {
+      return { ...result, tableName };
+    }
+  }
+
+  return { ...(lastResult || {}), tableName: CHATBOX_TABLE_CANDIDATES[0] };
+};
+
+app.get("/chat-conversations", async (req, res) => {
+  const { email, role } = req.query;
+  const normalizedRole = String(role || "").toLowerCase();
+
+  if (!email || !["customer", "tailor"].includes(normalizedRole)) {
+    return res.status(400).json({ error: "email and role (customer|tailor) are required" });
+  }
+
+  const column = normalizedRole === "customer" ? "customer_email" : "tailor_email";
+
+  try {
+    const { data, error } = await runChatboxQuery((tableName) =>
+      supabase
+        .from(tableName)
+        .select("id, tailor_email, customer_email, tailor_name, customer_name, message, image_url, is_read, datetime")
+        .eq(column, email)
+        .order("datetime", { ascending: false })
+    );
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    const conversationMap = new Map();
+
+    for (const row of data || []) {
+      const key = getConversationKey(row.tailor_email, row.customer_email);
+      const decoded = decodeChatMessage(row.message);
+      const isUnreadIncoming = Boolean(decoded.sender_role && decoded.sender_role !== normalizedRole && !row.is_read);
+
+      if (!conversationMap.has(key)) {
+        conversationMap.set(key, {
+          conversation_id: key,
+          tailor_email: row.tailor_email,
+          customer_email: row.customer_email,
+          tailor_name: row.tailor_name,
+          customer_name: row.customer_name,
+          last_message: decoded.message || (row.image_url ? "[Image]" : ""),
+          last_image_url: row.image_url,
+          last_datetime: row.datetime,
+          unread_count: isUnreadIncoming ? 1 : 0,
+        });
+      } else if (isUnreadIncoming) {
+        const existing = conversationMap.get(key);
+        existing.unread_count += 1;
+      }
+    }
+
+    res.json({ conversations: Array.from(conversationMap.values()) });
+  } catch (err) {
+    console.error("Chat conversations error:", err);
+    res.status(500).json({ error: "Failed to fetch conversations" });
+  }
+});
+
+app.get("/chat-messages", async (req, res) => {
+  const { tailor_email, customer_email, viewer_role } = req.query;
+  const normalizedViewerRole = String(viewer_role || "").toLowerCase();
+
+  if (!tailor_email || !customer_email) {
+    return res.status(400).json({ error: "tailor_email and customer_email are required" });
+  }
+
+  try {
+    const { data, error } = await runChatboxQuery((tableName) =>
+      supabase
+        .from(tableName)
+        .select("id, tailor_email, customer_email, tailor_name, customer_name, message, image_url, is_read, datetime")
+        .eq("tailor_email", tailor_email)
+        .eq("customer_email", customer_email)
+        .order("datetime", { ascending: true })
+    );
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    const messages = (data || []).map((row) => {
+      const decoded = decodeChatMessage(row.message);
+      return {
+        ...row,
+        sender_role: decoded.sender_role,
+        message: decoded.message,
+      };
+    });
+
+    if (["customer", "tailor"].includes(normalizedViewerRole)) {
+      const incomingRole = normalizedViewerRole === "customer" ? "tailor" : "customer";
+
+      await runChatboxQuery((tableName) =>
+        supabase
+          .from(tableName)
+          .update({ is_read: true })
+          .eq("tailor_email", tailor_email)
+          .eq("customer_email", customer_email)
+          .eq("is_read", false)
+          .like("message", `[[${incomingRole}]]%`)
+      );
+    }
+
+    res.json({ messages });
+  } catch (err) {
+    console.error("Chat messages error:", err);
+    res.status(500).json({ error: "Failed to fetch messages" });
+  }
+});
+
+app.post("/chat-send-message", async (req, res) => {
+  const {
+    tailor_email,
+    customer_email,
+    tailor_name,
+    customer_name,
+    sender_role,
+    message,
+    image_url,
+  } = req.body;
+
+  const normalizedSenderRole = String(sender_role || "").toLowerCase();
+  const messageText = typeof message === "string" ? message.trim() : "";
+
+  if (!tailor_email || !customer_email || !tailor_name || !customer_name) {
+    return res.status(400).json({ error: "tailor/customer names and emails are required" });
+  }
+
+  if (!["customer", "tailor"].includes(normalizedSenderRole)) {
+    return res.status(400).json({ error: "sender_role must be customer or tailor" });
+  }
+
+  if (!messageText && !image_url) {
+    return res.status(400).json({ error: "message text or image is required" });
+  }
+
+  try {
+    const encodedMessage = encodeChatMessage(normalizedSenderRole, messageText);
+
+    const { data, error } = await runChatboxQuery((tableName) =>
+      supabase
+        .from(tableName)
+        .insert([
+          {
+            tailor_email,
+            customer_email,
+            tailor_name,
+            customer_name,
+            message: encodedMessage,
+            image_url: image_url || null,
+            is_read: false,
+          },
+        ])
+        .select("id, tailor_email, customer_email, tailor_name, customer_name, message, image_url, is_read, datetime")
+        .single()
+    );
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    const decoded = decodeChatMessage(data.message);
+
+    const isSenderCustomer = normalizedSenderRole === "customer";
+    const recipientEmail = isSenderCustomer ? tailor_email : customer_email;
+    const senderName = isSenderCustomer ? customer_name : tailor_name;
+    const senderRoleLabel = isSenderCustomer ? "customer" : "tailor";
+    const preview = decoded.message?.trim()
+      ? decoded.message.trim().slice(0, 160)
+      : image_url
+        ? "[Image message]"
+        : "[New message]";
+
+    // Email notification should not block chat delivery.
+    transporter.sendMail({
+      from: `"TailorX" <${process.env.EMAIL_USER}>`,
+      to: recipientEmail,
+      subject: `New message from ${senderRoleLabel}: ${senderName}`,
+      text:
+        `You have received a new message on TailorX.\n\n` +
+        `From: ${senderName} (${senderRoleLabel})\n` +
+        `Message preview: ${preview}\n\n` +
+        `Open the app to reply.`,
+    }).catch((mailError) => {
+      console.error("Chat notification email error:", mailError.message);
+    });
+
+    res.json({
+      message: "Message sent",
+      chat: {
+        ...data,
+        sender_role: decoded.sender_role,
+        message: decoded.message,
+      },
+    });
+  } catch (err) {
+    console.error("Send chat message error:", err);
+    res.status(500).json({ error: "Failed to send message" });
+  }
+});
+
+app.post("/chat-upload-image", upload.single("image"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No image file provided" });
+  }
+
+  const fileExtension = (req.file.mimetype || "image/jpeg").split("/")[1] || "jpg";
+  const fileName = `chat_${Date.now()}_${Math.round(Math.random() * 1_000_000)}.${fileExtension}`;
+  const bucketCandidates = ["chat-images", "Chat", "Fabric"];
+
+  let lastError = null;
+
+  for (const bucketName of bucketCandidates) {
+    const { error: uploadError } = await supabase.storage
+      .from(bucketName)
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+      });
+
+    if (uploadError) {
+      lastError = uploadError;
+      continue;
+    }
+
+    const { data } = supabase.storage.from(bucketName).getPublicUrl(fileName);
+    return res.json({ image_url: data.publicUrl, bucket: bucketName });
+  }
+
+  res.status(500).json({ error: lastError?.message || "Failed to upload image" });
+});
+
 app.post("/place-order", upload.single("fabric"), async (req, res) => {
   try {
     // 1️⃣ Get data from request body
@@ -507,6 +771,7 @@ app.post("/place-order", upload.single("fabric"), async (req, res) => {
         fabric_image_url: fabricImageUrl,
         tailor_name,
         status: "pending",
+        is_notified: false,
       })
       .select("id")
       .single();
@@ -526,19 +791,19 @@ app.post("/place-order", upload.single("fabric"), async (req, res) => {
 });
 // ---------------- PLACE ORDER2 ----------------
 app.post("/place-order2", async (req, res) => {
- 
+
 
   try {
-    const { CustomerEmail, tailorEmail,full_name, address, phone, orderId } = req.body;
+    const { CustomerEmail, tailorEmail, full_name, address, phone, orderId } = req.body;
 
- const {  error } = await supabase
-  .from("orders")
-  .update({ full_name, address, phone })
-  .eq("id", orderId)
-  .select();
+    const { error } = await supabase
+      .from("orders")
+      .update({ full_name, address, phone })
+      .eq("id", orderId)
+      .select();
 
 
- 
+
     if (error) throw error;
     await transporter.sendMail({
       from: `"TailorX" <${process.env.EMAIL_USER}>`,
@@ -566,7 +831,7 @@ app.get("/get-profile2", async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from("profiles")
-      .select("full_name, location, phone_number")  
+      .select("full_name, location, phone_number")
       .eq("email", email)
       .single();
     if (error) return res.status(400).json({ error: error.message });
@@ -639,7 +904,7 @@ app.delete("/delete-appointment/:id", async (req, res) => {
 app.get('/get-orders', async (req, res) => {
   const { email } = req.query;
   try {
-    const query = supabase
+    let query = supabase
       .from('orders')
       .select(`
         id,
@@ -678,19 +943,164 @@ app.delete("/delete-order/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const { error } = await supabase
+    console.log(`\n[DELETE ORDER] Deleting order ${id}`);
+
+    // Fetch order details first to get customer email
+    const { data: order, error: fetchError } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !order) {
+      console.error(`[DELETE ORDER ERROR] Order not found: ${id}`);
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const customerEmail = order.customer_email;
+    const tailorName = order.tailor_name || 'Tailor';
+    const serviceType = order.service_type || 'Order';
+    console.log(`[DELETE ORDER] Found order for customer: ${customerEmail}`);
+
+    // Delete the order
+    const { error: deleteError } = await supabase
       .from("orders")
       .delete()
       .eq("id", id);
 
-    if (error) {
-      return res.status(500).json({ error: error.message });
+    if (deleteError) {
+      console.error(`[DELETE ORDER DB ERROR] ${deleteError.message}`);
+      return res.status(500).json({ error: deleteError.message });
+    }
+    console.log(`[DELETE ORDER] Order deleted from DB`);
+
+    // Send deletion notification email
+    try {
+      await transporter.sendMail({
+        from: `"TailorX" <${process.env.EMAIL_USER}>`,
+        to: customerEmail,
+        subject: "Order Cancelled - TailorX",
+        text: `Hello,\n\nYour order for ${serviceType} has been Canceled .\n\nBest regards,\nTailorX Team`,
+      });
+      console.log(`[DELETE ORDER] Email sent to ${customerEmail}`);
+    } catch (emailErr) {
+      console.error(`[DELETE ORDER EMAIL ERROR] ${emailErr.message}`);
     }
 
-    res.json({ message: "Order deleted successfully" });
+    res.json({ message: "Order deleted successfully and notification sent" });
   } catch (err) {
-    console.error("Delete order error:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("[DELETE ORDER FATAL ERROR]", err);
+    res.status(500).json({ error: "Internal Server Error", details: err.message });
+  }
+});
+// ---------------- GET TAILOR ORDERS ----------------
+app.get('/tailor-orders', async (req, res) => {
+  const { email } = req.query;
+
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('tailor_email', email)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ orders: data || [] });
+  } catch (err) {
+    console.error('Error fetching tailor orders:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// ---------------- UPDATE ORDER STATUS ----------------
+app.put('/update-order-status', async (req, res) => {
+  const { id, status } = req.body;
+
+  if (!id || !status) return res.status(400).json({ error: 'Missing id or status' });
+
+  try {
+    console.log(`\n[UPDATE STATUS] Starting status update for order ${id} to "${status}"`);
+    const normalized = String(status).toLowerCase();
+
+    // Fetch order details first
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !order) {
+      console.error(`[UPDATE STATUS ERROR] Order not found: ${id}`);
+      throw new Error('Order not found');
+    }
+
+    const customerEmail = order.customer_email;
+    const tailorName = order.tailor_name || 'Tailor';
+    const serviceType = order.service_type || 'Order';
+    console.log(`[UPDATE STATUS] Customer: ${customerEmail}, Tailor: ${tailorName}`);
+
+    // If status indicates cancellation/rejection, delete the order
+    if (normalized === 'cancelled' || normalized === 'rejected') {
+      const { error: deleteError } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', id);
+
+      if (deleteError) throw deleteError;
+      console.log(`[UPDATE STATUS] Order deleted (${normalized})`);
+
+      // Send cancellation email
+      try {
+        await transporter.sendMail({
+          from: `"TailorX" <${process.env.EMAIL_USER}>`,
+          to: customerEmail,
+          subject: `Your Order Has Been ${normalized.toUpperCase()} - TailorX`,
+          text: `Hello,\n\nYour order for ${serviceType} has been ${normalized} by ${tailorName}.\n\nWe appreciate your understanding.\n\nBest regards,\nTailorX Team`,
+        });
+        console.log(`[UPDATE STATUS] Cancellation email sent to ${customerEmail}`);
+      } catch (emailErr) {
+        console.error(`[UPDATE STATUS EMAIL ERROR] Failed to send email: ${emailErr.message}`);
+      }
+
+      return res.json({ message: 'Order deleted due to cancelled/rejected status', emailSent: true });
+    }
+
+    // Update order status and mark as unnotified
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ status, is_notified: false })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+    console.log(`[UPDATE STATUS] Order updated in DB with is_notified: false`);
+
+    // Send status update email
+    const statusMessages = {
+      'accepted': 'Your order has been accepted and will be started soon!',
+      'in_progress': 'Your order is now in progress. We are working on it!',
+      'completed': 'Your order is completed! Please arrange pickup or delivery.',
+      'pending': 'Your order is pending review.',
+    };
+
+    const message = statusMessages[normalized] || `Your order status has been updated to: ${status}`;
+
+    try {
+      await transporter.sendMail({
+        from: `"TailorX" <${process.env.EMAIL_USER}>`,
+        to: customerEmail,
+        subject: `Order Update: ${status.toUpperCase()} - TailorX`,
+        text: `Hello,\n\n${message}\n\nTailor: ${tailorName}\nService: ${serviceType}\n\nThank you for choosing TailorX!\n\nBest regards,\nTailorX Team`,
+      });
+      console.log(`[UPDATE STATUS] Status update email sent to ${customerEmail}`);
+    } catch (emailErr) {
+      console.error(`[UPDATE STATUS EMAIL ERROR] Failed to send email: ${emailErr.message}`);
+    }
+
+    res.json({ message: 'Order status updated and notification sent' });
+  } catch (err) {
+    console.error('[UPDATE STATUS FATAL ERROR]', err.message);
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
   }
 });
 // ✅ Updated Book Appointment Endpoint
@@ -702,19 +1112,19 @@ app.post("/book-appointment", async (req, res) => {
   // Validation
   if (!tailor_email || !customer_email || !datetime || !tailor_name) {
     console.error("Missing fields:", { tailor_email, customer_email, datetime, tailor_name });
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: "Missing required fields (tailor_email, customer_email, datetime, tailor_name)" 
+      message: "Missing required fields (tailor_email, customer_email, datetime, tailor_name)"
     });
   }
 
   try {
     const { data, error } = await supabase
       .from("appointments")
-      .insert([{ 
-        tailor_email, 
-        customer_email, 
-        datetime, 
+      .insert([{
+        tailor_email,
+        customer_email,
+        datetime,
         tailor_name,
         status: "pending"
       }])
@@ -740,7 +1150,7 @@ app.get("/my-appointments", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("appointments")
-      .select("*") 
+      .select("*")
       .eq("customer_email", email)
       .order("created_at", { ascending: false });
 
@@ -822,7 +1232,7 @@ app.delete("/remove-customer", async (req, res) => {
   const { email } = req.body;
 
   try {
-    
+
     const { error } = await supabase
       .from("profiles")
       .delete()
@@ -902,6 +1312,478 @@ app.put("/update-order", upload.single("fabric"), async (req, res) => {
   } catch (err) {
     console.error("Update failed:", err);
     res.status(500).json({ error: "Update failed" });
+  }
+});
+
+// ============ NOTIFICATION SYSTEM ============
+// ---------------- GET CUSTOMER NOTIFICATIONS ----------------
+app.get("/get-notifications", async (req, res) => {
+  const { email } = req.query;
+
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("id, customer_email, tailor_email, service_type, gender, price, quantity, status, created_at, tailor_name")
+      .eq("customer_email", email)
+      .eq("is_notified", false)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ notifications: data || [] });
+  } catch (err) {
+    console.error("Get notifications error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ============ CLEAR ALL NOTIFICATIONS ============
+app.put("/clear-all-notifications", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const { error } = await supabase
+      .from("orders")
+      .update({ is_notified: true })
+      .eq("customer_email", email)
+      .eq("is_notified", false);
+
+    if (error) throw error;
+
+    res.json({ message: "All notifications cleared" });
+  } catch (err) {
+    console.error("Clear notifications error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ============ DISMISS SINGLE NOTIFICATION ============
+app.put("/dismiss-notification", async (req, res) => {
+  const { order_id } = req.body;
+
+  try {
+    const { error } = await supabase
+      .from("orders")
+      .update({ is_notified: true })
+      .eq("id", order_id);
+
+    if (error) throw error;
+
+    res.json({ message: "Notification dismissed" });
+  } catch (err) {
+    console.error("Dismiss notification error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ============ GET APPOINTMENT NOTIFICATIONS ============
+app.get("/get-appointment-notifications", async (req, res) => {
+  const { email } = req.query;
+
+  try {
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("customer_email", email)
+      .eq("is_notified", false)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ notifications: data || [] });
+  } catch (err) {
+    console.error("Get appointment notifications error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ============ DISMISS APPOINTMENT NOTIFICATION ============
+app.put("/dismiss-appointment-notification", async (req, res) => {
+  const { appointment_id } = req.body;
+
+  try {
+    const { error } = await supabase
+      .from("appointments")
+      .update({ is_notified: true })
+      .eq("id", appointment_id);
+
+    if (error) throw error;
+
+    res.json({ message: "Notification dismissed" });
+  } catch (err) {
+    console.error("Dismiss appointment notification error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ============ TAILOR NOTIFICATIONS ============
+// ---------- GET TAILOR NOTIFICATIONS ----------
+app.get("/tailor-notifications", async (req, res) => {
+  const { email } = req.query;
+
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("id, customer_email, tailor_email, service_type, gender, price, quantity, status, created_at, customer_name")
+      .eq("tailor_email", email)
+      .eq("is_notified", false)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ notifications: data || [] });
+  } catch (err) {
+    console.error("Get tailor notifications error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ============ CLEAR ALL TAILOR NOTIFICATIONS ============
+app.put("/clear-all-tailor-notifications", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const { error } = await supabase
+      .from("orders")
+      .update({ is_notified: true })
+      .eq("tailor_email", email)
+      .eq("is_notified", false);
+
+    if (error) throw error;
+
+    res.json({ message: "All notifications cleared" });
+  } catch (err) {
+    console.error("Clear tailor notifications error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ============ DISMISS TAILOR TAILOR NOTIFICATION ============
+app.put("/dismiss-tailor-notification", async (req, res) => {
+  const { order_id } = req.body;
+
+  try {
+    const { error } = await supabase
+      .from("orders")
+      .update({ is_notified: true })
+      .eq("id", order_id);
+
+    if (error) throw error;
+
+    res.json({ message: "Notification dismissed" });
+  } catch (err) {
+    console.error("Dismiss tailor notification error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ============ GET TAILOR APPOINTMENT NOTIFICATIONS ============
+app.get("/tailor-appointment-notifications", async (req, res) => {
+  const { email } = req.query;
+
+  try {
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("tailor_email", email)
+      .eq("is_notified", false)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ notifications: data || [] });
+  } catch (err) {
+    console.error("Get tailor appointment notifications error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ============ DISMISS TAILOR APPOINTMENT NOTIFICATION ============
+app.put("/dismiss-tailor-appointment-notification", async (req, res) => {
+  const { appointment_id } = req.body;
+
+  try {
+    const { error } = await supabase
+      .from("appointments")
+      .update({ is_notified: true })
+      .eq("id", appointment_id);
+
+    if (error) throw error;
+
+    res.json({ message: "Notification dismissed" });
+  } catch (err) {
+    console.error("Dismiss tailor appointment notification error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ============ TAILOR APPOINTMENTS ============
+// ---------- GET TAILOR APPOINTMENTS ----------
+app.get("/tailor-appointments", async (req, res) => {
+  const { email } = req.query;
+
+  try {
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("tailor_email", email)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ appointments: data || [] });
+  } catch (err) {
+    console.error("Error fetching tailor appointments:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ---------- UPDATE APPOINTMENT STATUS ----------
+app.put("/update-appointment-status", async (req, res) => {
+  const { id, status, tailor_name, customer_email } = req.body;
+
+  if (!id || !status) {
+    return res.status(400).json({ error: "Missing appointment ID or status" });
+  }
+
+  try {
+    // Get appointment details
+    const { data: appointment, error: fetchError } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !appointment) throw new Error("Appointment not found");
+
+    // Update appointment status and set is_notified to false to trigger notification
+    const { error: updateError } = await supabase
+      .from("appointments")
+      .update({ status, is_notified: false })
+      .eq("id", id);
+
+    if (updateError) throw updateError;
+
+    res.json({ message: "Appointment status updated successfully" });
+  } catch (err) {
+    console.error("Error updating appointment status:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+  // ---------- File Complain(Customer) ----------
+});
+app.post("/file-complaint", async (req, res) => {
+  try {
+    const {
+      filed_by_email,
+      filed_by_role,
+      against_email,
+      complaint_type,
+      subject,
+      description,
+      order_id,
+      attachment_url
+    } = req.body;
+
+    const specialIssues = [
+      "Payment Issue",
+      "Late Delivery",
+      "Wrong Measurement",
+      "Bad Stitching",
+      "Misbehaviour"
+    ];
+
+    /* ================= BASIC VALIDATION ================= */
+
+    if (!filed_by_email || !subject || !description || !complaint_type) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    /* ================= CONDITIONAL VALIDATION ================= */
+
+    if (specialIssues.includes(complaint_type)) {
+
+      if (!against_email || !order_id) {
+        return res.status(400).json({
+          error: "Tailor email and Order ID are required for this complaint type"
+        });
+      }
+
+      /* ===== CHECK IF EMAIL EXISTS IN profiles ===== */
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("email", against_email)
+        .single();
+
+      if (profileError || !profileData) {
+        return res.status(400).json({
+          error: "Tailor email not found in system"
+        });
+      }
+
+      /* ===== CHECK IF ORDER EXISTS IN orders ===== */
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("id", order_id)
+        .single();
+
+      if (orderError || !orderData) {
+        return res.status(400).json({
+          error: "Order ID not found"
+        });
+      }
+    }
+
+    /* ================= INSERT COMPLAINT ================= */
+
+    const { data, error } = await supabase
+      .from("complaints")
+      .insert([{
+        filed_by_email,
+        filed_by_role,
+        against_email: against_email || null,
+        complaint_type,
+        subject,
+        description,
+        order_id: order_id || null,
+        attachment_url
+      }])
+      .select();
+
+    if (error) throw error;
+
+    res.status(201).json({
+      message: "Complaint submitted successfully",
+      data
+    });
+
+  } catch (err) {
+    console.log("🔥 Server Error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ===============================
+   GET MY COMPLAINTS
+=============================== */
+app.get("/my-complaints/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+    console.log("📥 Fetching complaints for:", email);
+
+    const { data, error } = await supabase
+      .from("complaints")
+      .select("*")
+      .eq("filed_by_email", email)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.log("❌ Supabase Fetch Error:", error);
+      throw error;
+    }
+
+    console.log("✅ Complaints Found:", data.length);
+
+    res.json(data);
+
+  } catch (err) {
+    console.log("🔥 Fetch Error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+// ---------------- DELETE COMPLAINT ----------------
+app.delete("/delete-complaint/:id/:email", async (req, res) => {
+  try {
+    const { id, email } = req.params;
+
+    const { error } = await supabase
+      .from("complaints")
+      .delete()
+      .eq("id", id)
+      .eq("filed_by_email", email);
+
+    if (error) throw error;
+
+    res.status(200).json({ message: "Complaint deleted successfully" });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ===============================
+   GET ALL COMPLAINTS
+=============================== */
+app.get("/admin/complaints", async (req, res) => {
+  try {
+    console.log("👑 Admin fetching all complaints");
+
+    const { data, error } = await supabase
+      .from("complaints")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    console.log("✅ Total Complaints:", data.length);
+    res.json(data);
+
+  } catch (err) {
+    console.log("🔥 Admin Error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ===============================
+   RESOLVE COMPLAINT & SEND MESSAGE
+=============================== */
+app.put("/admin/respond-complaint/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { admin_response } = req.body;
+
+    const { data, error } = await supabase
+      .from("complaints")
+      .update({
+        admin_response,
+        resolved_at: new Date(), // mark as resolved
+      })
+      .eq("id", id)
+      .select();
+
+    if (error) throw error;
+
+    console.log(`✅ Complaint ${id} resolved with message: ${admin_response}`);
+    res.json({ message: "Resolved and message sent", data });
+
+  } catch (err) {
+    console.log("🔥 Resolve Error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ===============================
+   SEND MESSAGE ONLY
+=============================== */
+app.post("/admin/send-message", async (req, res) => {
+  try {
+    const { complaint_id, message } = req.body;
+
+    const { data, error } = await supabase
+      .from("complaints")
+      .update({ admin_response: message }) // update response only
+      .eq("id", complaint_id)
+      .select();
+
+    if (error) throw error;
+
+    console.log(`💬 Message sent for complaint ${complaint_id}: ${message}`);
+    res.json({ message: "Message sent successfully", data });
+
+  } catch (err) {
+    console.log("🔥 Send Message Error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

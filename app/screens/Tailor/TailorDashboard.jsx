@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
 import {
   Animated,
@@ -120,7 +121,7 @@ const TailorDashboard = ({ route, navigation }) => {
       >
 
         <View style={styles.greetingBox}>
-          <Text style={styles.greetingSmall}>Welcome back 👋</Text>
+          <Text style={styles.greetingSmall}>Welcome back</Text>
           <Text style={styles.greetingName}>
             {profile.full_name || "Tailor"}
           </Text>
@@ -128,9 +129,7 @@ const TailorDashboard = ({ route, navigation }) => {
 
         {/* ----------- TOP RIGHT BUTTONS ----------- */}
         <View style={styles.topRightContainer}>
-          <TouchableOpacity style={styles.iconButton} disabled={showProfile}>
-            <Ionicons name="notifications-outline" size={24} color="black" />
-          </TouchableOpacity>
+         
 
           <TouchableOpacity
             style={styles.iconButton}
@@ -139,7 +138,7 @@ const TailorDashboard = ({ route, navigation }) => {
           >
             <Image
               source={require('../../../assets/images/imTailor.png')}
-              style={{ height: 35, width: 35 }}
+              style={{ height: 40, width: 46, borderRadius: 25   }}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -148,13 +147,13 @@ const TailorDashboard = ({ route, navigation }) => {
         <View style={styles.verticalContainer}>
           <TouchableOpacity style={styles.locationBox} disabled={showProfile}>
             <Ionicons name="location-outline" size={26} color="#4A1C22" />
-            <View style={{ marginLeft: 10 }}>
+            <View style={{ marginLeft: 10, flex: 1 }}>
               <Text style={styles.locationTitle}>My Location</Text>
-              <Text style={styles.locationText}>{profile.location}</Text>
+              <Text style={[styles.locationText, { flexWrap: 'wrap' }]}>{profile.location}</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.TruckBox} disabled={showProfile}>
+          <TouchableOpacity style={styles.TruckBox} disabled={showProfile}  onPress={() => navigation.navigate("MyOrders", { email })}>
             <Image
               source={require('../../../assets/images/Truck.png')}
               style={styles.TruckImage}
@@ -215,11 +214,54 @@ const TailorDashboard = ({ route, navigation }) => {
                 <>
                   <Text style={styles.title}>Edit Profile</Text>
 
-                  <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Full Name" />
-                  <TextInput style={styles.input} value={cnic} onChangeText={setCnic} keyboardType="numeric" maxLength={13} placeholder="CNIC" />
-                  <TextInput style={styles.input} value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="numeric" maxLength={11} placeholder="Phone Number" />
-                  <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="Location" />
-                  <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="New Password (optional)" />
+                  <Text style={styles.fieldLabel}>Full Name</Text>
+                  <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Enter your full name" placeholderTextColor="#ccc" />
+                  
+                  <Text style={styles.fieldLabel}>CNIC (13 digits)</Text>
+                  <TextInput style={styles.input} value={cnic} onChangeText={setCnic} keyboardType="numeric" maxLength={13} placeholder="12345678901234" placeholderTextColor="#ccc" />
+                  
+                  <Text style={styles.fieldLabel}>Phone Number (11 digits)</Text>
+                  <TextInput style={styles.input} value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="numeric" maxLength={11} placeholder="03001234567" placeholderTextColor="#ccc" />
+                  
+                  <Text style={styles.fieldLabel}>Location</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TextInput
+                      style={[styles.input, { flex: 1 }]}
+                      value={location}
+                      onChangeText={setLocation}
+                      placeholder="Enter your location"
+                      placeholderTextColor="#ccc"
+                    />
+                    <TouchableOpacity
+                      style={{ marginLeft: 10, padding: 10, backgroundColor: '#4CAF50', borderRadius: 8 }}
+                      onPress={async () => {
+                        try {
+                          const { status } = await Location.requestForegroundPermissionsAsync();
+                          if (status !== 'granted') {
+                            alert('Permission to access location was denied');
+                            return;
+                          }
+
+                          const { coords } = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+                          const geocode = await Location.reverseGeocodeAsync({
+                            latitude: coords.latitude,
+                            longitude: coords.longitude,
+                          });
+
+                          const address = geocode[0];
+                          setLocation(`${address.city}, ${address.street}, ${address.country}`);
+                        } catch (error) {
+                          console.error('Error fetching location:', error);
+                          alert('Unable to fetch location');
+                        }
+                      }}
+                    >
+                      <Ionicons name="location-outline" size={20} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <Text style={styles.fieldLabel}>New Password (optional)</Text>
+                  <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="Leave blank to keep current password" placeholderTextColor="#ccc" />
 
                   <TouchableOpacity style={[styles.btn, { backgroundColor: "#4CAF50" }]} onPress={saveProfile}>
                     <Text style={styles.btnText}>Save Changes</Text>
@@ -280,7 +322,7 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: "rgba(255,255,255,0.85)",
     borderRadius: 30,
-    marginLeft: 12,
+    marginLeft: 10,
   },
 
   verticalContainer: {
@@ -364,7 +406,7 @@ const styles = StyleSheet.create({
 
   card: {
     position: "absolute",
-    top: '20%',
+    top: '10%',
     alignSelf: "center",
     width: "88%",
     padding: 20,
@@ -402,8 +444,17 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 10,
     backgroundColor: "#fff",
-    marginBottom: 10,
+    marginBottom: 15,
     fontSize: 16,
+  },
+
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#444",
+    marginTop: 10,
+    marginBottom: 8,
+    letterSpacing: 0.3,
   },
 
   btn: {

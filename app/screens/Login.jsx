@@ -1,3 +1,4 @@
+
 import { Ionicons } from '@expo/vector-icons'; //for importing logos,icons from react Expo icon library
 import axios from "axios";
 import { LinearGradient } from 'expo-linear-gradient';
@@ -66,7 +67,7 @@ const Login = ({ navigation }) => {
 
   try {
     // sending a request to this server running on my Mac at port 3000
-    const response = await axios.post("http://UF-MacBook-Pro.local:3000/Login", {
+    const response = await axios.post("http://UF-MacBook-Pro.local:3000/login", {
       email,
       password,
     });
@@ -155,7 +156,7 @@ const Login = ({ navigation }) => {
       ) : null}
             <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
               <Text style={styles.link}>
-                Don’t have an account?</Text>
+                Don't have an account?</Text>
             </TouchableOpacity>
                  <TouchableOpacity onPress={() => navigation.navigate('Forgot')}>
               <Text style={styles.link}>
@@ -248,3 +249,4 @@ const styles = StyleSheet.create({
     color: '#555',
   },
 });
+

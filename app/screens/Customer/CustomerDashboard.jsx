@@ -1,11 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Dimensions,
   Easing,
   Image,
+  Platform,
+  ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -13,6 +18,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+
+const { width: SCREEN_W } = Dimensions.get('window');
 
 const CustomerDashboard = ({ route, navigation }) => {
   const { email } = route.params;
@@ -38,7 +45,6 @@ const CustomerDashboard = ({ route, navigation }) => {
   /* ---------- ANIMATIONS ---------- */
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleBtnAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (showProfile) {
@@ -150,18 +156,39 @@ const CustomerDashboard = ({ route, navigation }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Button press animation without haptic feedback
+  // Removed scaling effect for button presses
   const onPressWithScale = (callback) => {
-    Animated.sequence([
-      Animated.timing(scaleBtnAnim, { toValue: 0.9, duration: 100, useNativeDriver: true }),
-      Animated.timing(scaleBtnAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
-    ]).start(() => {
-      if (callback) callback();
-    });
+    if (callback) callback();
+  };
+
+  const fetchLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Permission to access location was denied.');
+        return;
+      }
+
+      const locationData = await Location.getCurrentPositionAsync({});
+      const geocode = await Location.reverseGeocodeAsync({
+        latitude: locationData.coords.latitude,
+        longitude: locationData.coords.longitude,
+      });
+
+      if (geocode.length > 0) {
+        const { city, country, street, name } = geocode[0];
+        setLocation(`${name || ''} ${street || ''}, ${city || ''}, ${country || ''}`.trim());
+      } else {
+        alert('Unable to fetch location details.');
+      }
+    } catch (error) {
+      alert('An error occurred while fetching location.');
+    }
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0c1435' }}>
+    <View style={{ flex: 1, backgroundColor: '#080927' }}>
+      <StatusBar barStyle="light-content" backgroundColor="#080927" />
       <LinearGradient
         colors={['#1b254f', '#0c1435', '#080927']}
         start={{ x: 0, y: 0 }}
@@ -169,194 +196,321 @@ const CustomerDashboard = ({ route, navigation }) => {
         style={styles.container}
         pointerEvents={showProfile ? 'none' : 'auto'}
       >
-        <View style={styles.greetingBox}>
-          <Text style={styles.greetingSmall}>Welcome back </Text>
-          <Text style={styles.greetingName}>
-            {profile.full_name || "Customer"}
-          </Text>
-        </View>
-
-        <View style={styles.topRightContainer}>
-          <TouchableOpacity
-            style={[styles.iconButton, { backgroundColor: 'rgba(255,255,255,0.12)' }]}
-            disabled={showProfile}
-            onPress={() => onPressWithScale(() => alert("Chat coming soon!"))}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="chatbubbles-outline" size={36} color="#99aaff" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.iconButton, { backgroundColor: 'rgba(255,255,255,0.12)' }]}
-            onPress={() => onPressWithScale(() => setShowProfile(true))}
-            disabled={showProfile}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={require('../../../assets/images/Men.png')}
-              style={styles.profileIcon}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.verticalContainer}>
-          <TouchableOpacity style={styles.locationBox} disabled={showProfile}>
-            <Ionicons name="location-outline" size={28} color="#8fa1cc" />
-            <View style={{ marginLeft: 14 }}>
-              <Text style={styles.locationTitle}>My Location</Text>
-              <Text style={styles.locationText}>{profile.location || "Unknown"}</Text>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* ---- Header ---- */}
+          <View style={styles.headerRow}>
+            <View style={styles.greetingBox}>
+              <Text style={styles.greetingSmall}>Welcome back</Text>
+              <Text style={styles.greetingName}>
+                {profile.full_name || "Customer"}
+              </Text>
             </View>
+
+            <View style={styles.topRightContainer}>
+              <TouchableOpacity
+                style={styles.iconButton}
+                disabled={showProfile}
+                onPress={() => onPressWithScale(() => navigation.navigate('NotificationScreen', { email }))}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="chatbubbles-outline" size={38} color="#99aaff" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => onPressWithScale(() => setShowProfile(true))}
+                disabled={showProfile}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={require('../../../assets/images/Men.png')}
+                  style={styles.profileIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* ---- Location ---- */}
+          <TouchableOpacity
+            style={styles.locationBox}
+            onPress={fetchLocation}
+            disabled={showProfile}
+            activeOpacity={0.85}
+          >
+            <View style={styles.locationIconWrap}>
+              <Ionicons name="location" size={20} color="#7b9bff" />
+            </View>
+            <View style={{ marginLeft: 14, flex: 1 }}>
+              <Text style={styles.locationTitle}>My Location</Text>
+              <Text style={styles.locationText} numberOfLines={1}>
+                {profile.location || "Tap to detect"}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="rgba(155,179,255,0.4)" />
           </TouchableOpacity>
 
+          {/* ---- Tailor Spotlight ---- */}
           <TouchableOpacity
             style={styles.tailorBox}
             onPress={() => onPressWithScale(() => navigation.navigate("BrowseTailors", { CustomerEmail: email }))}
             disabled={showProfile}
             activeOpacity={0.9}
           >
-            <Animated.Image
-              source={tailorImages[currentTailorImageIndex]}
-              style={[styles.tailorImage, { opacity: fadeTailorImage }]}
-              resizeMode="contain"
-            />
-            <Text style={styles.tailorText}>Look for a Tailor</Text>
+            <View style={styles.tailorAccent} />
+            <View style={styles.tailorContent}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <Text style={styles.tailorLabel}>EXPLORE</Text>
+                <Text style={styles.tailorText}>Find Your{'\n'}Perfect Tailor</Text>
+                <View style={styles.tailorArrowRow}>
+                  <Text style={styles.tailorCta}>Browse now</Text>
+                  <Ionicons name="arrow-forward" size={14} color="#7b9bff" style={{ marginLeft: 6 }} />
+                </View>
+              </View>
+              <Animated.Image
+                source={tailorImages[currentTailorImageIndex]}
+                style={[styles.tailorImage, { opacity: fadeTailorImage }]}
+                resizeMode="contain"
+              />
+            </View>
+            {/* Dot indicators */}
+            <View style={styles.dotsRow}>
+              {tailorImages.map((_, i) => (
+                <View key={i} style={[styles.dot, i === currentTailorImageIndex && styles.dotActive]} />
+              ))}
+            </View>
           </TouchableOpacity>
 
-          <View style={styles.horizontalButtons}>
-            <AnimatedTouchable
-              style={[styles.smallButton, { backgroundColor: '#2a3c72', transform: [{ scale: scaleBtnAnim }] }]}
-              onPress={() => onPressWithScale(() => navigation.navigate("CustomerOrders", { CustomerEmail: email }))}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="receipt-outline" size={24} color="#ccd9ff" />
-              <Text style={styles.smallButtonText}>My Orders</Text>
-            </AnimatedTouchable>
+         
 
-            <AnimatedTouchable
-              style={[styles.smallButton, { backgroundColor: '#2a3c72', transform: [{ scale: scaleBtnAnim }] }]}
-              onPress={() => onPressWithScale(() => navigation.navigate("MyAppointments", { CustomerEmail: email }))}
-              activeOpacity={0.85}
+          {/* ---- Action Cards ---- */}
+          <View style={styles.allButtonsContainer}>
+            <View style={styles.horizontalButtons}>
+              <LinearGradient
+                colors={['#3957a6', '#506ba9']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.actionCard}
+              >
+                <TouchableOpacity
+                  onPress={() => onPressWithScale(() => navigation.navigate("CustomerOrders", { CustomerEmail: email }))}
+                  activeOpacity={0.85}
+                  style={{ alignItems: 'center', width: '100%' }}
+                >
+                  <View style={styles.actionIconWrap}>
+                    <Ionicons name="receipt-outline" size={24} color="#99aaff" />
+                  </View>
+                  <Text style={styles.actionCardTitle}>My Orders</Text>
+                  <Text style={styles.actionCardSub}>Track & manage</Text>
+                </TouchableOpacity>
+              </LinearGradient>
+
+              <LinearGradient
+                colors={['#506ba9', '#3957a6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.actionCard}
+              >
+                <TouchableOpacity
+                  onPress={() => onPressWithScale(() => navigation.navigate("MyAppointments", { CustomerEmail: email }))}
+                  activeOpacity={0.85}
+                  style={{ alignItems: 'center', width: '100%' }}
+                >
+                  <View style={styles.actionIconWrap}>
+                    <Ionicons name="calendar-outline" size={24} color="#99aaff" />
+                  </View>
+                  <Text style={styles.actionCardTitle}>Appointments</Text>
+                  <Text style={styles.actionCardSub}>View schedule</Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            </View>
+
+            {/* ---- Logout ---- */}
+            <LinearGradient
+              colors={['#506ba9', '#3957a6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoutCard}
             >
-              <Ionicons name="calendar-outline" size={24} color="#ccd9ff" />
-              <Text style={styles.smallButtonText}>My Appointments</Text>
-            </AnimatedTouchable>
+              <TouchableOpacity
+                onPress={() => onPressWithScale(() => navigation.navigate("Login"))}
+                activeOpacity={0.85}
+                style={{ alignItems: 'center', width: '100%' }}
+              >
+                <Ionicons name="log-out-outline" size={24} color="#8899cc" />
+                <Text style={styles.actionCardTitle}>Logout</Text>
+              </TouchableOpacity>
+            </LinearGradient>
           </View>
-        </View>
-
-        <AnimatedTouchable
-          style={[styles.logoutBtn, { backgroundColor: '#111a3a', transform: [{ scale: scaleBtnAnim }] }]}
-          onPress={() => onPressWithScale(() => navigation.navigate("Login"))}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="log-out-outline" size={24} color="#8899cc" />
-          <Text style={styles.logoutText}> Logout</Text>
-        </AnimatedTouchable>
+        </ScrollView>
       </LinearGradient>
 
+      {/* ========== PROFILE OVERLAY ========== */}
       {profileVisible && (
         <TouchableWithoutFeedback onPress={() => setShowProfile(false)}>
           <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-            <Animated.View style={[styles.card, { transform: [{ translateY: slideAnim }] }]}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <Animated.View style={[styles.card, { transform: [{ translateY: slideAnim }] }]}>
 
-              {!editMode ? (
-                <>
-                  <Text style={styles.title}>My Profile</Text>
+                {/* Close button */}
+                <TouchableOpacity
+                  style={styles.closeBtn}
+                  onPress={() => { setShowProfile(false); setEditMode(false); }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={20} color="#8899cc" />
+                </TouchableOpacity>
 
-                  <View style={styles.itemBox}>
-                    <Text style={styles.label}>Full Name</Text>
-                    <Text style={styles.value}>{profile.full_name}</Text>
-                  </View>
-                  <View style={styles.itemBox}>
-                    <Text style={styles.label}>CNIC</Text>
-                    <Text style={styles.value}>{profile.cnic}</Text>
-                  </View>
-                  <View style={styles.itemBox}>
-                    <Text style={styles.label}>Phone</Text>
-                    <Text style={styles.value}>{profile.phone_number}</Text>
-                  </View>
-                  <View style={styles.itemBox}>
-                    <Text style={styles.label}>Location</Text>
-                    <Text style={styles.value}>{profile.location}</Text>
-                  </View>
+                {!editMode ? (
+                  <>
+                    {/* Avatar */}
+                    <View style={styles.avatarWrap}>
+                      <LinearGradient colors={['#3957a6', '#2a3c72']} style={styles.avatarCircle}>
+                        <Text style={styles.avatarText}>
+                          {(profile.full_name || 'C').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                        </Text>
+                      </LinearGradient>
+                      <Text style={styles.avatarName}>{profile.full_name || 'Customer'}</Text>
+                      <Text style={styles.avatarEmail}>{email}</Text>
+                    </View>
 
-                  <TouchableOpacity
-                    style={[styles.btn, { backgroundColor: "#2a3c72" }]}
-                    onPress={() => onPressWithScale(() => setEditMode(true))}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.btnText}>Edit Details</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.title}>Edit Profile</Text>
+                    <View style={styles.divider} />
 
-                  <TextInput
-                    style={styles.input}
-                    value={fullName}
-                    onChangeText={setFullName}
-                    placeholder="Full Name"
-                    placeholderTextColor="#667799"
-                    selectionColor="#aabbff"
-                  />
-                  <TextInput
-                    style={styles.input}
-                    value={cnic}
-                    onChangeText={setCnic}
-                    placeholder="CNIC"
-                    keyboardType="numeric"
-                    maxLength={13}
-                    placeholderTextColor="#667799"
-                    selectionColor="#aabbff"
-                  />
-                  <TextInput
-                    style={styles.input}
-                    value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                    placeholder="Phone"
-                    keyboardType="numeric"
-                    maxLength={11}
-                    placeholderTextColor="#667799"
-                    selectionColor="#aabbff"
-                  />
-                  <TextInput
-                    style={styles.input}
-                    value={location}
-                    onChangeText={setLocation}
-                    placeholder="Location"
-                    placeholderTextColor="#667799"
-                    selectionColor="#aabbff"
-                  />
-                  <TextInput
-                    style={styles.input}
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="New Password"
-                    secureTextEntry
-                    placeholderTextColor="#667799"
-                    selectionColor="#aabbff"
-                  />
+                    <View style={styles.itemBox}>
+                      <Ionicons name="person-outline" size={16} color="#7b9bff" style={{ marginRight: 10 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.label}>Full Name</Text>
+                        <Text style={styles.value}>{profile.full_name}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.itemBox}>
+                      <Ionicons name="card-outline" size={16} color="#7b9bff" style={{ marginRight: 10 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.label}>CNIC</Text>
+                        <Text style={styles.value}>{profile.cnic}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.itemBox}>
+                      <Ionicons name="call-outline" size={16} color="#7b9bff" style={{ marginRight: 10 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.label}>Phone</Text>
+                        <Text style={styles.value}>{profile.phone_number}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.itemBox}>
+                      <Ionicons name="location-outline" size={16} color="#7b9bff" style={{ marginRight: 10 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.label}>Location</Text>
+                        <Text style={styles.value}>{profile.location}</Text>
+                      </View>
+                    </View>
 
-                  <TouchableOpacity
-                    style={[styles.btn, { backgroundColor: "#1f2a59" }]}
-                    onPress={() => onPressWithScale(updateProfile)}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.btnText}>Save Changes</Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.btn, { backgroundColor: "#2a3c72" }]}
+                      onPress={() => onPressWithScale(() => setEditMode(true))}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="create-outline" size={18} color="#e6ebff" style={{ marginRight: 8 }} />
+                      <Text style={styles.btnText}>Edit Details</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.title}>Edit Profile</Text>
 
-                  <TouchableOpacity
-                    style={[styles.btn, { backgroundColor: "#6a2e2e" }]}
-                    onPress={() => onPressWithScale(() => setEditMode(false))}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.btnText}>Cancel</Text>
-                  </TouchableOpacity>
-                </>
-              )}
+                    <View style={styles.inputRow}>
+                      <Ionicons name="person-outline" size={16} color="#667799" style={{ marginRight: 10 }} />
+                      <TextInput
+                        style={styles.input}
+                        value={fullName}
+                        onChangeText={setFullName}
+                        placeholder="Full Name"
+                        placeholderTextColor="#667799"
+                        selectionColor="#aabbff"
+                      />
+                    </View>
+                    <View style={styles.inputRow}>
+                      <Ionicons name="card-outline" size={16} color="#667799" style={{ marginRight: 10 }} />
+                      <TextInput
+                        style={styles.input}
+                        value={cnic}
+                        onChangeText={setCnic}
+                        placeholder="CNIC"
+                        keyboardType="numeric"
+                        maxLength={13}
+                        placeholderTextColor="#667799"
+                        selectionColor="#aabbff"
+                      />
+                    </View>
+                    <View style={styles.inputRow}>
+                      <Ionicons name="call-outline" size={16} color="#667799" style={{ marginRight: 10 }} />
+                      <TextInput
+                        style={styles.input}
+                        value={phoneNumber}
+                        onChangeText={setPhoneNumber}
+                        placeholder="Phone"
+                        keyboardType="numeric"
+                        maxLength={11}
+                        placeholderTextColor="#667799"
+                        selectionColor="#aabbff"
+                      />
+                    </View>
+                    <View style={styles.locationRow}>
+                      <View style={[styles.inputRow, { flex: 1 }]}>
+                        <Ionicons name="location-outline" size={16} color="#667799" style={{ marginRight: 10 }} />
+                        <TextInput
+                          style={[styles.input, { flex: 1 }]}
+                          value={location}
+                          onChangeText={setLocation}
+                          placeholder="Location"
+                          placeholderTextColor="#667799"
+                          selectionColor="#aabbff"
+                        />
+                      </View>
+                      <TouchableOpacity
+                        style={styles.locationButton}
+                        onPress={fetchLocation}
+                      >
+                        <Ionicons name="location" size={22} color="white" />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.inputRow}>
+                      <Ionicons name="lock-closed-outline" size={16} color="#667799" style={{ marginRight: 10 }} />
+                      <TextInput
+                        style={styles.input}
+                        value={password}
+                        onChangeText={setPassword}
+                        placeholder="New Password"
+                        secureTextEntry
+                        placeholderTextColor="#667799"
+                        selectionColor="#aabbff"
+                      />
+                    </View>
 
-            </Animated.View>
+                    <TouchableOpacity
+                      style={[styles.btn, { backgroundColor: "#1f2a59" }]}
+                      onPress={() => onPressWithScale(updateProfile)}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="checkmark-circle-outline" size={18} color="#e6ebff" style={{ marginRight: 8 }} />
+                      <Text style={styles.btnText}>Save Changes</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.btn, styles.cancelBtn]}
+                      onPress={() => onPressWithScale(() => setEditMode(false))}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.btnText, { color: '#cc8888' }]}>Cancel</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+              </Animated.View>
+            </TouchableWithoutFeedback>
           </Animated.View>
         </TouchableWithoutFeedback>
       )}
@@ -369,228 +523,405 @@ const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    paddingTop: 90,
+  },
+  scrollContent: {
+    paddingTop: Platform.OS === 'ios' ? 65 : 45,
     paddingHorizontal: 20,
+    paddingBottom: 40,
+    flexGrow: 1,
+  },
+
+  /* ---- header ---- */
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 24,
   },
   greetingBox: {
-    width: "100%",
-    marginBottom: 20,
+    flex: 1,
   },
   greetingSmall: {
-    fontSize: 28,
+    fontSize: 15,
     color: "#8e9ccf",
-    fontWeight: "700",
+    fontWeight: "600",
     letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   greetingName: {
-    fontSize: 26,
+    fontSize: 28,
     color: "#d1d9ff",
-    marginTop: 6,
     fontWeight: "800",
-    textShadowColor: "rgba(0,0,0,0.4)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 4,
   },
   topRightContainer: {
-    position: "absolute",
-    top: 45,
-    right: 20,
     flexDirection: "row",
-    padding: 6,
-    zIndex: 10,
+    alignItems: 'center',
   },
   iconButton: {
-    padding: 10,
-    borderRadius: 30,
-    marginLeft: 14,
-    shadowColor: "#18294a",
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: 'rgba(42,60,114,0.5)',
+    padding: 11,
+    borderRadius: 16,
+    marginLeft: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(155,179,255,0.12)',
   },
   profileIcon: {
-    height: 42,
-    width: 42,
+    height: 38,
+    width: 38,
   },
-  verticalContainer: {
-    width: "100%",
-    marginTop: 40,
-  },
+
+  /* ---- location ---- */
   locationBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(38, 52, 90, 0.4)",
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderRadius: 22,
-    marginBottom: 30,
-    shadowColor: "#1a2a5a",
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    backgroundColor: "rgba(38, 52, 90, 0.45)",
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(102,126,234,0.15)',
+  },
+  locationIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: 'rgba(42,60,114,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   locationTitle: {
-    color: "#aab6ff",
-    fontSize: 14,
+    color: "#8e9ccf",
+    fontSize: 12,
     fontWeight: "600",
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 2,
   },
   locationText: {
     color: "#d1d9ff",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
   },
+
+  /* ---- tailor card ---- */
   tailorBox: {
-    backgroundColor: "rgba(38, 52, 90, 0.45)",
-    height: 160,
-    borderRadius: 26,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
+    borderRadius: 24,
+    paddingVertical: 22,
+    paddingHorizontal: 22,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(102,126,234,0.15)',
     shadowColor: "#18294a",
     shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 7,
-    marginBottom: 30,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  tailorAccent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: '#506ba9',
+  },
+  tailorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  tailorLabel: {
+    fontSize: 11,
+    color: '#7b9bff',
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginBottom: 6,
   },
   tailorImage: {
-    width: 90,
-    height: 110,
-    marginBottom: 12,
-    borderRadius: 12,
+    width: 95,
+    height: 115,
+    borderRadius: 14,
   },
   tailorText: {
     color: "#d1d9ff",
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "900",
-    letterSpacing: 1.1,
-    textShadowColor: 'rgba(0,0,0,0.7)',
-    textShadowOffset: { width: 1, height: 2 },
-    textShadowRadius: 6,
+    lineHeight: 30,
+  },
+  tailorCta: {
+    color: '#7b9bff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  tailorArrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 14,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: 'rgba(155,179,255,0.2)',
+    marginHorizontal: 4,
+  },
+  dotActive: {
+    backgroundColor: '#7b9bff',
+    width: 20,
+    borderRadius: 4,
+  },
+
+  /* ---- section label ---- */
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(155,179,255,0.1)',
+  },
+  sectionTitle: {
+    color: '#8e9ccf',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginHorizontal: 14,
+  },
+
+  /* ---- action cards ---- */
+  allButtonsContainer: {
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    gap: 14,
   },
   horizontalButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: 14,
   },
-  smallButton: {
+  actionCard: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 22,
-    borderRadius: 18,
-    marginRight: 14,
-    shadowOpacity: 0.7,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  smallButtonText: {
-    color: "#ccd9ff",
-    fontSize: 14,
-    fontWeight: "700",
-    marginLeft: 8,
-    letterSpacing: 0.7,
-  },
-  card: {
-    position: "absolute",
-    top: '22%',
-    alignSelf: "center",
-    width: "88%",
-    padding: 24,
-    backgroundColor: "rgba(23, 34, 67, 0.95)",
-    borderRadius: 24,
-    shadowColor: '#18294a',
-    shadowOpacity: 0.85,
-    shadowRadius: 24,
-    elevation: 22,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#b0c2ff",
-    marginBottom: 24,
-    letterSpacing: 0.8,
-    textAlign: 'center',
-  },
-  itemBox: {
-    marginBottom: 14,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: "rgba(38, 52, 90, 0.6)",
+    alignItems: 'center',
+    paddingVertical: 26,
+    paddingHorizontal: 14,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(102, 126, 234, 0.5)",
-    shadowColor: "#3b4f90",
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  label: {
-    fontSize: 14,
-    color: "#889acc",
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-  value: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#c3d1ff",
-  },
-  input: {
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#506ba9",
-    borderRadius: 14,
-    backgroundColor: "rgba(20, 28, 54, 0.7)",
-    marginBottom: 14,
-    fontSize: 16,
-    color: "#c3d1ff",
-    shadowColor: "#506ba9",
+    borderColor: 'rgba(102,126,234,0.15)',
+    shadowColor: "#18294a",
     shadowOpacity: 0.5,
     shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    overflow: 'hidden',
   },
-  btn: {
-    padding: 16,
-    borderRadius: 18,
-    alignItems: "center",
-    marginTop: 14,
-    shadowColor: "#3957a6",
-    shadowOpacity: 0.75,
-    shadowRadius: 14,
-    elevation: 12,
+  logoutCard: {
+    alignItems: 'center',
+    paddingVertical: 22,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(102,126,234,0.15)',
+    shadowColor: "#18294a",
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    overflow: 'hidden',
   },
-  btnText: {
-    color: "#e6ebff",
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 1,
+  actionIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(42,60,114,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(102,126,234,0.2)',
   },
-  logoutBtn: {
-    marginTop: 160,
-    bottom: 40,
-    backgroundColor: "#101d43",
-    paddingVertical: 16,
-    paddingHorizontal: 44,
-    borderRadius: 32,
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "center",
-    shadowColor: "#1e2d67",
-    shadowOpacity: 0.9,
-    shadowRadius: 18,
-    elevation: 16,
-  },
-  logoutText: {
-    color: "#9bb3ff",
-    fontSize: 20,
+  actionCardTitle: {
+    color: "#d1d9ff",
+    fontSize: 15,
     fontWeight: "800",
-    marginLeft: 10,
-    letterSpacing: 0.8,
+    marginBottom: 3,
   },
+  actionCardSub: {
+    color: 'rgb(136, 150, 186)',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+
+
+  /* ---- overlay ---- */
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(4, 10, 35, 0.85)',
+    backgroundColor: 'rgba(4, 8, 25, 0.88)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 999,
+  },
+
+  /* ---- profile card ---- */
+  card: {
+    position: "absolute",
+    top: '12%',
+    alignSelf: "center",
+    width: "90%",
+    maxWidth: 400,
+    padding: 24,
+    backgroundColor: "rgba(16, 24, 52, 0.97)",
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: 'rgba(102,126,234,0.18)',
+    shadowColor: '#0a0f2e',
+    shadowOpacity: 0.9,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 24,
+  },
+  closeBtn: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 12,
+    backgroundColor: 'rgba(42,60,114,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  avatarWrap: {
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  avatarCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  avatarText: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#e6ebff',
+  },
+  avatarName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#d1d9ff',
+    marginBottom: 2,
+  },
+  avatarEmail: {
+    fontSize: 12,
+    color: '#7b8dbb',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(102,126,234,0.12)',
+    marginVertical: 14,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#b0c2ff",
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  itemBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: "rgba(38, 52, 90, 0.4)",
+    borderWidth: 1,
+    borderColor: "rgba(102, 126, 234, 0.12)",
+  },
+  label: {
+    fontSize: 11,
+    color: "#7b8dbb",
+    fontWeight: "600",
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 2,
+  },
+  value: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#c3d1ff",
+  },
+
+  /* ---- inputs ---- */
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: "rgba(80,107,169,0.35)",
+    borderRadius: 14,
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
+    marginBottom: 12,
+    paddingHorizontal: 14,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 13,
+    fontSize: 15,
+    color: "#c3d1ff",
+  },
+  btn: {
+    flexDirection: 'row',
+    padding: 15,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: 'center',
+    marginTop: 12,
+    shadowColor: "#3957a6",
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  cancelBtn: {
+    backgroundColor: 'rgba(106,46,46,0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(204,136,136,0.2)',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  btnText: {
+    color: "#e6ebff",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationButton: {
+    backgroundColor: '#3957a6',
+    padding: 11,
+    borderRadius: 14,
+    marginLeft: 10,
+    marginBottom: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(102,126,234,0.25)',
   },
 });
 

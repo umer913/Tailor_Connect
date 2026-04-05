@@ -170,6 +170,7 @@ Alert.alert("Success", "Order updated successfully");
               </View>
 
               <Text style={styles.tailor}>Tailor: {item.tailor_name}</Text>
+              <Text style={styles.tailor}>OrderID: {item.id}</Text>
               <Text style={styles.tailor}>Quantity: {item.quantity}</Text>
               <Pressable
                 disabled={!isEditing}
@@ -186,7 +187,7 @@ Alert.alert("Success", "Order updated successfully");
                   />
                 ) : isEditing ? (
                   <View style={styles.addImagePlaceholder}>
-                    <Ionicons name="image-outline" size={48} color="#999" />
+                    <Ionicons name="image-outline" size={48} color="#8e9ccf" />
                     <Text style={styles.addImageText}>Add Image</Text>
                   </View>
                 ) : null}
@@ -234,7 +235,7 @@ Alert.alert("Success", "Order updated successfully");
 
   {Object.entries(item.measurements || {}).map(([key, value]) => (
   <View key={key} style={{ marginBottom: 10 }}>
-    <Text style={{ fontWeight: "600", marginBottom: 4 }}>
+<Text style={{ fontWeight: "600", marginBottom: 4, color: "#8e9ccf" }}>
       {key.toUpperCase()}
     </Text>
 
@@ -306,15 +307,19 @@ const styles = StyleSheet.create({
     top: 30,
     left: 20,
     padding: 8,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 12,
+    backgroundColor: "rgba(42,60,114,0.5)",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(155,179,255,0.12)",
   },
-  heading: { marginLeft: 125, fontSize: 26, fontWeight: "800", color: "#d1d9ff", marginBottom: 25 },
+  heading: { textAlign: "center", fontSize: 26, fontWeight: "800", color: "#d1d9ff", marginBottom: 25 },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(38,52,90,0.5)",
     borderRadius: 20,
     padding: 18,
     marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "rgba(102,126,234,0.15)",
   },
   rowBetween: {
     flexDirection: "row",
@@ -322,8 +327,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   rightHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
-  service: { fontSize: 18, fontWeight: "800" },
-  tailor: { fontSize: 14, color: "#666", marginVertical: 6 },
+  service: { fontSize: 18, fontWeight: "800", color: "#d1d9ff" },
+  tailor: { fontSize: 14, color: "#8e9ccf", marginVertical: 6 },
   fabricImage: {
     width: "100%",
     height: 160,
@@ -335,9 +340,9 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: 14,
     marginVertical: 10,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "rgba(20,28,54,0.7)",
     borderWidth: 2,
-    borderColor: "#ddd",
+    borderColor: "rgba(102,126,234,0.15)",
     borderStyle: "dashed",
     justifyContent: "center",
     alignItems: "center",
@@ -346,7 +351,7 @@ const styles = StyleSheet.create({
   addImageText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#999",
+    color: "#8e9ccf",
   },
   statusBadge: {
     paddingVertical: 6,
@@ -357,12 +362,14 @@ const styles = StyleSheet.create({
   closeText: { color: "#d85b5b", fontSize: 16 },
   expandBox: {
     marginTop: 14,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "rgba(20,28,54,0.7)",
     borderRadius: 14,
     padding: 14,
+    borderWidth: 1,
+    borderColor: "rgba(102,126,234,0.15)",
   },
-  detailTitle: { fontWeight: "800", marginBottom: 8 },
-  quantityDisplay: { fontSize: 18, fontWeight: "700", color: "#333", marginBottom: 14 },
+  detailTitle: { fontWeight: "800", marginBottom: 8, color: "#d1d9ff" },
+  quantityDisplay: { fontSize: 18, fontWeight: "700", color: "#c3d1ff", marginBottom: 14 },
   quantityEditRow: {
     flexDirection: "row",
     justifyContent: "center",
@@ -399,33 +406,34 @@ const styles = StyleSheet.create({
     minWidth: 70,
     height: 44,
     borderRadius: 8,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "rgba(20,28,54,0.7)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#333",
+    borderColor: "#506ba9",
   },
   qtyDisplayText: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#333",
+    color: "#c3d1ff",
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(20,28,54,0.7)",
     borderRadius: 8,
     padding: 8,
     marginBottom: 6,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#506ba9",
+    color: "#c3d1ff",
   },
   editBtn: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#2a3c72",
     padding: 10,
     borderRadius: 8,
     marginTop: 8,
   },
   saveBtn: {
-    backgroundColor: "#22c55e",
+    backgroundColor: "#3957a6",
     padding: 10,
     borderRadius: 8,
     flex: 1,
@@ -437,5 +445,5 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionRow: { flexDirection: "row", gap: 8, marginTop: 8 },
-  btnText: { color: "#fff", fontWeight: "700", textAlign: "center" },
+  btnText: { color: "#d1d9ff", fontWeight: "700", textAlign: "center" },
 });
