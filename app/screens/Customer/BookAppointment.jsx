@@ -103,7 +103,7 @@ const customer_email = CustomerEmail; // Renamed for clarity
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Select Date</Text>
           <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPicker(true)}>
-            <Ionicons name="calendar" size={22} color="#92a6e8" />
+            <Ionicons name="calendar" size={22} color="#99aaff" />
             <Text style={styles.dateText}>{date.toDateString()}</Text>
           </TouchableOpacity>
           {showPicker && (
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   backBtn: {
-    backgroundColor: "rgba(42,60,114,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     padding: 10,
     borderRadius: 14,
     borderWidth: 1,
@@ -185,12 +185,12 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
   card: {
-    backgroundColor: "rgba(38,52,90,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 20,
     padding: 18,
     marginBottom: 22,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
   },
   sectionTitle: {
     color: "#d1d9ff",
@@ -201,11 +201,11 @@ const styles = StyleSheet.create({
   dateBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(20,28,54,0.7)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
   },
   dateText: {
     color: "#c3d1ff",
@@ -217,14 +217,14 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   slot: {
-    backgroundColor: "rgba(20,28,54,0.7)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 14,
     marginRight: 10,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
   },
   slotActive: {
     backgroundColor: "#3957a6",
@@ -239,12 +239,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   summary: {
-    backgroundColor: "rgba(38,52,90,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     padding: 18,
     borderRadius: 20,
     marginBottom: 25,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
   },
   summaryText: {
     color: "#c3d1ff",
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
   },
   confirmText: {
     color: "#d1d9ff",

@@ -16,6 +16,35 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+3. Start backend server
+
+   ```bash
+   node backend/server.js
+   ```
+
+## Payment Setup
+
+This project now supports:
+
+- Card payments using Stripe Checkout
+- EasyPaisa manual transfer submission
+- JazzCash manual transfer submission
+- Bank transfer submission
+
+To enable card charging:
+
+1. Open backend/.env
+2. Set STRIPE_SECRET_KEY with your Stripe secret key
+3. Keep PAYMENT_SUCCESS_URL and PAYMENT_CANCEL_URL as deep-link values (default already added)
+
+For transfer methods, set your merchant/account values in backend/.env:
+
+- EASYPAISA_ACCOUNT_TITLE, EASYPAISA_ACCOUNT_NUMBER
+- JAZZCASH_ACCOUNT_TITLE, JAZZCASH_ACCOUNT_NUMBER
+- BANK_NAME, BANK_ACCOUNT_TITLE, BANK_ACCOUNT_NUMBER, BANK_IBAN
+
+Payment status is tracked server-side in backend/payments-store.json and shown in My Orders.
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

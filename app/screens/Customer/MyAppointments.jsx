@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     top: 30,
     left: 20,
     padding: 10,
-    backgroundColor: "rgba(42,60,114,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.12)",
@@ -223,12 +223,12 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: "rgba(38,52,90,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     padding: 18,
     borderRadius: 20,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
   },
 
   header: {

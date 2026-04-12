@@ -104,7 +104,7 @@ const NotificationScreen = ({ route, navigation }) => {
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Ionicons name="checkmark-circle-outline" size={48} color="#6fa2ff" />
+          <Ionicons name="checkmark-circle-outline" size={48} color="#7b9bff" />
           <Text style={styles.emptyText}>No new notifications</Text>
         </View>
       ) : (
@@ -134,7 +134,7 @@ const NotificationScreen = ({ route, navigation }) => {
                     style={styles.dismissBtn}
                     onPress={() => dismissNotification(item)}
                   >
-                    <Ionicons name="close" size={20} color="#8fa1cc" />
+                    <Ionicons name="close" size={20} color="#8e9ccf" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(102, 126, 234, 0.15)',
+    borderBottomColor: 'rgba(155,179,255,0.15)',
     backgroundColor: 'rgba(38, 52, 90, 0.5)',
   },
   title: {
@@ -183,12 +183,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#8fa1cc',
+    color: '#8e9ccf',
     fontSize: 16,
     fontWeight: '600',
   },
   emptyText: {
-    color: '#8fa1cc',
+    color: '#8e9ccf',
     fontSize: 18,
     fontWeight: '600',
     marginTop: 12,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: 'rgba(102, 126, 234, 0.15)',
+    borderColor: 'rgba(155,179,255,0.15)',
   },
   notificationHeader: {
     flexDirection: 'row',
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   serviceType: {
     fontSize: 16,
-    color: '#8fa1cc',
+    color: '#8e9ccf',
     fontWeight: '800',
   },
   dismissBtn: {
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    color: '#8fa1cc',
+    color: '#8e9ccf',
     fontWeight: '600',
   },
   value: {

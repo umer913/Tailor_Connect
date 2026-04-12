@@ -265,7 +265,7 @@ export default function TailorServices({ route, navigation }) {
   const defaultImage = require("../../../assets/images/2Peice.png");
 
   // Single uniform button color for all cards:
-  const buttonColor = "rgba(90, 50, 180, 0.35)"; // soft purple translucent
+  const buttonColor = "rgba(155,179,255,0.35)"; // soft blue translucent
 
   const fetchServices = async () => {
     try {
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
 
   backButton: {
     padding: 10,
-    backgroundColor: "rgba(42,60,114,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.12)",
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
     shadowColor: "#18294a",
     shadowOpacity: 0.4,
     shadowRadius: 10,
@@ -453,17 +453,16 @@ const styles = StyleSheet.create({
     width: 80,
     height: 90,
     borderRadius: 16,
-    backgroundColor: "rgba(42,60,114,0.4)",
+   
     alignItems: "center",
     justifyContent: "center",
     marginRight: 16,
-    borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    
   },
 
   image: {
-    height: 85,
-    width: 85,
+    height: 95,
+    width: 105,
     resizeMode: "contain",
   },
 
@@ -489,10 +488,10 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingVertical: 4,
     paddingHorizontal: 14,
-    backgroundColor: "rgba(42,60,114,0.6)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.2)",
+    borderColor: "rgba(155,179,255,0.2)",
   },
 
   genderText: {

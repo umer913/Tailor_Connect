@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
@@ -15,6 +16,18 @@ import {
 } from "react-native";
 
 const SERVER = "http://UF-MacBook-Pro.local:3000";
+const TARGET_REQUIRED_TYPES = [
+  "Customer Misbehaviour",
+  "Payment Not Received",
+  "Order Cancellation",
+];
+const COMPLAINT_TYPE_OPTIONS = [
+  { label: "General Platform Issue", value: "General" },
+  { label: "Customer Misbehaviour", value: "Customer Misbehaviour" },
+  { label: "Payment Not Received", value: "Payment Not Received" },
+  { label: "Order Cancellation Dispute", value: "Order Cancellation" },
+  { label: "Other", value: "Other" },
+];
 
 export default function TailorComplainBox({ route }) {
   const email = route.params?.email;
@@ -26,6 +39,25 @@ export default function TailorComplainBox({ route }) {
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
   const [complaints, setComplaints] = useState([]);
+  const [followUps, setFollowUps] = useState({});
+  const shouldRequireTargetFields = TARGET_REQUIRED_TYPES.includes(complaintType);
+
+  const resetForm = () => {
+    setAgainstEmail("");
+    setOrderId("");
+    setSubject("");
+    setDescription("");
+    setImage(null);
+    setComplaintType("General");
+  };
+
+  const setFollowUpText = (id, text) => {
+    setFollowUps((prev) => ({ ...prev, [id]: text }));
+  };
+
+  const clearFollowUpText = (id) => {
+    setFollowUps((prev) => ({ ...prev, [id]: "" }));
+  };
 
   /* ================= IMAGE PICK ================= */
   const pickImage = async () => {
@@ -79,11 +111,7 @@ export default function TailorComplainBox({ route }) {
     }
 
     // 🔥 Only require email + orderId for these 3 types
-    if (
-      complaintType === "Customer Misbehaviour" ||
-      complaintType === "Payment Not Received" ||
-      complaintType === "Order Cancellation"
-    ) {
+    if (shouldRequireTargetFields) {
       if (!againstEmail || !orderId) {
         Alert.alert(
           "Customer Email and Order ID are required for this complaint type"
@@ -96,18 +124,8 @@ export default function TailorComplainBox({ route }) {
       await axios.post(`${SERVER}/file-complaint`, {
         filed_by_email: email,
         filed_by_role: "tailor",
-        against_email:
-          complaintType === "Customer Misbehaviour" ||
-          complaintType === "Payment Not Received" ||
-          complaintType === "Order Cancellation"
-            ? againstEmail
-            : null,
-        order_id:
-          complaintType === "Customer Misbehaviour" ||
-          complaintType === "Payment Not Received" ||
-          complaintType === "Order Cancellation"
-            ? orderId
-            : null,
+        against_email: shouldRequireTargetFields ? againstEmail : null,
+        order_id: shouldRequireTargetFields ? orderId : null,
         complaint_type: complaintType,
         subject,
         description,
@@ -115,17 +133,33 @@ export default function TailorComplainBox({ route }) {
       });
 
       Alert.alert("Complaint submitted successfully");
-
-      setAgainstEmail("");
-      setOrderId("");
-      setSubject("");
-      setDescription("");
-      setImage(null);
-      setComplaintType("General");
-
+      resetForm();
       fetchComplaints();
     } catch {
       Alert.alert("Error submitting complaint");
+    }
+  };
+
+  const sendFollowUp = async (complaintId) => {
+    const message = String(followUps[complaintId] || "").trim();
+    if (!message) {
+      Alert.alert("Write a message first");
+      return;
+    }
+
+    try {
+      await axios.post(`${SERVER}/complaints/follow-up`, {
+        complaint_id: complaintId,
+        filed_by_email: email,
+        message,
+      });
+
+      clearFollowUpText(complaintId);
+      fetchComplaints();
+      Alert.alert("Follow-up sent");
+    } catch (err) {
+      const messageText = err.response?.data?.error || "Could not send follow-up";
+      Alert.alert("Error", messageText);
     }
   };
 
@@ -152,20 +186,18 @@ export default function TailorComplainBox({ route }) {
               <Picker
                 selectedValue={complaintType}
                 onValueChange={setComplaintType}
-                style={{ color: "#4A1C22" }}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
+                dropdownIconColor="#4A1C22"
               >
-                <Picker.Item label="General Platform Issue" value="General" />
-                <Picker.Item label="Customer Misbehaviour" value="Customer Misbehaviour" />
-                <Picker.Item label="Payment Not Received" value="Payment Not Received" />
-                <Picker.Item label="Order Cancellation Dispute" value="Order Cancellation" />
-                <Picker.Item label="Other" value="Other" />
+                {COMPLAINT_TYPE_OPTIONS.map((option) => (
+                  <Picker.Item key={option.value} label={option.label} value={option.value} color="#4A1C22" />
+                ))}
               </Picker>
             </View>
 
             {/* 🔥 CONDITIONAL FIELDS */}
-            {(complaintType === "Customer Misbehaviour" ||
-              complaintType === "Payment Not Received" ||
-              complaintType === "Order Cancellation") && (
+            {shouldRequireTargetFields && (
               <>
                 <TextInput
                   placeholder="Customer Email *"
@@ -243,6 +275,32 @@ export default function TailorComplainBox({ route }) {
                   </View>
                 )}
 
+                {!item.resolved_at && (
+                  <View style={styles.followUpBox}>
+                    <Text style={styles.followUpTitle}>Continue This Complaint</Text>
+                    <Text style={styles.followUpHint}>Send more context before admin marks it resolved.</Text>
+
+                    <TextInput
+                      placeholder="Add follow-up message"
+                      placeholderTextColor="#888"
+                      value={followUps[item.id] || ""}
+                      onChangeText={(text) => setFollowUpText(item.id, text)}
+                      style={styles.followUpInput}
+                      multiline
+                    />
+
+                    <TouchableOpacity
+                      style={styles.followUpButton}
+                      onPress={() => sendFollowUp(item.id)}
+                    >
+                      <View style={styles.followUpButtonContent}>
+                        <Ionicons name="send" size={15} color="#fff" />
+                        <Text style={styles.followUpButtonText}>Send Follow-up</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 <TouchableOpacity
                   style={styles.deleteBtn}
                   onPress={() => deleteComplaint(item.id)}
@@ -286,6 +344,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#f4f4f4",
     borderRadius: 12,
     marginBottom: 10
+  },
+  picker: {
+    color: "#4A1C22"
+  },
+  pickerItem: {
+    color: "#4A1C22"
   },
   input: {
     backgroundColor: "#f4f4f4",
@@ -336,6 +400,61 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 12,
     marginTop: 10
+  },
+  adminBox: {
+    backgroundColor: "#ffecec",
+    borderWidth: 1,
+    borderColor: "#f5c6c6",
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
+  },
+  followUpBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#fff3f3",
+    borderWidth: 1,
+    borderColor: "#f1d0d0",
+  },
+  followUpTitle: {
+    color: "#6b2028",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  followUpHint: {
+    marginTop: 4,
+    marginBottom: 10,
+    color: "#8d5c62",
+    fontSize: 12,
+  },
+  followUpInput: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e3d2d2",
+    padding: 12,
+    borderRadius: 10,
+    minHeight: 72,
+    color: "#4A1C22",
+    textAlignVertical: "top",
+  },
+  followUpButton: {
+    marginTop: 10,
+    backgroundColor: "#4A1C22",
+    paddingVertical: 11,
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#6b2a33",
+  },
+  followUpButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  followUpButtonText: {
+    color: "#fff",
+    fontWeight: "700",
   },
   adminLabel: { fontSize: 22,fontWeight: "bold", color: "#cd0000" },
   deleteBtn: {

@@ -23,6 +23,40 @@ export default function MyOrders({ route, navigation }) {
 
   const getExpandedOrder = () => orders.find(o => o.id === expandedOrderId);
 
+  const parseNumericPrice = (rawPrice) => {
+    const firstMatch = String(rawPrice || '').match(/\d+(?:\.\d+)?/);
+    return firstMatch ? Number.parseFloat(firstMatch[0]) : 0;
+  };
+
+  const toSafeQuantity = (value) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  };
+
+  const formatCurrency = (value) => {
+    if (!Number.isFinite(value)) return '0';
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
+  };
+
+  const getOrderPricing = (order) => {
+    const quantity = toSafeQuantity(order?.quantity);
+    const options = order?.options && typeof order.options === 'object' ? order.options : {};
+    const metaUnitPrice = Number(options.__unit_price);
+    const basePrice = parseNumericPrice(order?.price);
+    const hasUnitMeta = Number.isFinite(metaUnitPrice) && metaUnitPrice > 0;
+    const unitPrice = hasUnitMeta ? metaUnitPrice : basePrice;
+    const totalPrice = hasUnitMeta && options.__price_mode === 'total' && basePrice > 0
+      ? basePrice
+      : Number((unitPrice * quantity).toFixed(2));
+
+    return { quantity, unitPrice, totalPrice };
+  };
+
+  const getVisibleOptions = (options) => {
+    if (!options || typeof options !== 'object') return {};
+    return Object.fromEntries(Object.entries(options).filter(([key]) => !String(key).startsWith('__')));
+  };
+
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -127,7 +161,10 @@ export default function MyOrders({ route, navigation }) {
           </View>
         ) : (
           <View style={styles.list}>
-            {orders.map(order => (
+            {orders.map(order => {
+              const pricing = getOrderPricing(order);
+
+              return (
               <TouchableOpacity key={order.id} activeOpacity={0.9} onPress={() => setExpandedOrderId(order.id)}>
                 <LinearGradient colors={['#ffffff', '#f8f0f0']} style={styles.card}>
                 {/* Delete Button */}
@@ -202,16 +239,26 @@ export default function MyOrders({ route, navigation }) {
                       <Ionicons name="document-text-outline" size={20} color="#E6B0B0" />
                       <View style={styles.infoText}>
                         <Text style={styles.infoLabel}>Quantity</Text>
-                        <Text style={styles.infoValue}>{order.quantity}</Text>
+                        <Text style={styles.infoValue}>{pricing.quantity}</Text>
                       </View>
                     </View>
 
-                    {order.price && (
+                    {pricing.totalPrice > 0 && (
                       <View style={styles.infoRow}>
                         <Ionicons name="pricetag-outline" size={20} color="#E6B0B0" />
                         <View style={styles.infoText}>
-                          <Text style={styles.infoLabel}>Price</Text>
-                          <Text style={styles.infoValue}>Rs. {order.price}</Text>
+                          <Text style={styles.infoLabel}>Unit Price</Text>
+                          <Text style={styles.infoValue}>Rs. {formatCurrency(pricing.unitPrice)}</Text>
+                        </View>
+                      </View>
+                    )}
+
+                    {pricing.totalPrice > 0 && (
+                      <View style={styles.infoRow}>
+                        <Ionicons name="cash-outline" size={20} color="#E6B0B0" />
+                        <View style={styles.infoText}>
+                          <Text style={styles.infoLabel}>Total Price</Text>
+                          <Text style={styles.infoValue}>Rs. {formatCurrency(pricing.totalPrice)}</Text>
                         </View>
                       </View>
                     )}
@@ -262,7 +309,8 @@ export default function MyOrders({ route, navigation }) {
                 </View>
               </LinearGradient>
               </TouchableOpacity>
-            ))}
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -306,14 +354,14 @@ export default function MyOrders({ route, navigation }) {
                   )}
 
                   {/* Options */}
-                  {getExpandedOrder().options && Object.keys(getExpandedOrder().options).length > 0 ? (
+                  {Object.keys(getVisibleOptions(getExpandedOrder().options)).length > 0 ? (
                     <View style={styles.modalSection}>
                       <View style={styles.sectionHeaderBox}>
                         <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
                         <Text style={styles.sectionTitle}>Options</Text>
                       </View>
                       <View style={styles.optionsContainer}>
-                        {Object.entries(getExpandedOrder().options).map(([key, value]) => (
+                        {Object.entries(getVisibleOptions(getExpandedOrder().options)).map(([key, value]) => (
                           <View key={key} style={styles.optionRow}>
                             <Ionicons name="checkmark-done" size={16} color="#4CAF50" />
                             <View style={styles.optionText}>

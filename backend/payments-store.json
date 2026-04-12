@@ -1,0 +1,15 @@
+{
+  "2f13068b-60d9-4e13-92b5-df7d46a7aad0": {
+    "order_id": "2f13068b-60d9-4e13-92b5-df7d46a7aad0",
+    "created_at": "2026-04-10T05:29:11.379Z",
+    "status": "initiated",
+    "method": "card",
+    "customer_email": "uf9139866@gmail.com",
+    "amount": 250,
+    "currency": "PKR",
+    "stripe_session_id": "cs_test_a1jvupFIjh0vfBmOs5ubL93xuRlb4YbfHKb03KzJnyxDzNjaWL3UaewtPR",
+    "updated_at": "2026-04-11T17:14:56.975Z",
+    "stripe_payment_intent": "pi_3TKbrlP33bR67Fm305jdr2wq",
+    "paid_at": null
+  }
+}

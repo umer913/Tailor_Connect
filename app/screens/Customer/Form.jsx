@@ -276,11 +276,11 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    backgroundColor: "rgba(38,52,90,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 24,
     padding: 22,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
   },
   autofillBtn: {
     backgroundColor: "#2a3c72",
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     color: "#d1d9ff",
   },
   input: {
-    backgroundColor: "rgba(20,28,54,0.7)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     borderRadius: 14,
     padding: 14,
     fontSize: 15,
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   loadingBtn: {
     height: 56,
     borderRadius: 30,
-    backgroundColor: "rgba(38,52,90,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     justifyContent: "center",
     overflow: "hidden",
   },
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     left: 20,
     top: 100,
     padding: 8,
-    backgroundColor: "rgba(42,60,114,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.12)",

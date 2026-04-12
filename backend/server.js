@@ -2,8 +2,12 @@ import { createClient } from "@supabase/supabase-js"; //this connects my js proj
 import cors from "cors"; //for cross sharing of resource on different ports//backend and frontend
 import dotenv from "dotenv"; //secret enviroment keys and variable are stored in .env which are not directly visible as we r not using in the code
 import express from "express"; //Nodejs Framework for creating apis,handle http request and response,parsing data
+import fs from "fs/promises";
 import multer from "multer";
 import nodemailer from "nodemailer"; //node.js library to send otp messages
+import path from "path";
+import Stripe from "stripe";
+import { fileURLToPath } from "url";
 
 
 dotenv.config();
@@ -14,6 +18,81 @@ app.use(express.json());//parsing json body when requested
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);//reading enviroment variables
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PAYMENT_STORE_PATH = path.join(__dirname, "payments-store.json");
+
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null;
+
+const PAYMENT_SUCCESS_URL = process.env.PAYMENT_SUCCESS_URL || "tailorx://payment-success";
+const PAYMENT_CANCEL_URL = process.env.PAYMENT_CANCEL_URL || "tailorx://payment-cancel";
+
+const toSafeQuantity = (value) => {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+};
+
+const parseNumericPrice = (rawPrice) => {
+  const firstMatch = String(rawPrice || "").match(/\d+(?:\.\d+)?/);
+  return firstMatch ? Number.parseFloat(firstMatch[0]) : 0;
+};
+
+const getPriceMeta = (order) => {
+  const options = order?.options && typeof order.options === "object" ? order.options : {};
+  const parsedUnitPrice = Number(options.__unit_price);
+  const unitPrice = Number.isFinite(parsedUnitPrice) && parsedUnitPrice > 0 ? parsedUnitPrice : parseNumericPrice(order?.price);
+  return { options, unitPrice };
+};
+
+const resolveOrderTotals = (order) => {
+  const quantity = toSafeQuantity(order?.quantity);
+  const { unitPrice } = getPriceMeta(order);
+  const totalAmount = Number((unitPrice * quantity).toFixed(2));
+
+  return { quantity, unitPrice, totalAmount };
+};
+
+async function readPaymentStore() {
+  try {
+    const raw = await fs.readFile(PAYMENT_STORE_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return {};
+    }
+
+    console.error("Failed reading payment store:", error.message);
+    return {};
+  }
+}
+
+async function writePaymentStore(store) {
+  await fs.writeFile(PAYMENT_STORE_PATH, JSON.stringify(store, null, 2), "utf8");
+}
+
+async function getPaymentByOrderId(orderId) {
+  const store = await readPaymentStore();
+  return store[String(orderId)] || null;
+}
+
+async function upsertPayment(orderId, patch) {
+  const store = await readPaymentStore();
+  const key = String(orderId);
+  const existing = store[key] || { order_id: key, created_at: new Date().toISOString() };
+  const next = {
+    ...existing,
+    ...patch,
+    order_id: key,
+    updated_at: new Date().toISOString(),
+  };
+
+  store[key] = next;
+  await writePaymentStore(store);
+  return next;
+}
 
 function hashPassword(password) {
   let hash = "";
@@ -429,7 +508,17 @@ const upload = multer({ storage: multer.memoryStorage() });// Configure multer t
 // so we can directly upload them to cloud storage without saving to disk.
 
 const CHATBOX_TABLE_CANDIDATES = ["chatbox", "Chatbox"];
+const CHAT_IMAGE_BUCKET_CANDIDATES = ["chat-images", "Chat", "Fabric"];
+const CHAT_SELECT_FIELDS = "id, tailor_email, customer_email, tailor_name, customer_name, message, image_url, is_read, datetime";
+const CHAT_ROLES = ["customer", "tailor"];
 const CHAT_PREFIX_REGEX = /^\[\[(customer|tailor)\]\]/i;
+
+const normalizeChatRole = (value) => String(value || "").toLowerCase();
+const isSupportedChatRole = (value) => CHAT_ROLES.includes(value);
+const isMissingRelationError = (error) => {
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("relation") && message.includes("does not exist");
+};
 
 const encodeChatMessage = (senderRole, message) => {
   const normalizedRole = senderRole === "tailor" ? "tailor" : "customer";
@@ -439,21 +528,20 @@ const encodeChatMessage = (senderRole, message) => {
 const decodeChatMessage = (storedMessage) => {
   const rawValue = String(storedMessage || "");
   const prefixMatch = rawValue.match(CHAT_PREFIX_REGEX);
-
-  if (!prefixMatch) {
-    return {
-      sender_role: null,
-      message: rawValue,
-    };
-  }
-
-  return {
-    sender_role: prefixMatch[1].toLowerCase(),
-    message: rawValue.slice(prefixMatch[0].length),
-  };
+  return prefixMatch
+    ? { sender_role: prefixMatch[1].toLowerCase(), message: rawValue.slice(prefixMatch[0].length) }
+    : { sender_role: null, message: rawValue };
 };
 
 const getConversationKey = (tailorEmail, customerEmail) => `${tailorEmail || ""}::${customerEmail || ""}`;
+const toDecodedChatRow = (row) => {
+  const decoded = decodeChatMessage(row.message);
+  return { ...row, sender_role: decoded.sender_role, message: decoded.message };
+};
+const getChatPreview = (decodedMessage, imageUrl) => {
+  const trimmedMessage = decodedMessage?.trim();
+  return trimmedMessage ? trimmedMessage.slice(0, 160) : imageUrl ? "[Image message]" : "[New message]";
+};
 
 const runChatboxQuery = async (queryFactory) => {
   let lastResult = null;
@@ -466,10 +554,7 @@ const runChatboxQuery = async (queryFactory) => {
       return { ...result, tableName };
     }
 
-    const normalizedMessage = String(result.error.message || "").toLowerCase();
-    const isMissingTableError = normalizedMessage.includes("relation") && normalizedMessage.includes("does not exist");
-
-    if (!isMissingTableError) {
+    if (!isMissingRelationError(result.error)) {
       return { ...result, tableName };
     }
   }
@@ -479,9 +564,9 @@ const runChatboxQuery = async (queryFactory) => {
 
 app.get("/chat-conversations", async (req, res) => {
   const { email, role } = req.query;
-  const normalizedRole = String(role || "").toLowerCase();
+  const normalizedRole = normalizeChatRole(role);
 
-  if (!email || !["customer", "tailor"].includes(normalizedRole)) {
+  if (!email || !isSupportedChatRole(normalizedRole)) {
     return res.status(400).json({ error: "email and role (customer|tailor) are required" });
   }
 
@@ -491,7 +576,7 @@ app.get("/chat-conversations", async (req, res) => {
     const { data, error } = await runChatboxQuery((tableName) =>
       supabase
         .from(tableName)
-        .select("id, tailor_email, customer_email, tailor_name, customer_name, message, image_url, is_read, datetime")
+        .select(CHAT_SELECT_FIELDS)
         .eq(column, email)
         .order("datetime", { ascending: false })
     );
@@ -506,8 +591,13 @@ app.get("/chat-conversations", async (req, res) => {
       const key = getConversationKey(row.tailor_email, row.customer_email);
       const decoded = decodeChatMessage(row.message);
       const isUnreadIncoming = Boolean(decoded.sender_role && decoded.sender_role !== normalizedRole && !row.is_read);
+      const existing = conversationMap.get(key);
 
-      if (!conversationMap.has(key)) {
+      if (existing) {
+        if (isUnreadIncoming) {
+          existing.unread_count += 1;
+        }
+      } else {
         conversationMap.set(key, {
           conversation_id: key,
           tailor_email: row.tailor_email,
@@ -519,9 +609,6 @@ app.get("/chat-conversations", async (req, res) => {
           last_datetime: row.datetime,
           unread_count: isUnreadIncoming ? 1 : 0,
         });
-      } else if (isUnreadIncoming) {
-        const existing = conversationMap.get(key);
-        existing.unread_count += 1;
       }
     }
 
@@ -534,7 +621,7 @@ app.get("/chat-conversations", async (req, res) => {
 
 app.get("/chat-messages", async (req, res) => {
   const { tailor_email, customer_email, viewer_role } = req.query;
-  const normalizedViewerRole = String(viewer_role || "").toLowerCase();
+  const normalizedViewerRole = normalizeChatRole(viewer_role);
 
   if (!tailor_email || !customer_email) {
     return res.status(400).json({ error: "tailor_email and customer_email are required" });
@@ -544,7 +631,7 @@ app.get("/chat-messages", async (req, res) => {
     const { data, error } = await runChatboxQuery((tableName) =>
       supabase
         .from(tableName)
-        .select("id, tailor_email, customer_email, tailor_name, customer_name, message, image_url, is_read, datetime")
+        .select(CHAT_SELECT_FIELDS)
         .eq("tailor_email", tailor_email)
         .eq("customer_email", customer_email)
         .order("datetime", { ascending: true })
@@ -554,16 +641,9 @@ app.get("/chat-messages", async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    const messages = (data || []).map((row) => {
-      const decoded = decodeChatMessage(row.message);
-      return {
-        ...row,
-        sender_role: decoded.sender_role,
-        message: decoded.message,
-      };
-    });
+    const messages = (data || []).map(toDecodedChatRow);
 
-    if (["customer", "tailor"].includes(normalizedViewerRole)) {
+    if (isSupportedChatRole(normalizedViewerRole)) {
       const incomingRole = normalizedViewerRole === "customer" ? "tailor" : "customer";
 
       await runChatboxQuery((tableName) =>
@@ -595,14 +675,14 @@ app.post("/chat-send-message", async (req, res) => {
     image_url,
   } = req.body;
 
-  const normalizedSenderRole = String(sender_role || "").toLowerCase();
+  const normalizedSenderRole = normalizeChatRole(sender_role);
   const messageText = typeof message === "string" ? message.trim() : "";
 
   if (!tailor_email || !customer_email || !tailor_name || !customer_name) {
     return res.status(400).json({ error: "tailor/customer names and emails are required" });
   }
 
-  if (!["customer", "tailor"].includes(normalizedSenderRole)) {
+  if (!isSupportedChatRole(normalizedSenderRole)) {
     return res.status(400).json({ error: "sender_role must be customer or tailor" });
   }
 
@@ -627,7 +707,7 @@ app.post("/chat-send-message", async (req, res) => {
             is_read: false,
           },
         ])
-        .select("id, tailor_email, customer_email, tailor_name, customer_name, message, image_url, is_read, datetime")
+        .select(CHAT_SELECT_FIELDS)
         .single()
     );
 
@@ -636,25 +716,19 @@ app.post("/chat-send-message", async (req, res) => {
     }
 
     const decoded = decodeChatMessage(data.message);
-
     const isSenderCustomer = normalizedSenderRole === "customer";
     const recipientEmail = isSenderCustomer ? tailor_email : customer_email;
     const senderName = isSenderCustomer ? customer_name : tailor_name;
-    const senderRoleLabel = isSenderCustomer ? "customer" : "tailor";
-    const preview = decoded.message?.trim()
-      ? decoded.message.trim().slice(0, 160)
-      : image_url
-        ? "[Image message]"
-        : "[New message]";
+    const preview = getChatPreview(decoded.message, image_url);
 
     // Email notification should not block chat delivery.
     transporter.sendMail({
       from: `"TailorX" <${process.env.EMAIL_USER}>`,
       to: recipientEmail,
-      subject: `New message from ${senderRoleLabel}: ${senderName}`,
+      subject: `New message from ${normalizedSenderRole}: ${senderName}`,
       text:
         `You have received a new message on TailorX.\n\n` +
-        `From: ${senderName} (${senderRoleLabel})\n` +
+        `From: ${senderName} (${normalizedSenderRole})\n` +
         `Message preview: ${preview}\n\n` +
         `Open the app to reply.`,
     }).catch((mailError) => {
@@ -682,11 +756,9 @@ app.post("/chat-upload-image", upload.single("image"), async (req, res) => {
 
   const fileExtension = (req.file.mimetype || "image/jpeg").split("/")[1] || "jpg";
   const fileName = `chat_${Date.now()}_${Math.round(Math.random() * 1_000_000)}.${fileExtension}`;
-  const bucketCandidates = ["chat-images", "Chat", "Fabric"];
-
   let lastError = null;
 
-  for (const bucketName of bucketCandidates) {
+  for (const bucketName of CHAT_IMAGE_BUCKET_CANDIDATES) {
     const { error: uploadError } = await supabase.storage
       .from(bucketName)
       .upload(fileName, req.file.buffer, {
@@ -749,11 +821,16 @@ app.post("/place-order", upload.single("fabric"), async (req, res) => {
       ? JSON.parse(measurements)
       : {};
 
-    const parsedOptions = options
-      ? JSON.parse(options)
-      : {};
+    const parsedOptions = options ? JSON.parse(options) : {};
 
-    const finalQuantity = quantity ? parseInt(quantity, 10) : 1;
+    const finalQuantity = toSafeQuantity(quantity);
+    const unitPrice = parseNumericPrice(price);
+    const totalPrice = Number((unitPrice * finalQuantity).toFixed(2));
+    const enrichedOptions = {
+      ...(parsedOptions && typeof parsedOptions === "object" ? parsedOptions : {}),
+      __unit_price: unitPrice,
+      __price_mode: "total",
+    };
     console.log("Final quantity to save:", finalQuantity, "Type:", typeof finalQuantity);
 
     // 5️⃣ Save order in database
@@ -764,10 +841,10 @@ app.post("/place-order", upload.single("fabric"), async (req, res) => {
         tailor_email,
         service_type,
         gender,
-        price,
+        price: totalPrice,
         quantity: finalQuantity,
         measurements: parsedMeasurements,
-        options: parsedOptions,
+        options: enrichedOptions,
         fabric_image_url: fabricImageUrl,
         tailor_name,
         status: "pending",
@@ -937,6 +1014,199 @@ app.get('/get-orders', async (req, res) => {
     console.error('Error fetching orders:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// ---------------- PAYMENT ORDER DETAILS ----------------
+app.get("/payment/order/:orderId", async (req, res) => {
+  const { orderId } = req.params;
+  const { customer_email } = req.query;
+
+  try {
+    const { data: order, error } = await supabase
+      .from("orders")
+      .select("id, customer_email, service_type, price, quantity, options, tailor_name, status")
+      .eq("id", orderId)
+      .single();
+
+    if (error || !order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (customer_email && customer_email !== order.customer_email) {
+      return res.status(403).json({ error: "Order access denied" });
+    }
+
+    const totals = resolveOrderTotals(order);
+    const payment = await getPaymentByOrderId(order.id);
+
+    res.json({
+      order: {
+        ...order,
+        quantity: totals.quantity,
+        unit_price: totals.unitPrice,
+        total_amount: totals.totalAmount,
+      },
+      payment: payment || { status: "unpaid", method: null },
+    });
+  } catch (err) {
+    console.error("Payment order lookup failed:", err.message);
+    res.status(500).json({ error: "Failed to fetch payment details" });
+  }
+});
+
+// ---------------- BULK PAYMENT STATUS ----------------
+app.get("/payments/status", async (req, res) => {
+  const orderIds = String(req.query.order_ids || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+
+  if (orderIds.length === 0) {
+    return res.json({ statuses: {} });
+  }
+
+  try {
+    const store = await readPaymentStore();
+    const statuses = {};
+
+    for (const id of orderIds) {
+      statuses[id] = store[id]?.status || "unpaid";
+    }
+
+    res.json({ statuses });
+  } catch (err) {
+    console.error("Bulk payment status failed:", err.message);
+    res.status(500).json({ error: "Failed to fetch payment statuses" });
+  }
+});
+
+// ---------------- CARD PAYMENT CHECKOUT ----------------
+app.post("/payment/create-checkout-session", async (req, res) => {
+  const { order_id, customer_email } = req.body;
+
+  if (!order_id) {
+    return res.status(400).json({ error: "order_id is required" });
+  }
+
+  if (!stripe) {
+    return res.status(500).json({ error: "Stripe is not configured on server" });
+  }
+
+  try {
+    const { data: order, error } = await supabase
+      .from("orders")
+      .select("id, customer_email, service_type, price, quantity, options")
+      .eq("id", order_id)
+      .single();
+
+    if (error || !order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (customer_email && customer_email !== order.customer_email) {
+      return res.status(403).json({ error: "Order access denied" });
+    }
+
+    const { quantity, unitPrice, totalAmount } = resolveOrderTotals(order);
+
+    if (unitPrice <= 0 || totalAmount <= 0) {
+      return res.status(400).json({ error: "Order amount is invalid for payment" });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      customer_email: order.customer_email,
+      line_items: [
+        {
+          quantity,
+          price_data: {
+            currency: "pkr",
+            unit_amount: Math.round(unitPrice * 100),
+            product_data: {
+              name: `${order.service_type || "Tailor"} Order`,
+              description: `Order #${order.id}`,
+            },
+          },
+        },
+      ],
+      metadata: {
+        order_id: String(order.id),
+        customer_email: order.customer_email || "",
+        payment_method: "card",
+      },
+      success_url: `${PAYMENT_SUCCESS_URL}?session_id={CHECKOUT_SESSION_ID}&order_id=${order.id}`,
+      cancel_url: `${PAYMENT_CANCEL_URL}?order_id=${order.id}`,
+    });
+
+    await upsertPayment(order.id, {
+      status: "initiated",
+      method: "card",
+      customer_email: order.customer_email,
+      amount: totalAmount,
+      currency: "PKR",
+      stripe_session_id: session.id,
+    });
+
+    res.json({
+      checkout_url: session.url,
+      session_id: session.id,
+      amount: totalAmount,
+      currency: "PKR",
+    });
+  } catch (err) {
+    console.error("Create checkout session failed:", err.message);
+    res.status(500).json({ error: "Failed to start card checkout" });
+  }
+});
+
+// ---------------- VERIFY CARD PAYMENT ----------------
+app.post("/payment/verify-card-session", async (req, res) => {
+  const { session_id, order_id } = req.body;
+
+  if (!session_id) {
+    return res.status(400).json({ error: "session_id is required" });
+  }
+
+  if (!stripe) {
+    return res.status(500).json({ error: "Stripe is not configured on server" });
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    const metadataOrderId = session?.metadata?.order_id;
+    const resolvedOrderId = order_id || metadataOrderId;
+
+    if (!resolvedOrderId) {
+      return res.status(400).json({ error: "order_id could not be resolved" });
+    }
+
+    const isPaid = session.payment_status === "paid";
+
+    const updatedPayment = await upsertPayment(resolvedOrderId, {
+      status: isPaid ? "paid" : "initiated",
+      method: "card",
+      stripe_session_id: session.id,
+      stripe_payment_intent: session.payment_intent || null,
+      amount: session.amount_total ? Number((session.amount_total / 100).toFixed(2)) : undefined,
+      currency: session.currency ? String(session.currency).toUpperCase() : "PKR",
+      paid_at: isPaid ? new Date().toISOString() : null,
+    });
+
+    res.json({
+      verified: isPaid,
+      status: updatedPayment.status,
+      payment: updatedPayment,
+    });
+  } catch (err) {
+    console.error("Verify card session failed:", err.message);
+    res.status(500).json({ error: "Failed to verify card payment" });
+  }
+});
+
+// ---------------- MANUAL TRANSFER METHODS ----------------
+app.post("/payment/manual-transfer", async (_req, res) => {
+  return res.status(400).json({ error: "Manual payment methods are disabled" });
 });
 // ---------------- Delete Order ----------------
 app.delete("/delete-order/:id", async (req, res) => {
@@ -1282,7 +1552,26 @@ app.put("/update-order", upload.single("fabric"), async (req, res) => {
 
     // Add quantity if provided
     if (quantity) {
-      updateData.quantity = parseInt(quantity, 10);
+      const { data: existingOrder, error: fetchOrderError } = await supabase
+        .from("orders")
+        .select("price, options, quantity")
+        .eq("id", orderId)
+        .single();
+
+      if (fetchOrderError || !existingOrder) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      const nextQuantity = toSafeQuantity(quantity);
+      const { options: currentOptions, unitPrice } = getPriceMeta(existingOrder);
+
+      updateData.quantity = nextQuantity;
+      updateData.price = Number((unitPrice * nextQuantity).toFixed(2));
+      updateData.options = {
+        ...currentOptions,
+        __unit_price: unitPrice,
+        __price_mode: "total",
+      };
     }
 
     // Upload fabric image if provided
@@ -1690,6 +1979,52 @@ app.get("/my-complaints/:email", async (req, res) => {
   } catch (err) {
     console.log("🔥 Fetch Error:", err.message);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------- ADD FOLLOW-UP TO COMPLAINT ----------------
+app.post("/complaints/follow-up", async (req, res) => {
+  try {
+    const { complaint_id, filed_by_email, message } = req.body;
+    const cleanMessage = String(message || "").trim();
+
+    if (!complaint_id || !filed_by_email || !cleanMessage) {
+      return res.status(400).json({ error: "complaint_id, filed_by_email and message are required" });
+    }
+
+    const { data: complaint, error: complaintError } = await supabase
+      .from("complaints")
+      .select("id, filed_by_email, resolved_at, description")
+      .eq("id", complaint_id)
+      .single();
+
+    if (complaintError || !complaint) {
+      return res.status(404).json({ error: "Complaint not found" });
+    }
+
+    if (String(complaint.filed_by_email || "").toLowerCase() !== String(filed_by_email).toLowerCase()) {
+      return res.status(403).json({ error: "You can only add follow-up to your own complaint" });
+    }
+
+    if (complaint.resolved_at) {
+      return res.status(400).json({ error: "Complaint is already resolved" });
+    }
+
+    const followUpBlock = `\n\n[Follow-up ${new Date().toISOString()}]\n${cleanMessage}`;
+    const updatedDescription = `${complaint.description || ""}${followUpBlock}`.trim();
+
+    const { data, error } = await supabase
+      .from("complaints")
+      .update({ description: updatedDescription })
+      .eq("id", complaint_id)
+      .select();
+
+    if (error) throw error;
+
+    res.json({ message: "Follow-up added", data });
+  } catch (err) {
+    console.log("🔥 Follow-up Error:", err.message);
+    res.status(500).json({ error: err.message || "Failed to add follow-up" });
   }
 });
 // ---------------- DELETE COMPLAINT ----------------

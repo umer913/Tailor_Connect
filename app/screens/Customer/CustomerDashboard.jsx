@@ -7,7 +7,6 @@ import {
   Animated,
   Dimensions,
   Easing,
-  Image,
   Platform,
   ScrollView,
   StatusBar,
@@ -225,11 +224,11 @@ const CustomerDashboard = ({ route, navigation }) => {
                 disabled={showProfile}
                 activeOpacity={0.8}
               >
-                <Image
-                  source={require('../../../assets/images/Men.png')}
-                  style={styles.profileIcon}
-                  resizeMode="contain"
-                />
+                <View style={styles.profileInitialCircle}>
+                  <Text style={styles.profileInitialText}>
+                    {((profile.full_name || "Customer").trim().charAt(0) || "C").toUpperCase()}
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -525,7 +524,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: Platform.OS === 'ios' ? 65 : 45,
+    paddingTop: Platform.OS === 'ios' ? 10 : 35,
     paddingHorizontal: 20,
     paddingBottom: 40,
     flexGrow: 1,
@@ -566,9 +565,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(155,179,255,0.12)',
   },
-  profileIcon: {
-    height: 38,
+  profileInitialCircle: {
     width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileInitialText: {
+    color: '#d1d9ff',
+    fontSize: 30,
+    fontWeight: 'bold',
   },
 
   /* ---- location ---- */
@@ -838,7 +844,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#b0c2ff",
+    color: "#aabbff",
     marginBottom: 20,
     textAlign: 'center',
   },

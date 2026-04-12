@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
@@ -15,6 +16,22 @@ import {
 } from "react-native";
 
 const SERVER = "http://UF-MacBook-Pro.local:3000";
+const SPECIAL_ISSUES = [
+  "Payment Issue",
+  "Late Delivery",
+  "Wrong Measurement",
+  "Bad Stitching",
+  "Misbehaviour",
+];
+const ISSUE_OPTIONS = [
+  { label: "General", value: "General" },
+  { label: "Payment Issue", value: "Payment Issue" },
+  { label: "Late Delivery", value: "Late Delivery" },
+  { label: "Wrong Measurement", value: "Wrong Measurement" },
+  { label: "Bad Stitching", value: "Bad Stitching" },
+  { label: "Misbehaviour", value: "Misbehaviour" },
+  { label: "Other", value: "Other" },
+];
 
 export default function CustomerComplainBox({ route }) {
   const email = route.params?.email;
@@ -26,16 +43,26 @@ export default function CustomerComplainBox({ route }) {
   const [image, setImage] = useState(null);
   const [selectedIssue, setSelectedIssue] = useState("");
   const [complaints, setComplaints] = useState([]);
+  const [followUps, setFollowUps] = useState({});
 
-  const specialIssues = [
-    "Payment Issue",
-    "Late Delivery",
-    "Wrong Measurement",
-    "Bad Stitching",
-    "Misbehaviour"
-  ];
+  const shouldShowFields = SPECIAL_ISSUES.includes(selectedIssue);
 
-  const shouldShowFields = specialIssues.includes(selectedIssue);
+  const resetForm = () => {
+    setAgainstEmail("");
+    setOrderId("");
+    setSelectedIssue("");
+    setSubject("");
+    setDescription("");
+    setImage(null);
+  };
+
+  const setFollowUpText = (id, text) => {
+    setFollowUps((prev) => ({ ...prev, [id]: text }));
+  };
+
+  const clearFollowUpText = (id) => {
+    setFollowUps((prev) => ({ ...prev, [id]: "" }));
+  };
 
   /* ================= IMAGE ================= */
   const pickImage = async () => {
@@ -115,14 +142,7 @@ export default function CustomerComplainBox({ route }) {
     try {
       await axios.post(`${SERVER}/file-complaint`, payload);
       Alert.alert("Complaint submitted successfully");
-
-      setAgainstEmail("");
-      setOrderId("");
-      setSelectedIssue("");
-      setSubject("");
-      setDescription("");
-      setImage(null);
-
+      resetForm();
       fetchComplaints();
     } catch (err) {
       const message =
@@ -131,6 +151,29 @@ export default function CustomerComplainBox({ route }) {
         "Error submitting complaint";
 
       Alert.alert("Error", message);
+    }
+  };
+
+  const sendFollowUp = async (complaintId) => {
+    const message = String(followUps[complaintId] || "").trim();
+    if (!message) {
+      Alert.alert("Write a message first");
+      return;
+    }
+
+    try {
+      await axios.post(`${SERVER}/complaints/follow-up`, {
+        complaint_id: complaintId,
+        filed_by_email: email,
+        message,
+      });
+
+      clearFollowUpText(complaintId);
+      fetchComplaints();
+      Alert.alert("Follow-up sent");
+    } catch (err) {
+      const messageText = err.response?.data?.error || "Could not send follow-up";
+      Alert.alert("Error", messageText);
     }
   };
 
@@ -195,13 +238,9 @@ export default function CustomerComplainBox({ route }) {
               dropdownIconColor="#c3d1ff"
               style={{ color: "#c3d1ff" }}
             >
-              <Picker.Item color="white" label="General" value="General" />
-              <Picker.Item color="white" label="Payment Issue" value="Payment Issue" />
-              <Picker.Item color="white" label="Late Delivery" value="Late Delivery" />
-              <Picker.Item color="white" label="Wrong Measurement" value="Wrong Measurement" />
-              <Picker.Item color="white" label="Bad Stitching" value="Bad Stitching" />
-              <Picker.Item color="white" label="Misbehaviour" value="Misbehaviour" />
-              <Picker.Item color="white" label="Other" value="Other" />
+              {ISSUE_OPTIONS.map((option) => (
+                <Picker.Item key={option.value} color="white" label={option.label} value={option.value} />
+              ))}
             </Picker>
           </View>
 
@@ -265,6 +304,32 @@ export default function CustomerComplainBox({ route }) {
                   </View>
                 )}
 
+                {!item.resolved_at && (
+                  <View style={styles.followUpBox}>
+                    <Text style={styles.followUpTitle}>Continue This Complaint</Text>
+                    <Text style={styles.followUpHint}>Share more details until admin resolves this issue.</Text>
+
+                    <TextInput
+                      placeholder="Add follow-up message"
+                      placeholderTextColor="#667799"
+                      value={followUps[item.id] || ""}
+                      onChangeText={(text) => setFollowUpText(item.id, text)}
+                      style={styles.followUpInput}
+                      multiline
+                    />
+
+                    <TouchableOpacity
+                      style={styles.followUpButton}
+                      onPress={() => sendFollowUp(item.id)}
+                    >
+                      <View style={styles.followUpButtonContent}>
+                        <Ionicons name="send" size={15} color="#e6ebff" />
+                        <Text style={styles.followUpButtonText}>Send Follow-up</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={() => deleteComplaint(item.id)}
@@ -299,7 +364,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(102, 126, 234, 0.15)"
+    borderColor: "rgba(155,179,255,0.15)"
   },
   sectionTitle: {
     fontSize: 18,
@@ -308,7 +373,7 @@ const styles = StyleSheet.create({
     color: "#d1d9ff"
   },
   input: {
-    backgroundColor: "rgba(20, 28, 54, 0.7)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     borderWidth: 1,
     borderColor: "#506ba9",
     color: "#c3d1ff",
@@ -317,7 +382,7 @@ const styles = StyleSheet.create({
     marginVertical: 6
   },
   pickerWrapper: {
-    backgroundColor: "rgba(20, 28, 54, 0.7)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     borderWidth: 1,
     borderColor: "#506ba9",
     borderRadius: 12,
@@ -330,7 +395,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8
   },
-  imageButtonText: { color: "#ccd9ff", fontWeight: "600" },
+  imageButtonText: { color: "#c3d1ff", fontWeight: "600" },
   previewImage: {
     width: "100%",
     height: 180,
@@ -352,7 +417,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderWidth: 1,
-    borderColor: "rgba(102, 126, 234, 0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
     padding: 15,
     borderRadius: 20,
     marginVertical: 8
@@ -385,14 +450,61 @@ const styles = StyleSheet.create({
     marginTop: 10
   },
   adminBox: {
-    backgroundColor: "rgba(20, 28, 54, 0.7)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     padding: 10,
     borderRadius: 10,
     marginTop: 10,
     borderWidth: 1,
     borderColor: "#506ba9"
   },
-  adminLabel: { fontWeight: "bold", color: "#9bb3ff" },
+  adminLabel: { fontWeight: "bold", color: "#99aaff" },
+  followUpBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(20, 28, 54, 0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(155,179,255,0.22)",
+  },
+  followUpTitle: {
+    color: "#dbe4ff",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  followUpHint: {
+    marginTop: 4,
+    marginBottom: 10,
+    color: "#9fb0e2",
+    fontSize: 12,
+  },
+  followUpInput: {
+    backgroundColor: "rgba(20, 28, 54, 0.8)",
+    borderWidth: 1,
+    borderColor: "#506ba9",
+    color: "#c3d1ff",
+    padding: 12,
+    borderRadius: 10,
+    minHeight: 72,
+    textAlignVertical: "top",
+  },
+  followUpButton: {
+    marginTop: 10,
+    backgroundColor: "#2a3c72",
+    paddingVertical: 11,
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(155,179,255,0.25)",
+  },
+  followUpButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  followUpButtonText: {
+    color: "#e6ebff",
+    fontWeight: "700",
+  },
   deleteButton: {
     marginTop: 12,
     backgroundColor: "#7a1f2b",

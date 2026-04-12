@@ -5,20 +5,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    Easing,
-    Image,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const API_BASE_URL = "http://UF-MacBook-Pro.local:3000";
@@ -40,9 +40,50 @@ const ALL_SERVICE_TYPES = [
   "Overlock",
   "Button Hole",
 ];
+const NEARBY_RADIUS_KM = 25;
+
+const normalizeText = (value) => (value || "").toLowerCase().replace(/[^a-z0-9\s,]/g, " ").replace(/\s+/g, " ").trim();
+
+const getLocationCacheKey = (value) => normalizeText(value);
+
+const parsePriceNumbers = (priceText) => {
+  const matches = String(priceText || "").match(/\d+(?:\.\d+)?/g) || [];
+  return matches.map((item) => Number(item)).filter((item) => Number.isFinite(item));
+};
+
+const extractPriceIntervals = (tailor) => {
+  const intervals = [];
+
+  for (const service of tailor?.services || []) {
+    const numbers = parsePriceNumbers(service?.price_range);
+    if (!numbers.length) {
+      continue;
+    }
+
+    const first = numbers[0];
+    const second = numbers.length > 1 ? numbers[1] : numbers[0];
+    intervals.push({ min: Math.min(first, second), max: Math.max(first, second) });
+  }
+
+  return intervals;
+};
+
+const calculateDistanceKm = (latitudeA, longitudeA, latitudeB, longitudeB) => {
+  const toRadians = (value) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const deltaLatitude = toRadians(latitudeB - latitudeA);
+  const deltaLongitude = toRadians(longitudeB - longitudeA);
+  const a =
+    Math.sin(deltaLatitude / 2) * Math.sin(deltaLatitude / 2) +
+    Math.cos(toRadians(latitudeA)) * Math.cos(toRadians(latitudeB)) * Math.sin(deltaLongitude / 2) * Math.sin(deltaLongitude / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return earthRadiusKm * c;
+};
+
+const toSelectedRange = (min, max) => ({ min: Math.min(min, max), max: Math.max(min, max) });
 
 const BrowseTailors = ({ navigation, route }) => {
-  const nearbyRadiusKm = 25;
   const customerEmail = route?.params?.CustomerEmail || route?.params?.email || "";
   const [tailors, setTailors] = useState([]);
   const [currentLocation, setCurrentLocation] = useState(null);
@@ -104,32 +145,6 @@ const BrowseTailors = ({ navigation, route }) => {
     fetchTailors();
   }, []);
 
-  const normalizeText = (value) => (value || "").toLowerCase().replace(/[^a-z0-9\s,]/g, " ").replace(/\s+/g, " ").trim();
-
-  const getLocationCacheKey = (value) => normalizeText(value);
-
-  const parsePriceNumbers = (priceText) => {
-    const matches = String(priceText || "").match(/\d+(?:\.\d+)?/g) || [];
-    return matches.map((item) => Number(item)).filter((item) => Number.isFinite(item));
-  };
-
-  const extractPriceIntervals = (tailor) => {
-    const intervals = [];
-
-    for (const service of tailor?.services || []) {
-      const numbers = parsePriceNumbers(service?.price_range);
-      if (!numbers.length) {
-        continue;
-      }
-
-      const first = numbers[0];
-      const second = numbers.length > 1 ? numbers[1] : numbers[0];
-      intervals.push({ min: Math.min(first, second), max: Math.max(first, second) });
-    }
-
-    return intervals;
-  };
-
   const priceBounds = useMemo(() => {
     const allIntervals = tailors.flatMap((tailor) => extractPriceIntervals(tailor));
 
@@ -173,6 +188,8 @@ const BrowseTailors = ({ navigation, route }) => {
     return new Set(selectedServiceTypes.map((type) => normalizeText(type)));
   }, [selectedServiceTypes]);
 
+  const normalizedSearchText = useMemo(() => normalizeText(searchText), [searchText]);
+
   useEffect(() => {
     if (!priceBounds.hasPrices) {
       setSelectedMinPrice(0);
@@ -190,8 +207,7 @@ const BrowseTailors = ({ navigation, route }) => {
       return true;
     }
 
-    const effectiveMin = Math.min(selectedMinPrice, selectedMaxPrice);
-    const effectiveMax = Math.max(selectedMinPrice, selectedMaxPrice);
+    const { min: effectiveMin, max: effectiveMax } = toSelectedRange(selectedMinPrice, selectedMaxPrice);
     const serviceIntervals = extractPriceIntervals(tailor);
 
     if (!serviceIntervals.length) {
@@ -212,22 +228,6 @@ const BrowseTailors = ({ navigation, route }) => {
       const serviceTypes = Array.isArray(service?.service_types) ? service.service_types : [];
       return serviceTypes.some((type) => selectedServiceTypeSet.has(normalizeText(type)));
     });
-  };
-
-  const calculateDistanceKm = (latitudeA, longitudeA, latitudeB, longitudeB) => {
-    const toRadians = (value) => (value * Math.PI) / 180;
-    const earthRadiusKm = 6371;
-    const deltaLatitude = toRadians(latitudeB - latitudeA);
-    const deltaLongitude = toRadians(longitudeB - longitudeA);
-    const a =
-      Math.sin(deltaLatitude / 2) * Math.sin(deltaLatitude / 2) +
-      Math.cos(toRadians(latitudeA)) *
-        Math.cos(toRadians(latitudeB)) *
-        Math.sin(deltaLongitude / 2) *
-        Math.sin(deltaLongitude / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return earthRadiusKm * c;
   };
 
   const locationMatchesTextually = (tailorLocation) => {
@@ -271,11 +271,8 @@ const BrowseTailors = ({ navigation, route }) => {
         return;
       }
 
-      const missingLocations = tailors
-        .map((tailor) => tailor.location)
-        .filter(Boolean)
-        .filter((location, index, allLocations) => allLocations.indexOf(location) === index)
-        .filter((location) => !tailorLocationCache[getLocationCacheKey(location)]);
+      const uniqueLocations = [...new Set(tailors.map((tailor) => tailor.location).filter(Boolean))];
+      const missingLocations = uniqueLocations.filter((location) => !tailorLocationCache[getLocationCacheKey(location)]);
 
       if (!missingLocations.length) {
         return;
@@ -333,7 +330,7 @@ const BrowseTailors = ({ navigation, route }) => {
             cacheEntry.latitude,
             cacheEntry.longitude
           );
-          matchesLocation = distanceKm <= nearbyRadiusKm;
+          matchesLocation = distanceKm <= NEARBY_RADIUS_KM;
         } else {
           matchesLocation = locationMatchesTextually(tailor.location);
         }
@@ -346,7 +343,7 @@ const BrowseTailors = ({ navigation, route }) => {
       };
     })
     .filter((tailor) => {
-      const matchesName = normalizeText(tailor.full_name).includes(normalizeText(searchText));
+      const matchesName = normalizeText(tailor.full_name).includes(normalizedSearchText);
       const priceMatched = matchesPriceRange(tailor);
       const servicesMatched = matchesSelectedServices(tailor);
       return tailor.matchesLocation && matchesName && priceMatched && servicesMatched;
@@ -442,8 +439,7 @@ const BrowseTailors = ({ navigation, route }) => {
   };
 
   const openServices = (tailor) => {
-    const selectedRangeMin = Math.min(selectedMinPrice, selectedMaxPrice);
-    const selectedRangeMax = Math.max(selectedMinPrice, selectedMaxPrice);
+    const selectedRange = toSelectedRange(selectedMinPrice, selectedMaxPrice);
 
     navigation.navigate("TailorServices", {
       CustomerEmail: customerEmail,
@@ -452,8 +448,8 @@ const BrowseTailors = ({ navigation, route }) => {
       location: tailor.location,
       phone_number: tailor.phone_number,
       isPriceFilterActive,
-      selectedRangeMin,
-      selectedRangeMax,
+      selectedRangeMin: selectedRange.min,
+      selectedRangeMax: selectedRange.max,
       selectedServiceTypes,
     });
   };
@@ -517,10 +513,9 @@ const BrowseTailors = ({ navigation, route }) => {
   const toggleFilterDrawer = () => {
     if (isFilterDrawerOpen) {
       closeFilterDrawer();
-      return;
+    } else {
+      openFilterDrawer();
     }
-
-    openFilterDrawer();
   };
 
   const drawerTranslateX = drawerProgress.interpolate({
@@ -542,7 +537,6 @@ const BrowseTailors = ({ navigation, route }) => {
     <LinearGradient colors={["#1b254f", "#0c1435", "#080927"]} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
-          
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.85}>
             <Ionicons name="chevron-back" size={22} color="#99aaff" />
           </TouchableOpacity>
@@ -553,7 +547,6 @@ const BrowseTailors = ({ navigation, route }) => {
               <View style={styles.menuBar} />
             </Animated.View>
           </TouchableOpacity>
-
         </View>
 
         <View style={styles.header}>
@@ -567,7 +560,7 @@ const BrowseTailors = ({ navigation, route }) => {
             value={searchText}
             onChangeText={setSearchText}
             placeholder="Search tailor by name"
-            placeholderTextColor="#7f8dbd"
+            placeholderTextColor="#7b8dbb"
             style={styles.searchInput}
           />
           {searchText ? (
@@ -576,9 +569,6 @@ const BrowseTailors = ({ navigation, route }) => {
             </TouchableOpacity>
           ) : null}
         </View>
-
-
-
         {visibleTailors.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="cut-outline" size={46} color="#506ba9" />
@@ -692,7 +682,7 @@ const BrowseTailors = ({ navigation, route }) => {
                         style={styles.clearServiceButton}
                         onPress={() => setSelectedServiceTypes([])}
                         activeOpacity={0.85}>
-                        <Ionicons name="close-circle-outline" size={15} color="#aebcff" style={styles.buttonIcon} />
+                        <Ionicons name="close-circle-outline" size={15} color="#99aaff" style={styles.buttonIcon} />
                         <Text style={styles.clearServiceText}>Clear</Text>
                       </TouchableOpacity>
                     ) : null}
@@ -708,7 +698,7 @@ const BrowseTailors = ({ navigation, route }) => {
                         <Ionicons
                           name={isServiceDropdownOpen ? "chevron-up-outline" : "chevron-down-outline"}
                           size={18}
-                          color="#aebcff"
+                          color="#99aaff"
                         />
                       </TouchableOpacity>
 
@@ -728,7 +718,7 @@ const BrowseTailors = ({ navigation, route }) => {
                                   onPress={() => toggleServiceType(serviceType)}
                                   activeOpacity={0.85}>
                                   <Text style={[styles.serviceOptionText, isSelected && styles.serviceOptionTextActive]}>{serviceType}</Text>
-                                  {isSelected ? <Ionicons name="checkmark-circle" size={18} color="#8ca6ff" /> : null}
+                                  {isSelected ? <Ionicons name="checkmark-circle" size={18} color="#99aaff" /> : null}
                                 </TouchableOpacity>
                               );
                             })}
@@ -764,7 +754,7 @@ const BrowseTailors = ({ navigation, route }) => {
                           setIsPriceFilterActive(false);
                         }}
                         activeOpacity={0.85}>
-                        <Ionicons name="close-circle-outline" size={15} color="#aebcff" style={styles.buttonIcon} />
+                        <Ionicons name="close-circle-outline" size={15} color="#99aaff" style={styles.buttonIcon} />
                         <Text style={styles.clearPriceText}>Clear</Text>
                       </TouchableOpacity>
                     ) : null}
@@ -784,8 +774,8 @@ const BrowseTailors = ({ navigation, route }) => {
                           maximumValue={selectedMaxPrice || priceBounds.max}
                           value={selectedMinPrice || priceBounds.min}
                           step={priceBounds.step}
-                          minimumTrackTintColor="#8ca6ff"
-                          maximumTrackTintColor="#364d8f"
+                          minimumTrackTintColor="#99aaff"
+                          maximumTrackTintColor="#506ba9"
                           thumbTintColor="#d1d9ff"
                           onValueChange={(value) => {
                             setSelectedMinPrice(Math.round(value));
@@ -802,8 +792,8 @@ const BrowseTailors = ({ navigation, route }) => {
                           maximumValue={priceBounds.max}
                           value={selectedMaxPrice || priceBounds.max}
                           step={priceBounds.step}
-                          minimumTrackTintColor="#8ca6ff"
-                          maximumTrackTintColor="#364d8f"
+                          minimumTrackTintColor="#99aaff"
+                          maximumTrackTintColor="#506ba9"
                           thumbTintColor="#d1d9ff"
                           onValueChange={(value) => {
                             setSelectedMaxPrice(Math.round(value));
@@ -827,7 +817,7 @@ const BrowseTailors = ({ navigation, route }) => {
                       </View>
                       <View style={styles.locationHeaderTextWrap}>
                         <Text style={styles.locationTitle}>Location Filter</Text>
-                        <Text style={styles.locationSubtitle}>Nearby tailors within {nearbyRadiusKm} km</Text>
+                        <Text style={styles.locationSubtitle}>Nearby tailors within {NEARBY_RADIUS_KM} km</Text>
                       </View>
                     </View>
 
@@ -870,7 +860,7 @@ const BrowseTailors = ({ navigation, route }) => {
                       value={typedLocation}
                       onChangeText={setTypedLocation}
                       placeholder="Type city or area"
-                      placeholderTextColor="#7f8dbd"
+                      placeholderTextColor="#7b8dbb"
                       style={styles.manualLocationInput}
                     />
 
@@ -889,10 +879,10 @@ const BrowseTailors = ({ navigation, route }) => {
                         onPress={fetchCurrentLocation}
                         activeOpacity={0.85}>
                         {isFetchingLocation ? (
-                          <ActivityIndicator size="small" color="#aebcff" />
+                          <ActivityIndicator size="small" color="#99aaff" />
                         ) : (
                           <>
-                            <Ionicons name="refresh-outline" size={16} color="#aebcff" style={styles.buttonIcon} />
+                            <Ionicons name="refresh-outline" size={16} color="#99aaff" style={styles.buttonIcon} />
                             <Text style={styles.clearLocationText}>Refresh</Text>
                           </>
                         )}
@@ -937,7 +927,7 @@ const styles = StyleSheet.create({
     marginLeft: -350, 
   },
   menuButton: {
-    backgroundColor: "rgba(42,60,114,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     width: 44,
     height: 44,
     borderRadius: 16,
@@ -958,7 +948,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#99aaff",
   },
   backButton: {
-    backgroundColor: "rgba(42,60,114,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     padding: 11,
     borderRadius: 16,
     borderWidth: 1,
@@ -981,7 +971,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: FILTER_DRAWER_WIDTH,
-    backgroundColor: "#101a3b",
+    backgroundColor: "#1f2a59",
     borderRightWidth: 1,
     borderRightColor: "rgba(155,179,255,0.15)",
     paddingTop: Platform.OS === "ios" ? 58 : 40,
@@ -1020,12 +1010,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   searchBox: {
-    backgroundColor: "rgba(38,52,90,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
     marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -1041,11 +1031,11 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   filtersPanel: {
-    backgroundColor: "rgba(38,52,90,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
     marginBottom: 22,
   },
   filterSection: {
@@ -1055,14 +1045,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "rgba(155,179,255,0.12)",
     marginVertical: 14,
-  },
-  servicePanel: {
-    backgroundColor: "rgba(38,52,90,0.5)",
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
-    marginBottom: 16,
   },
   serviceHeader: {
     flexDirection: "row",
@@ -1080,11 +1062,11 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: "rgba(55,82,150,0.45)",
+    backgroundColor: "rgba(42,60,114,0.5)",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(123,155,255,0.18)",
+    borderColor: "rgba(155,179,255,0.18)",
     marginRight: 12,
   },
   serviceTitle: {
@@ -1101,7 +1083,7 @@ const styles = StyleSheet.create({
   clearServiceButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(17,26,58,0.9)",
+    backgroundColor: "rgba(16, 24, 52, 0.97)",
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.1)",
     borderRadius: 14,
@@ -1109,7 +1091,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   clearServiceText: {
-    color: "#aebcff",
+    color: "#99aaff",
     fontSize: 12,
     fontWeight: "700",
   },
@@ -1118,7 +1100,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.2)",
-    backgroundColor: "rgba(17,26,58,0.75)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -1136,7 +1118,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.2)",
-    backgroundColor: "rgba(17,26,58,0.88)",
+    backgroundColor: "rgba(16, 24, 52, 0.97)",
   },
   serviceDropdownScroll: {
     maxHeight: 220,
@@ -1151,10 +1133,10 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(155,179,255,0.08)",
   },
   serviceOptionRowActive: {
-    backgroundColor: "rgba(70, 110, 220, 0.2)",
+    backgroundColor: "rgba(155,179,255,0.12)",
   },
   serviceOptionText: {
-    color: "#b8c5f5",
+    color: "#aabbff",
     fontSize: 13,
     fontWeight: "700",
   },
@@ -1165,22 +1147,6 @@ const styles = StyleSheet.create({
     color: "#8e9ccf",
     fontSize: 12,
     fontWeight: "600",
-  },
-  locationPanel: {
-    backgroundColor: "rgba(38,52,90,0.5)",
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
-    marginBottom: 22,
-  },
-  pricePanel: {
-    backgroundColor: "rgba(38,52,90,0.5)",
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
-    marginBottom: 16,
   },
   priceHeader: {
     flexDirection: "row",
@@ -1198,11 +1164,11 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: "rgba(55,82,150,0.45)",
+    backgroundColor: "rgba(42,60,114,0.5)",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(123,155,255,0.18)",
+    borderColor: "rgba(155,179,255,0.18)",
     marginRight: 12,
   },
   priceTitle: {
@@ -1219,7 +1185,7 @@ const styles = StyleSheet.create({
   clearPriceButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(17,26,58,0.9)",
+    backgroundColor: "rgba(16, 24, 52, 0.97)",
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.1)",
     borderRadius: 14,
@@ -1227,7 +1193,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   clearPriceText: {
-    color: "#aebcff",
+    color: "#99aaff",
     fontSize: 12,
     fontWeight: "700",
   },
@@ -1246,7 +1212,7 @@ const styles = StyleSheet.create({
   },
   sliderLabel: {
     width: 34,
-    color: "#aebcff",
+    color: "#99aaff",
     fontSize: 12,
     fontWeight: "700",
     marginRight: 8,
@@ -1275,11 +1241,11 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: "rgba(55,82,150,0.45)",
+    backgroundColor: "rgba(42,60,114,0.5)",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(123,155,255,0.18)",
+    borderColor: "rgba(155,179,255,0.18)",
   },
   locationHeaderTextWrap: {
     flex: 1,
@@ -1300,7 +1266,7 @@ const styles = StyleSheet.create({
     minWidth: 78,
     height: 38,
     borderRadius: 999,
-    backgroundColor: "rgba(17,26,58,0.9)",
+    backgroundColor: "rgba(16, 24, 52, 0.97)",
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.1)",
     paddingHorizontal: 8,
@@ -1309,14 +1275,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   locationToggleActive: {
-    backgroundColor: "rgba(70, 110, 220, 0.26)",
-    borderColor: "rgba(123,155,255,0.3)",
+    backgroundColor: "rgba(155,179,255,0.2)",
+    borderColor: "rgba(155,179,255,0.2)",
   },
   locationToggleKnob: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "#6d7db3",
+    backgroundColor: "#506ba9",
   },
   locationToggleKnobActive: {
     backgroundColor: "#d1d9ff",
@@ -1328,7 +1294,7 @@ const styles = StyleSheet.create({
   },
   locationStrip: {
     marginTop: 14,
-    backgroundColor: "rgba(17,26,58,0.58)",
+    backgroundColor: "rgba(20, 28, 54, 0.5)",
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
@@ -1348,7 +1314,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.15)",
-    backgroundColor: "rgba(17,26,58,0.75)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     color: "#d1d9ff",
     fontSize: 13,
     fontWeight: "600",
@@ -1359,8 +1325,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(123,155,255,0.35)",
-    backgroundColor: "rgba(70, 110, 220, 0.26)",
+    borderColor: "rgba(155,179,255,0.2)",
+    backgroundColor: "rgba(155,179,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1377,19 +1343,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginLeft: 10,
   },
-  locationStripBadge: {
-    color: "#7b9bff",
-    fontSize: 11,
-    fontWeight: "800",
-    marginLeft: 10,
-  },
-  locationHint: {
-    color: "#8e9ccf",
-    fontSize: 12,
-    fontWeight: "600",
-    lineHeight: 18,
-    marginTop: 10,
-  },
   locationBottomRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -1399,7 +1352,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: "rgba(17,26,58,0.9)",
+    backgroundColor: "rgba(16, 24, 52, 0.97)",
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.1)",
     minWidth: 96,
@@ -1408,7 +1361,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   clearLocationText: {
-    color: "#aebcff",
+    color: "#99aaff",
     fontSize: 12,
     fontWeight: "700",
   },
@@ -1430,11 +1383,11 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   card: {
-    backgroundColor: "rgba(38,52,90,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 24,
     padding: 18,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
     shadowColor: "#18294a",
     shadowOpacity: 0.45,
     shadowRadius: 14,
@@ -1449,7 +1402,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: "rgba(22,34,70,0.92)",
+    backgroundColor: "rgba(16, 24, 52, 0.97)",
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.2)",
     alignItems: "center",
@@ -1457,11 +1410,11 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   imageWrap: {
-    backgroundColor: "rgba(42,60,114,0.4)",
+    backgroundColor: "rgba(38, 52, 90, 0.4)",
     padding: 16,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
     marginBottom: 12,
   },
   image: {
@@ -1484,7 +1437,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: "rgba(42,60,114,0.6)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1515,7 +1468,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1546,13 +1499,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   emptyCard: {
-    backgroundColor: "rgba(38,52,90,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 24,
     paddingVertical: 40,
     paddingHorizontal: 24,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
   },
   emptyTitle: {
     color: "#d1d9ff",

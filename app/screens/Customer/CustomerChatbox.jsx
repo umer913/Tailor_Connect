@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,16 +18,14 @@ import {
 } from "react-native";
 
 const API_BASE_URL = "http://UF-MacBook-Pro.local:3000";
+const CHAT_GRADIENT_COLORS = ["#1b254f", "#0c1435", "#080927"];
+const CUSTOMER_ROLE = "customer";
+const DEFAULT_CUSTOMER_NAME = "Customer";
+const DEFAULT_TAILOR_NAME = "Tailor";
 
 const formatTime = (value) => {
-  if (!value) {
-    return "";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "";
 
   return date.toLocaleString("en-US", {
     month: "short",
@@ -37,10 +35,13 @@ const formatTime = (value) => {
   });
 };
 
+const getConversationPreview = (item) => item.last_message || (item.last_image_url ? "Image" : "No messages yet");
+
 const CustomerChatbox = ({ route }) => {
-  const customerEmail = route?.params?.CustomerEmail || route?.params?.customerEmail || route?.params?.email || "";
-  const routeTailorEmail = route?.params?.tailorEmail || "";
-  const routeTailorName = route?.params?.tailorName || "";
+  const params = route?.params || {};
+  const customerEmail = params.CustomerEmail || params.customerEmail || params.email || "";
+  const routeTailorEmail = params.tailorEmail || "";
+  const routeTailorName = params.tailorName || "";
 
   const [customerName, setCustomerName] = useState("");
   const [conversations, setConversations] = useState([]);
@@ -61,9 +62,9 @@ const CustomerChatbox = ({ route }) => {
       const response = await axios.get(`${API_BASE_URL}/get-profile`, {
         params: { email: customerEmail },
       });
-      setCustomerName(response.data?.user?.full_name || "Customer");
+      setCustomerName(response.data?.user?.full_name || DEFAULT_CUSTOMER_NAME);
     } catch {
-      setCustomerName("Customer");
+      setCustomerName(DEFAULT_CUSTOMER_NAME);
     }
   }, [customerEmail]);
 
@@ -83,7 +84,7 @@ const CustomerChatbox = ({ route }) => {
         const response = await axios.get(`${API_BASE_URL}/chat-conversations`, {
           params: {
             email: customerEmail,
-            role: "customer",
+            role: CUSTOMER_ROLE,
           },
         });
 
@@ -116,7 +117,7 @@ const CustomerChatbox = ({ route }) => {
           params: {
             tailor_email: conversation.tailor_email,
             customer_email: customerEmail,
-            viewer_role: "customer",
+            viewer_role: CUSTOMER_ROLE,
           },
         });
 
@@ -146,31 +147,27 @@ const CustomerChatbox = ({ route }) => {
     return () => clearInterval(interval);
   }, [activeConversation, fetchConversations, fetchMessages]);
 
-  const routeConversation = useMemo(() => {
-    if (!routeTailorEmail || !customerEmail) {
-      return null;
-    }
+  const routeConversation =
+    routeTailorEmail && customerEmail
+      ? {
+          conversation_id: `${routeTailorEmail}::${customerEmail}`,
+          tailor_email: routeTailorEmail,
+          customer_email: customerEmail,
+          tailor_name: routeTailorName || DEFAULT_TAILOR_NAME,
+          customer_name: customerName || DEFAULT_CUSTOMER_NAME,
+          last_message: "",
+          unread_count: 0,
+        }
+      : null;
 
-    return {
-      conversation_id: `${routeTailorEmail}::${customerEmail}`,
-      tailor_email: routeTailorEmail,
-      customer_email: customerEmail,
-      tailor_name: routeTailorName || "Tailor",
-      customer_name: customerName || "Customer",
-      last_message: "",
-      unread_count: 0,
-    };
-  }, [routeTailorEmail, customerEmail, routeTailorName, customerName]);
-
-  const hasRouteConversationInList = useMemo(() => {
-    if (!routeConversation) {
-      return true;
-    }
-
-    return conversations.some(
+  const hasRouteConversationInList =
+    !routeConversation ||
+    conversations.some(
       (item) => item.tailor_email === routeConversation.tailor_email && item.customer_email === routeConversation.customer_email
     );
-  }, [conversations, routeConversation]);
+
+  const resetComposer = () => { setMessageText(""); setSelectedImageUri(""); };
+  const closeConversation = () => { setActiveConversation(null); setMessages([]); resetComposer(); };
 
   const openConversation = async (conversation) => {
     setActiveConversation(conversation);
@@ -243,15 +240,14 @@ const CustomerChatbox = ({ route }) => {
       await axios.post(`${API_BASE_URL}/chat-send-message`, {
         tailor_email: activeConversation.tailor_email,
         customer_email: customerEmail,
-        tailor_name: activeConversation.tailor_name || "Tailor",
-        customer_name: customerName || activeConversation.customer_name || "Customer",
-        sender_role: "customer",
+        tailor_name: activeConversation.tailor_name || DEFAULT_TAILOR_NAME,
+        customer_name: customerName || activeConversation.customer_name || DEFAULT_CUSTOMER_NAME,
+        sender_role: CUSTOMER_ROLE,
         message: cleanMessage,
         image_url: imageUrl,
       });
 
-      setMessageText("");
-      setSelectedImageUri("");
+      resetComposer();
 
       await fetchMessages(activeConversation, false);
       await fetchConversations(false);
@@ -263,35 +259,31 @@ const CustomerChatbox = ({ route }) => {
     }
   };
 
-  const renderConversationItem = ({ item }) => {
-    const previewText = item.last_message || (item.last_image_url ? "Image" : "No messages yet");
+  const renderConversationItem = ({ item }) => (
+    <TouchableOpacity style={styles.conversationItem} activeOpacity={0.86} onPress={() => openConversation(item)}>
+      <View style={styles.conversationAvatar}>
+        <Ionicons name="cut-outline" size={18} color="#99aaff" />
+      </View>
 
-    return (
-      <TouchableOpacity style={styles.conversationItem} activeOpacity={0.86} onPress={() => openConversation(item)}>
-        <View style={styles.conversationAvatar}>
-          <Ionicons name="cut-outline" size={18} color="#99aaff" />
-        </View>
+      <View style={styles.conversationBody}>
+        <Text style={styles.conversationName} numberOfLines={1}>
+          {item.tailor_name || "Tailor"}
+        </Text>
+        <Text style={styles.conversationPreview} numberOfLines={1}>
+          {getConversationPreview(item)}
+        </Text>
+      </View>
 
-        <View style={styles.conversationBody}>
-          <Text style={styles.conversationName} numberOfLines={1}>
-            {item.tailor_name || "Tailor"}
-          </Text>
-          <Text style={styles.conversationPreview} numberOfLines={1}>
-            {previewText}
-          </Text>
-        </View>
-
-        <View style={styles.conversationMeta}>
-          <Text style={styles.conversationTime}>{formatTime(item.last_datetime)}</Text>
-          {item.unread_count > 0 ? (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
-            </View>
-          ) : null}
-        </View>
-      </TouchableOpacity>
-    );
-  };
+      <View style={styles.conversationMeta}>
+        <Text style={styles.conversationTime}>{formatTime(item.last_datetime)}</Text>
+        {item.unread_count > 0 ? (
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
+          </View>
+        ) : null}
+      </View>
+    </TouchableOpacity>
+  );
 
   const renderMessageItem = ({ item }) => {
     const isMine = item.sender_role === "customer";
@@ -322,7 +314,7 @@ const CustomerChatbox = ({ route }) => {
 
   if (!customerEmail) {
     return (
-      <LinearGradient colors={["#1b254f", "#0c1435", "#080927"]} style={styles.container}>
+      <LinearGradient colors={CHAT_GRADIENT_COLORS} style={styles.container}>
         <View style={styles.centerContent}>
           <Text style={styles.emptyTitle}>Unable to open chat</Text>
           <Text style={styles.emptyText}>Missing customer email in navigation params.</Text>
@@ -332,13 +324,13 @@ const CustomerChatbox = ({ route }) => {
   }
 
   return (
-    <LinearGradient colors={["#1b254f", "#0c1435", "#080927"]} style={styles.container}>
+    <LinearGradient colors={CHAT_GRADIENT_COLORS} style={styles.container}>
       {!activeConversation ? (
         <View style={styles.screenContent}>
           <View style={styles.headerRow}>
             <Text style={styles.headerTitle}>Customer Chat</Text>
             <TouchableOpacity style={styles.refreshButton} onPress={() => fetchConversations(true)} activeOpacity={0.85}>
-              <Ionicons name="refresh-outline" size={18} color="#aebcff" />
+              <Ionicons name="refresh-outline" size={18} color="#99aaff" />
             </TouchableOpacity>
           </View>
 
@@ -356,11 +348,11 @@ const CustomerChatbox = ({ route }) => {
 
           {loadingConversations ? (
             <View style={styles.centerContent}>
-              <ActivityIndicator size="large" color="#9ab0ff" />
+              <ActivityIndicator size="large" color="#99aaff" />
             </View>
           ) : conversations.length === 0 ? (
             <View style={styles.centerContent}>
-              <Ionicons name="chatbubble-outline" size={42} color="#6076b3" />
+              <Ionicons name="chatbubble-outline" size={42} color="#506ba9" />
               <Text style={styles.emptyTitle}>No conversations yet</Text>
               <Text style={styles.emptyText}>Open any tailor profile and tap the message icon to start chatting.</Text>
             </View>
@@ -382,12 +374,7 @@ const CustomerChatbox = ({ route }) => {
           <View style={styles.threadHeader}>
             <TouchableOpacity
               style={styles.backButton}
-              onPress={() => {
-                setActiveConversation(null);
-                setMessages([]);
-                setMessageText("");
-                setSelectedImageUri("");
-              }}
+              onPress={closeConversation}
               activeOpacity={0.85}>
               <Ionicons name="chevron-back" size={20} color="#d1d9ff" />
             </TouchableOpacity>
@@ -400,7 +387,7 @@ const CustomerChatbox = ({ route }) => {
 
           {loadingMessages ? (
             <View style={styles.centerContent}>
-              <ActivityIndicator size="large" color="#9ab0ff" />
+              <ActivityIndicator size="large" color="#99aaff" />
             </View>
           ) : (
             <FlatList
@@ -416,7 +403,7 @@ const CustomerChatbox = ({ route }) => {
             <View style={styles.selectedImageRow}>
               <Image source={{ uri: selectedImageUri }} style={styles.selectedImagePreview} />
               <TouchableOpacity style={styles.removeImageButton} onPress={() => setSelectedImageUri("")} activeOpacity={0.85}>
-                <Ionicons name="close-circle" size={22} color="#b8c5f5" />
+                <Ionicons name="close-circle" size={22} color="#aabbff" />
               </TouchableOpacity>
             </View>
           ) : null}
@@ -430,7 +417,7 @@ const CustomerChatbox = ({ route }) => {
               value={messageText}
               onChangeText={setMessageText}
               placeholder="Type your message"
-              placeholderTextColor="#8495ca"
+              placeholderTextColor="#8e9ccf"
               style={styles.input}
               multiline
             />
@@ -480,7 +467,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.18)",
-    backgroundColor: "rgba(20,31,66,0.75)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -490,7 +477,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.2)",
-    backgroundColor: "rgba(20,31,66,0.78)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 10,
@@ -501,7 +488,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(64,91,163,0.45)",
+    backgroundColor: "rgba(42,60,114,0.5)",
   },
   quickStartTextWrap: {
     marginLeft: 10,
@@ -513,7 +500,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   quickStartSubtitle: {
-    color: "#8fa2d7",
+    color: "#8e9ccf",
     fontSize: 12,
     marginTop: 2,
   },
@@ -523,7 +510,7 @@ const styles = StyleSheet.create({
   conversationItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(20,31,66,0.78)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.14)",
@@ -549,7 +536,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   conversationPreview: {
-    color: "#9aacdf",
+    color: "#99aaff",
     fontSize: 13,
     marginTop: 2,
   },
@@ -558,7 +545,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   conversationTime: {
-    color: "#8295cd",
+    color: "#8e9ccf",
     fontSize: 11,
     fontWeight: "600",
   },
@@ -567,13 +554,13 @@ const styles = StyleSheet.create({
     minWidth: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "#5577da",
+    backgroundColor: "#506ba9",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
   },
   unreadBadgeText: {
-    color: "#eef2ff",
+    color: "#e6ebff",
     fontSize: 11,
     fontWeight: "800",
   },
@@ -590,7 +577,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   emptyText: {
-    color: "#8fa2d7",
+    color: "#8e9ccf",
     fontSize: 13,
     textAlign: "center",
     marginTop: 5,
@@ -608,7 +595,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: "rgba(20,31,66,0.82)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.14)",
     alignItems: "center",
@@ -624,7 +611,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   threadSubtitle: {
-    color: "#8ea2d9",
+    color: "#8e9ccf",
     fontSize: 12,
     marginTop: 2,
   },
@@ -653,11 +640,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   messageBubbleMine: {
-    backgroundColor: "rgba(74,108,201,0.36)",
-    borderColor: "rgba(130,160,255,0.26)",
+    backgroundColor: "rgba(102,126,234,0.2)",
+    borderColor: "rgba(155,179,255,0.2)",
   },
   messageBubbleOther: {
-    backgroundColor: "rgba(22,35,73,0.88)",
+    backgroundColor: "rgba(16, 24, 52, 0.97)",
     borderColor: "rgba(155,179,255,0.12)",
   },
   messageBubbleUnknown: {
@@ -671,12 +658,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8,15,33,0.55)",
   },
   messageText: {
-    color: "#dce4ff",
+    color: "#d1d9ff",
     fontSize: 14,
     lineHeight: 19,
   },
   messageTime: {
-    color: "#95a8de",
+    color: "#99aaff",
     fontSize: 10,
     marginTop: 5,
     alignSelf: "flex-end",
@@ -701,7 +688,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     flexDirection: "row",
     alignItems: "flex-end",
-    backgroundColor: "rgba(20,31,66,0.85)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.16)",
@@ -713,7 +700,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(64,91,163,0.45)",
+    backgroundColor: "rgba(42,60,114,0.5)",
   },
   input: {
     flex: 1,

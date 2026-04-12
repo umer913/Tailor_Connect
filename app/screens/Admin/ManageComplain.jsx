@@ -3,20 +3,23 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Animated,
+    Dimensions,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const SERVER = "http://UF-MacBook-Pro.local:3000";
 const { width } = Dimensions.get("window");
+
+const getStatusColor = (resolvedAt) => (resolvedAt ? "#00ff99" : "#ffcc00");
+const getStatusLabel = (resolvedAt) => (resolvedAt ? "Resolved" : "Pending");
 
 export default function ManageComplain() {
   const [complaints, setComplaints] = useState([]);
@@ -47,9 +50,17 @@ export default function ManageComplain() {
     }
   };
 
+  const getResponseText = (id) => responses[id]?.trim() || "";
+  const setResponseText = (id, text) => {
+    setResponses((prev) => ({ ...prev, [id]: text }));
+  };
+  const clearResponseText = (id) => {
+    setResponses((prev) => ({ ...prev, [id]: "" }));
+  };
+
   // Send message only
   const sendMessage = async (item) => {
-    if (!responses[item.id]?.trim()) {
+    if (!getResponseText(item.id)) {
       Alert.alert("Write a message first");
       return;
     }
@@ -57,11 +68,11 @@ export default function ManageComplain() {
     try {
       await axios.post(`${SERVER}/admin/send-message`, {
         complaint_id: item.id,
-        message: responses[item.id],
+        message: getResponseText(item.id),
       });
 
       Alert.alert("Message sent successfully to " + item.filed_by_email);
-      setResponses({ ...responses, [item.id]: "" });
+      clearResponseText(item.id);
     } catch (err) {
       console.log(err);
       Alert.alert("Error sending message");
@@ -70,18 +81,18 @@ export default function ManageComplain() {
 
   // Resolve complaint & send message
   const resolveComplaint = async (id) => {
-    if (!responses[id]?.trim()) {
+    if (!getResponseText(id)) {
       Alert.alert("Write a message first");
       return;
     }
 
     try {
       await axios.put(`${SERVER}/admin/respond-complaint/${id}`, {
-        admin_response: responses[id],
+        admin_response: getResponseText(id),
       });
 
       Alert.alert("Complaint resolved and message sent successfully");
-      setResponses({ ...responses, [id]: "" });
+      clearResponseText(id);
       fetchComplaints();
     } catch (err) {
       console.log(err);
@@ -89,8 +100,11 @@ export default function ManageComplain() {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+  const renderItem = ({ item }) => {
+    const isResolved = Boolean(item.resolved_at);
+
+    return (
+      <Animated.View style={[styles.card, { transform: [{ scale }] }]}> 
       <View style={styles.headerRow}>
         <Ionicons name="alert-circle-outline" size={22} color="#fff" />
         <Text style={styles.subject}>{item.subject}</Text>
@@ -107,10 +121,10 @@ export default function ManageComplain() {
       <Text
         style={[
           styles.status,
-          { color: item.resolved_at ? "#00ff99" : "#ffcc00" },
+          { color: getStatusColor(item.resolved_at) },
         ]}
       >
-        {item.resolved_at ? "Resolved" : "Pending"}
+        {getStatusLabel(item.resolved_at)}
       </Text>
 
       <Text style={styles.desc}>{item.description}</Text>
@@ -119,22 +133,20 @@ export default function ManageComplain() {
         <Image source={{ uri: item.attachment_url }} style={styles.image} />
       )}
 
-      {!item.resolved_at && (
+      {!isResolved && (
         <>
           {/* Admin Response Input always visible */}
           <TextInput
             placeholder="Type your message or response..."
             placeholderTextColor="#ccc"
             value={responses[item.id] || ""}
-            onChangeText={(text) =>
-              setResponses({ ...responses, [item.id]: text })
-            }
+            onChangeText={(text) => setResponseText(item.id, text)}
             style={styles.input}
           />
 
           <View style={styles.actionRow}>
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: "#007bff" }]}
+              style={[styles.actionBtn, styles.sendBtn]}
               onPress={() => sendMessage(item)}
             >
               <Ionicons
@@ -146,7 +158,7 @@ export default function ManageComplain() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: "#ff5252" }]}
+              style={[styles.actionBtn, styles.resolveBtn]}
               onPress={() => resolveComplaint(item.id)}
             >
               <Ionicons
@@ -166,7 +178,8 @@ export default function ManageComplain() {
         </Text>
       )}
     </Animated.View>
-  );
+    );
+  };
 
   return (
     <LinearGradient
@@ -178,7 +191,7 @@ export default function ManageComplain() {
   <Text style={styles.sub}>TailorX Admin Management</Text>
 
   {complaints.length === 0 ? (
-    <Text style={{ color: "#aaa", marginTop: 50 }}>
+    <Text style={styles.emptyText}>
       No complaints to show
     </Text>
   ) : (
@@ -275,6 +288,12 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 40,
   },
+  sendBtn: {
+    backgroundColor: "#007bff",
+  },
+  resolveBtn: {
+    backgroundColor: "#ff5252",
+  },
 
   actionText: {
     color: "#fff",
@@ -293,5 +312,9 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 15,
     marginTop: 10,
+  },
+  emptyText: {
+    color: "#aaa",
+    marginTop: 50,
   },
 });

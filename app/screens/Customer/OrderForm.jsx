@@ -76,6 +76,11 @@ const noMeasurementServices = [
   "Button Hole",
 ];
 
+const parseNumericPrice = (rawPrice) => {
+  const firstMatch = String(rawPrice || "").match(/\d+(?:\.\d+)?/);
+  return firstMatch ? Number.parseFloat(firstMatch[0]) : 0;
+};
+
 const measurementRanges = {
   Chest: "34–48",
   Bust: "30–46",
@@ -221,6 +226,8 @@ const activeServiceType = activeCartItem ? activeCartItem.serviceType : serviceT
 const activeGenderRaw = activeCartItem ? activeCartItem.gender : gender;
 const activeNormalizedGender = normalizeGender(activeGenderRaw);
 const activeEffectiveGender = selectedFormGender || activeNormalizedGender;
+const activeUnitPrice = parseNumericPrice(activeCartItem ? activeCartItem.price : price);
+const activeTotalPrice = Number((activeUnitPrice * orderQuantity).toFixed(2));
 
 const fields = measurementFields[activeServiceType]?.[activeEffectiveGender] || [];
 const optionsGroups = serviceOptionsGrouped[activeEffectiveGender]?.[activeServiceType] || {};
@@ -674,6 +681,9 @@ return (
                     <Text style={styles.incrementText}>+</Text>
                   </TouchableOpacity>
                 </View>
+                <Text style={{ color: "#444", marginTop: 8, fontSize: 13 }}>
+                  Unit: Rs. {activeUnitPrice} | Total: Rs. {activeTotalPrice}
+                </Text>
               </View>
 
               {/* Gender Selector */}
@@ -1313,7 +1323,7 @@ rightArrow: {
     borderBottomColor: '#eee',
   },
   cartMeasurementBox: {
-    backgroundColor: '#f5f5ff',
+    backgroundColor: '#e6ebff',
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,

@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Alert,
   Animated,
@@ -29,19 +29,34 @@ export default function CustomerOrders({ route }) {
   const [editedMeasurements, setEditedMeasurements] = useState({});
   const [editedQuantity, setEditedQuantity] = useState({});
   const [editedImages, setEditedImages] = useState({});
+  const [paymentStatusMap, setPaymentStatusMap] = useState({});
   const [fadeAnim] = useState(new Animated.Value(0));
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const { data } = await axios.get(
         "http://UF-MacBook-Pro.local:3000/get-orders",
         { params: { email: CustomerEmail } }
       );
-      setOrders(data.orders || []);
+      const orderList = data.orders || [];
+      setOrders(orderList);
+
+      try {
+        const ids = orderList.map((order) => order.id).filter(Boolean);
+        if (!ids.length) {
+          setPaymentStatusMap({});
+        } else {
+          const statusResponse = await axios.get(
+            "http://UF-MacBook-Pro.local:3000/payments/status",
+            { params: { order_ids: ids.join(",") } }
+          );
+          setPaymentStatusMap(statusResponse?.data?.statuses || {});
+        }
+      } catch (statusError) {
+        console.log("Payment statuses fetch failed", statusError?.message || statusError);
+        setPaymentStatusMap({});
+      }
+
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 400,
@@ -50,7 +65,13 @@ export default function CustomerOrders({ route }) {
     } catch (err) {
       console.log(err);
     }
-  };
+  }, [CustomerEmail, fadeAnim]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchOrders();
+    }, [fetchOrders])
+  );
 
   const pickImage = async (orderId) => {
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -120,9 +141,9 @@ Alert.alert("Success", "Order updated successfully");
       {
         pending: "#f59e0b",
         accepted: "#3b82f6",
-        in_progress: "#8b5cf6",
+        in_progress: "#7b9bff",
         completed: "#22c55e",
-      }[status] || "#6b7280"
+      }[status] || "#7b8dbb"
     );
   };
 
@@ -146,6 +167,10 @@ Alert.alert("Success", "Order updated successfully");
         renderItem={({ item }) => {
           const isOpen = expandedId === item.id;
           const isEditing = editingId === item.id;
+          const isCompletedOrder =
+            (item.status || "").toLowerCase() === "completed";
+          const paymentStatus = paymentStatusMap[String(item.id)] || "unpaid";
+          const isOrderPaid = paymentStatus === "paid";
 
           return (
             <AnimatedPressable
@@ -172,6 +197,32 @@ Alert.alert("Success", "Order updated successfully");
               <Text style={styles.tailor}>Tailor: {item.tailor_name}</Text>
               <Text style={styles.tailor}>OrderID: {item.id}</Text>
               <Text style={styles.tailor}>Quantity: {item.quantity}</Text>
+              {isCompletedOrder && (
+                <View style={styles.paymentRow}>
+                  <Text
+                    style={[
+                      styles.paymentStatus,
+                      isOrderPaid ? styles.paymentStatusPaid : styles.paymentStatusUnpaid,
+                    ]}
+                  >
+                    Status: {isOrderPaid ? "Paid" : "Not Paid"}
+                  </Text>
+
+                  {!isOrderPaid && (
+                    <TouchableOpacity
+                      style={styles.payNowBtn}
+                      onPress={() =>
+                        navigation.navigate("Payment", {
+                          orderId: item.id,
+                          CustomerEmail,
+                        })
+                      }
+                    >
+                      <Text style={styles.payNowText}>Pay Now</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
               <Pressable
                 disabled={!isEditing}
                 onPress={() => pickImage(item.id)}
@@ -307,19 +358,19 @@ const styles = StyleSheet.create({
     top: 30,
     left: 20,
     padding: 8,
-    backgroundColor: "rgba(42,60,114,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(155,179,255,0.12)",
   },
   heading: { textAlign: "center", fontSize: 26, fontWeight: "800", color: "#d1d9ff", marginBottom: 25 },
   card: {
-    backgroundColor: "rgba(38,52,90,0.5)",
+    backgroundColor: "rgba(38, 52, 90, 0.5)",
     borderRadius: 20,
     padding: 18,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
   },
   rowBetween: {
     flexDirection: "row",
@@ -340,9 +391,9 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: 14,
     marginVertical: 10,
-    backgroundColor: "rgba(20,28,54,0.7)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     borderWidth: 2,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
     borderStyle: "dashed",
     justifyContent: "center",
     alignItems: "center",
@@ -362,11 +413,11 @@ const styles = StyleSheet.create({
   closeText: { color: "#d85b5b", fontSize: 16 },
   expandBox: {
     marginTop: 14,
-    backgroundColor: "rgba(20,28,54,0.7)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(102,126,234,0.15)",
+    borderColor: "rgba(155,179,255,0.15)",
   },
   detailTitle: { fontWeight: "800", marginBottom: 8, color: "#d1d9ff" },
   quantityDisplay: { fontSize: 18, fontWeight: "700", color: "#c3d1ff", marginBottom: 14 },
@@ -406,7 +457,7 @@ const styles = StyleSheet.create({
     minWidth: 70,
     height: 44,
     borderRadius: 8,
-    backgroundColor: "rgba(20,28,54,0.7)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
@@ -418,7 +469,7 @@ const styles = StyleSheet.create({
     color: "#c3d1ff",
   },
   input: {
-    backgroundColor: "rgba(20,28,54,0.7)",
+    backgroundColor: "rgba(20, 28, 54, 0.6)",
     borderRadius: 8,
     padding: 8,
     marginBottom: 6,
@@ -446,4 +497,30 @@ const styles = StyleSheet.create({
   },
   actionRow: { flexDirection: "row", gap: 8, marginTop: 8 },
   btnText: { color: "#d1d9ff", fontWeight: "700", textAlign: "center" },
+  paymentRow: {
+    marginTop: 4,
+    marginBottom: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  paymentStatus: {
+    fontWeight: "700",
+  },
+  paymentStatusPaid: {
+    color: "#22c55e",
+  },
+  paymentStatusUnpaid: {
+    color: "#fbbf24",
+  },
+  payNowBtn: {
+    backgroundColor: "#2563eb",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  payNowText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
 });

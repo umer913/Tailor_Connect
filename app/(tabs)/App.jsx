@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
@@ -8,18 +9,6 @@ import ManageCustomers from '../screens/Admin/ManageCustomers';
 import ManageOrders from '../screens/Admin/ManageOrders';
 import ManageTailors from '../screens/Admin/ManageTailors';
 
-import Forgot from '../screens/Forgot';
-import Login from '../screens/Login';
-import Signup from '../screens/Signup';
-import Start from '../screens/Start';
-import AddServices from '../screens/Tailor/AddServices';
-import Appointment from '../screens/Tailor/Appointment';
-import TailorChatbox from '../screens/Tailor/TailorChatbox';
-import TailorComplainbox from '../screens/Tailor/TailorComplainbox';
-import TailorDashboard from '../screens/Tailor/TailorDashboard';
-// 👇 NEW imports for Drawer
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import { StyleSheet } from 'react-native';
 import BookAppointment from '../screens/Customer/BookAppointment';
 import BrowseTailors from '../screens/Customer/BrowseTailors';
 import CustomerChatbox from '../screens/Customer/CustomerChatbox';
@@ -30,168 +19,247 @@ import Form from '../screens/Customer/Form';
 import MyAppointments from '../screens/Customer/MyAppointments';
 import NotificationScreen from '../screens/Customer/NotificationScreen';
 import OrderForm from '../screens/Customer/OrderForm';
+import Payment from '../screens/Customer/Payment';
 import TailorServices from '../screens/Customer/TailorServices';
+import Forgot from '../screens/Forgot';
+import Login from '../screens/Login';
+import Signup from '../screens/Signup';
+import Start from '../screens/Start';
+import AddServices from '../screens/Tailor/AddServices';
+import Appointment from '../screens/Tailor/Appointment';
 import MyOrders from '../screens/Tailor/MyOrders';
-// Create Drawer
-const Drawer = createDrawerNavigator();
+import TailorChatbox from '../screens/Tailor/TailorChatbox';
+import TailorComplainbox from '../screens/Tailor/TailorComplainbox';
+import TailorDashboard from '../screens/Tailor/TailorDashboard';
+const Tab = createBottomTabNavigator();
 
-// Drawer content (Customer side)
+const customerTabColors = {
+  header: '#1b254f',
+  active: '#FFFFFF',
+  inactive: '#BFD6EC',
+  background: '#1F4E79',
+  border: '#173C5E',
+};
+
+const tailorTabColors = {
+  header: '#9D2A4B',
+  active: '#FFFFFF',
+  inactive: '#9D2A4B',
+  background: '#1F4E79',
+  border: '#173C5E',
+};
+
+// Customer tab navigation
 function CustomerDrawer({ route }) {
   const email = route.params?.email;
   return (
-    <Drawer.Navigator
+    <Tab.Navigator
       initialRouteName="CustomerDashboard"
+      backBehavior="history"
       screenOptions={{
-        headerStyle: { backgroundColor: '#2b2a74ff' },
+        headerStyle: { backgroundColor: customerTabColors.header },
         headerTintColor: '#fff',
-        drawerActiveTintColor: '#2b2a74ff',
-        drawerLabelStyle: { fontSize: 16 },
+        tabBarActiveTintColor: customerTabColors.active,
+        tabBarInactiveTintColor: customerTabColors.inactive,
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarStyle: {
+          backgroundColor:"#3957a6",
+          borderTopColor: customerTabColors.border,
+          height: 72,
+          paddingBottom: 8,
+          paddingTop: 6,
+        },
       }}
     >
-      <Drawer.Screen
+      <Tab.Screen
         name="CustomerDashboard"
         component={CustomerDashboard}
         initialParams={{ email }}
         options={{
-          drawerIcon: ({ color, size }) => (
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
       />
 
-      <Drawer.Screen
+      <Tab.Screen
         name="BrowseTailors"
         component={BrowseTailors}
         initialParams={{ email }}
         options={{
+          title: 'Browse',
           headerShown: false,
-          drawerIcon: ({ color, size }) => (
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="search-outline" size={size} color={color} />
           ),
         }}
       />
 
-      <Drawer.Screen
+      <Tab.Screen
         name="TailorServices"
         initialParams={{ email }}
         component={TailorServices}
-        options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
       />
-      <Drawer.Screen
+      <Tab.Screen
         name="OrderForm"
         initialParams={{ email }}
         component={OrderForm}
-        options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
       />
-      <Drawer.Screen
+      <Tab.Screen
         name="MyAppointments"
         initialParams={{ email }}
         component={MyAppointments}
-        options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
       />
-      <Drawer.Screen
+      <Tab.Screen
         name="CustomerOrders"
         component={CustomerOrders}
         initialParams={{ email, }}
         options={{
-          drawerIcon: ({ color, size }) => (
+          title: 'Orders',
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="clipboard-outline" size={size} color={color} />
           ),
         }}
       />
-      <Drawer.Screen
+      <Tab.Screen
         name="CustomerChatbox"
         component={CustomerChatbox}
         initialParams={{ email }}
         options={{
-          drawerIcon: ({ color, size }) => (
+          title: 'Chat',
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
           ),
         }}
       />
-      <Drawer.Screen
+      <Tab.Screen
         name="CustomerComplainbox"
         component={CustomerComplainbox}
         initialParams={{ email }}
         options={{
-          drawerIcon: ({ color, size }) => (
+          title: 'Complaints',
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="alert-circle-outline" size={size} color={color} />
           ),
         }}
       />
-      <Drawer.Screen
+      <Tab.Screen
         name="NotificationScreen"
         component={NotificationScreen}
         initialParams={{ email }}
-        options={{ drawerItemStyle: { height: 0 } }} // hide from drawer menu
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
       />
-    </Drawer.Navigator>
+      <Tab.Screen
+        name="Payment"
+        component={Payment}
+        initialParams={{ email }}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+    </Tab.Navigator>
   );
 }
 function TailorDrawer({ route }) {
   const email = route.params?.email;
   return (
-    <Drawer.Navigator
+    <Tab.Navigator
       initialRouteName="TailorDashboard"
+      backBehavior="history"
       screenOptions={{
-        headerStyle: { backgroundColor: '#E6B0B0' },
-        headerTintColor: '#4A1C22',
-        drawerActiveTintColor: '#E6B0B0',
-        drawerLabelStyle: { fontSize: 16 },
+        headerStyle: { backgroundColor: "#E6B0B0" },
+        headerTintColor: '#000000',
+        tabBarActiveTintColor: "#000000",
+        tabBarInactiveTintColor: tailorTabColors.inactive,
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarStyle: {
+          backgroundColor: "#E6B0B0",
+          borderTopColor: "#4a262d",
+          height: 72,
+          paddingBottom: 8,
+          paddingTop: 6,
+        },
       }}
     >
-      <Drawer.Screen
+      <Tab.Screen
         name="TailorDashboard"
         component={TailorDashboard}
         initialParams={{ email }}
         options={{
-          drawerIcon: ({ color, size }) => (
+          title: 'Dashboard',
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}
       />
-      <Drawer.Screen
+      <Tab.Screen
         name="AddServices"
         component={AddServices}
         initialParams={{ email }}
         options={{
-          drawerIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="add-circle-outline" size={size} color={color} />
           ),
           title: 'Add Services',
         }}
       />
-      <Drawer.Screen
+      <Tab.Screen
         name="MyOrders"
         component={MyOrders}
         initialParams={{ email }}
         options={{
-          drawerIcon: ({ color, size }) => (
+          title: 'Orders',
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="clipboard-outline" size={size} color={color} />
           ),
         }}
       />
-      <Drawer.Screen
+      <Tab.Screen
         name="TailorChatbox"
         component={TailorChatbox}
         initialParams={{ email }}
         options={{
-          drawerIcon: ({ color, size }) => (
+          title: 'Chat',
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
           ),
         }}
       />
-      <Drawer.Screen
+      <Tab.Screen
         name="TailorComplainbox"
         initialParams={{ email }}
         component={TailorComplainbox}
         options={{
-          drawerIcon: ({ color, size }) => (
+          title: 'Complaints',
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="alert-circle-outline" size={size} color={color} />
           ),
         }}
       />
-    </Drawer.Navigator>
+    </Tab.Navigator>
   );
 }
 
@@ -203,9 +271,9 @@ const App = () => {
       <Stack.Navigator screenOptions={{ gestureEnabled: false }} initialRouteName="Login">
         <Stack.Screen options={{ headerShown: false }} name="Login" component={Login} />
         <Stack.Screen options={{ headerShown: false }} name="Signup" component={Signup} />
-        {/* Use the Customer Drawer for customers */}
+        {/* Customer navigation (bottom tabs) */}
         <Stack.Screen options={{ headerShown: false }} name="CustomerDrawer" component={CustomerDrawer} />
-        {/* Use the Tailor Drawer for tailors */}
+        {/* Tailor navigation (bottom tabs) */}
         <Stack.Screen options={{ headerShown: false }} name="TailorDrawer" component={TailorDrawer} />
         <Stack.Screen name="OrderForm" component={OrderForm} />
         <Stack.Screen options={{ headerShown: false }} name="AdminDashboard" component={AdminDashboard} />
@@ -225,17 +293,5 @@ const App = () => {
     </NavigationContainer>
   );
 };
-
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 18, marginBottom: 20 },
-  logoutButton: {
-    backgroundColor: 'red',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-  },
-  logoutText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
-});
 
 export default App;
