@@ -3,14 +3,20 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
+
+const SCREEN_W = Dimensions.get('window').width;
+const IS_TABLET = SCREEN_W >= 768;
+const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 980 : IS_TABLET ? 840 : SCREEN_W;
+const PAGE_GUTTER = IS_TABLET ? 28 : 18;
 
 
 export default function Appointment({ route, navigation }) {
@@ -19,7 +25,6 @@ export default function Appointment({ route, navigation }) {
   const [updating, setUpdating] = useState(null);
   const tailorEmail = route?.params?.email || "tailor@example.com";
 console.log(tailorEmail);
-  // Fetch appointments on mount
   useEffect(() => {
     fetchAppointments();
   }, []);
@@ -27,7 +32,7 @@ console.log(tailorEmail);
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://UF-MacBook-Pro.local:3000/tailor-appointments`, {
+      const response = await axios.get(`http://UF-MacBook-Pro.local:3001/appointments/tailor-appointments`, {
         params: { email: tailorEmail }
       });
       setAppointments(response.data.appointments || []);
@@ -42,19 +47,14 @@ console.log(tailorEmail);
   const handleAppointmentStatus = async (appointmentId, newStatus) => {
     try {
       setUpdating(appointmentId);
-      
-      // Find the appointment to get details
       const appointment = appointments.find(apt => apt.id === appointmentId);
-      // If rejecting, delete the appointment from the database
       if (String(newStatus).toLowerCase() === "rejected") {
-        await axios.delete(`http://UF-MacBook-Pro.local:3000/delete-appointment/${appointmentId}`);
+        await axios.delete(`http://UF-MacBook-Pro.local:3001/appointments/delete-appointment/${appointmentId}`);
         Alert.alert("Success", "Appointment rejected and deleted");
-        // Remove from local state
         setAppointments(prev => prev.filter(apt => apt.id !== appointmentId));
       } else {
-        // Otherwise update status (e.g., accept)
         await axios.put(
-          `http://UF-MacBook-Pro.local:3000/update-appointment-status`,
+          `http://UF-MacBook-Pro.local:3001/appointments/update-appointment-status`,
           { 
             id: appointmentId, 
             status: newStatus,
@@ -62,9 +62,7 @@ console.log(tailorEmail);
             customer_email: appointment?.customer_email
           }
         );
-
         Alert.alert("Success", `Appointment ${newStatus} successfully`);
-        // Update local state
         setAppointments(prev => prev.map(apt =>
           apt.id === appointmentId ? { ...apt, status: newStatus } : apt
         ));
@@ -77,11 +75,10 @@ console.log(tailorEmail);
     }
   };
 
-  // Delete appointment (calls backend and removes from UI)
   const handleDelete = async (appointmentId) => {
     try {
       setUpdating(appointmentId);
-      await axios.delete(`http://UF-MacBook-Pro.local:3000/delete-appointment/${appointmentId}`);
+      await axios.delete(`http://UF-MacBook-Pro.local:3001/appointments/delete-appointment/${appointmentId}`);
       Alert.alert("Success", "Appointment deleted successfully");
       setAppointments(prev => prev.filter(apt => apt.id !== appointmentId));
     } catch (error) {
@@ -91,6 +88,7 @@ console.log(tailorEmail);
       setUpdating(null);
     }
   };
+
   const formatDateTime = (dateTimeString) => {
     if (!dateTimeString) return "N/A";
     const date = new Date(dateTimeString);
@@ -99,41 +97,48 @@ console.log(tailorEmail);
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case "pending":
-        return "#FFA500";
-      case "accepted":
-        return "#4CAF50";
-      case "rejected":
-        return "#F44336";
-      default:
-        return "#666";
+      case "pending": return "#F59E0B";
+      case "accepted": return "#10B981";
+      case "rejected": return "#EF4444";
+      default: return "#6B7280";
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case "pending": return "time-outline";
+      case "accepted": return "checkmark-circle-outline";
+      case "rejected": return "close-circle-outline";
+      default: return "help-circle-outline";
     }
   };
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#2B0F14" />
-      </View>
+      <LinearGradient colors={['#050811', '#0b1220', '#141c30']} style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#F59E0B" />
+        <Text style={styles.loadingText}>Loading appointments...</Text>
+      </LinearGradient>
     );
   }
 
   return (
-    <LinearGradient colors={['#2B0F14', '#3A1419', '#4A1C22']} style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <LinearGradient colors={['#050811', '#0b1220', '#141c30']} style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Back Button */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#E6B0B0" />
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.85}>
+          <Ionicons name="arrow-back" size={20} color="#F59E0B" />
         </TouchableOpacity>
 
         {/* Header */}
-        
         <View style={styles.header}>
-          <Ionicons name="calendar" size={28} color="#E6B0B0" />
-          <Text style={styles.headerTitle}>Appointment Requests</Text>
+          <View style={styles.headerIconWrap}>
+            <Ionicons name="calendar" size={22} color="#F59E0B" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 14 }}>
+            <Text style={styles.headerSub}>Manage your schedule</Text>
+            <Text style={styles.headerTitle}>Appointment Requests</Text>
+          </View>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{appointments.length}</Text>
           </View>
@@ -142,75 +147,102 @@ console.log(tailorEmail);
         {/* Empty State */}
         {appointments.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="calendar-outline" size={60} color="#E6B0B0" />
+            <View style={styles.emptyIconWrap}>
+              <Ionicons name="calendar-outline" size={52} color="rgba(148, 163, 184, 0.4)" />
+            </View>
             <Text style={styles.emptyText}>No appointments yet</Text>
+            <Text style={styles.emptySubText}>When customers book you, they'll appear here</Text>
           </View>
         ) : (
-          /* Appointments List */
           <View style={styles.appointmentsList}>
             {appointments.map((appointment) => (
               <View key={appointment.id} style={styles.appointmentCard}>
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => handleDelete(appointment.id)}
-                  disabled={updating === appointment.id}
-                >
-                  {updating === appointment.id ? (
-                    <ActivityIndicator size="small" color="#4A1C22" />
-                  ) : (
-                    <Ionicons name="close" size={18} color="#4A1C22" />
-                  )}
-                </TouchableOpacity>
-                {/* Status Badge */}
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(appointment.status) }]}>
-                  <Text style={styles.statusText}>{appointment.status?.toUpperCase()}</Text>
+
+                {/* Card Top Bar - Status & Delete */}
+                <View style={styles.cardTopBar}>
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(appointment.status) + '22', borderColor: getStatusColor(appointment.status) + '55' }]}>
+                    <Ionicons name={getStatusIcon(appointment.status)} size={13} color={getStatusColor(appointment.status)} />
+                    <Text style={[styles.statusText, { color: getStatusColor(appointment.status) }]}>
+                      {appointment.status?.toUpperCase()}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDelete(appointment.id)}
+                    disabled={updating === appointment.id}
+                    activeOpacity={0.85}
+                  >
+                    {updating === appointment.id ? (
+                      <ActivityIndicator size="small" color="#EF4444" />
+                    ) : (
+                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                    )}
+                  </TouchableOpacity>
                 </View>
+
+                {/* Divider */}
+                <View style={styles.cardDivider} />
 
                 {/* Appointment Details */}
                 <View style={styles.appointmentContent}>
                   <View style={styles.detailRow}>
-                    <Ionicons name="person" size={18} color="#E6B0B0" />
-                    <Text style={styles.detailLabel}>Customer:</Text>
-                    <Text style={styles.detailValue}>{appointment.customer_email}</Text>
+                    <View style={styles.detailIconWrap}>
+                      <Ionicons name="person" size={16} color="#F59E0B" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.detailLabel}>Customer</Text>
+                      <Text style={styles.detailValue}>{appointment.customer_email}</Text>
+                    </View>
                   </View>
 
                   <View style={styles.detailRow}>
-                    <Ionicons name="calendar" size={18} color="#E6B0B0" />
-                    <Text style={styles.detailLabel}>Date & Time:</Text>
-                    <Text style={styles.detailValue}>{formatDateTime(appointment.datetime)}</Text>
+                    <View style={styles.detailIconWrap}>
+                      <Ionicons name="calendar" size={16} color="#F59E0B" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.detailLabel}>Date & Time</Text>
+                      <Text style={styles.detailValue}>{formatDateTime(appointment.datetime)}</Text>
+                    </View>
                   </View>
 
-                  {/* Action Buttons - Only show if pending */}
+                  {/* Action Buttons */}
                   {appointment.status?.toLowerCase() === "pending" && (
                     <View style={styles.actionButtons}>
                       <TouchableOpacity
-                        style={[styles.button, styles.acceptButton]}
+                        style={styles.acceptButton}
                         onPress={() => handleAppointmentStatus(appointment.id, "accepted")}
                         disabled={updating === appointment.id}
+                        activeOpacity={0.85}
                       >
-                        {updating === appointment.id ? (
-                          <ActivityIndicator size="small" color="#FFF" />
-                        ) : (
-                          <>
-                            <Ionicons name="checkmark-circle" size={18} color="#FFF" />
-                            <Text style={styles.buttonText}>Accept</Text>
-                          </>
-                        )}
+                        <LinearGradient colors={['#10B981', '#059669']} style={styles.actionBtnGradient}>
+                          {updating === appointment.id ? (
+                            <ActivityIndicator size="small" color="#FFF" />
+                          ) : (
+                            <>
+                              <Ionicons name="checkmark-circle" size={17} color="#FFF" />
+                              <Text style={styles.buttonText}>Accept</Text>
+                            </>
+                          )}
+                        </LinearGradient>
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={[styles.button, styles.rejectButton]}
+                        style={styles.rejectButton}
                         onPress={() => handleAppointmentStatus(appointment.id, "rejected")}
                         disabled={updating === appointment.id}
+                        activeOpacity={0.85}
                       >
-                        {updating === appointment.id ? (
-                          <ActivityIndicator size="small" color="#FFF" />
-                        ) : (
-                          <>
-                            <Ionicons name="close-circle" size={18} color="#FFF" />
-                            <Text style={styles.buttonText}>Reject</Text>
-                          </>
-                        )}
+                        <LinearGradient colors={['#EF4444', '#DC2626']} style={styles.actionBtnGradient}>
+                          {updating === appointment.id ? (
+                            <ActivityIndicator size="small" color="#FFF" />
+                          ) : (
+                            <>
+                              <Ionicons name="close-circle" size={17} color="#FFF" />
+                              <Text style={styles.buttonText}>Reject</Text>
+                            </>
+                          )}
+                        </LinearGradient>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -220,167 +252,237 @@ console.log(tailorEmail);
           </View>
         )}
       </ScrollView>
-
-      {/* Refresh Button */}
-      
-     
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 20,
+  container: { flex: 1 },
+
+  scrollContent: {
+    paddingHorizontal: PAGE_GUTTER,
+    paddingBottom: 50,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
   },
+
   centerContainer: {
     flex: 1,
-    backgroundColor: '#2B0F14',
     justifyContent: "center",
     alignItems: "center",
+    gap: 16,
   },
+
+  loadingText: {
+    color: '#94a3b8',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
   backButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(230, 176, 176, 0.2)",
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.25)",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
-    marginTop: 58,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
+    marginTop: 60,
+    marginBottom: 20,
   },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 24,
-    paddingTop: 10,
+    marginBottom: 28,
+    width: '100%',
   },
+
+  headerIconWrap: {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
+    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.25)",
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  headerSub: {
+    fontSize: 11,
+    color: '#94a3b8',
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 3,
+  },
+
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#F2E6E6",
-    marginLeft: 12,
-    flex: 1,
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#ffffff",
+    letterSpacing: -0.2,
   },
+
   badge: {
-    backgroundColor: "#E6B0B0",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    backgroundColor: "rgba(245, 158, 11, 0.15)",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    minWidth: 40,
+    alignItems: 'center',
   },
   badgeText: {
-    color: "#4A1C22",
-    fontWeight: "600",
-    fontSize: 14,
+    color: "#F59E0B",
+    fontWeight: "800",
+    fontSize: 15,
   },
+
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 80,
   },
+  emptyIconWrap: {
+    width: 100,
+    height: 100,
+    borderRadius: 30,
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   emptyText: {
-    fontSize: 16,
-    color: "#E6B0B0",
-    marginTop: 16,
+    fontSize: 18,
+    color: "#ffffff",
+    marginTop: 4,
+    fontWeight: '700',
   },
+  emptySubText: {
+    color: '#94a3b8',
+    fontSize: 13,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+
   appointmentsList: {
-    gap: 16,
-    paddingBottom: 80,
+    gap: 14,
+    paddingBottom: 30,
+    width: '100%',
   },
+
   appointmentCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#ffffff",
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 3,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+    overflow: 'hidden',
+    width: '100%',
   },
+
+  cardTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+
+  cardDivider: {
+    height: 1,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    marginHorizontal: 16,
+  },
+
   deleteButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: '#E6B0B0',
-    padding: 6,
-    borderRadius: 16,
-    zIndex: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+
   statusBadge: {
-    alignSelf: "flex-start",
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginBottom: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
   },
   statusText: {
-    color: "#FFF",
-    fontWeight: "600",
-    fontSize: 12,
+    fontWeight: "700",
+    fontSize: 11,
+    letterSpacing: 0.4,
   },
+
   appointmentContent: {
+    padding: 16,
     gap: 12,
   },
+
   detailRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+    alignItems: "flex-start",
+    gap: 12,
   },
+
+  detailIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+
   detailLabel: {
     fontWeight: "600",
-    color: "#000000",
-    fontSize: 14,
-    minWidth: 70,
+    color: "#94a3b8",
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 3,
   },
   detailValue: {
-    color: "#000000",
+    color: "#ffffff",
     fontSize: 14,
-    flex: 1,
+    fontWeight: '600',
   },
+
   actionButtons: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
+    gap: 10,
+    marginTop: 6,
   },
-  button: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 8,
+
+  acceptButton: { flex: 1, borderRadius: 12, overflow: 'hidden' },
+  rejectButton: { flex: 1, borderRadius: 12, overflow: 'hidden' },
+
+  actionBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
   },
-  acceptButton: {
-    backgroundColor: "#4CAF50",
-  },
-  rejectButton: {
-    backgroundColor: "#F44336",
-  },
+
   buttonText: {
     color: "#FFF",
-    fontWeight: "600",
+    fontWeight: "700",
     fontSize: 14,
-  },
-  Button: {
-    position: "absolute",
-    bottom: 30,
-    right: 20,
-    backgroundColor: "#7A1F2B",
-    borderRadius: 50,
-    width: 56,
-    refreshheight: 56,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
 });

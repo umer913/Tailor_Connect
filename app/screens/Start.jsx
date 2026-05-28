@@ -1,81 +1,490 @@
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Animated,
-  Easing,
+  Dimensions,
   Image,
-  PanResponder,
+  SafeAreaView,
   StyleSheet,
   Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-const Start = ({ navigation }) => {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
+const { width, height } = Dimensions.get('window');
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 10,
-      onPanResponderMove: (_, g) => {
-        if (g.dy < 0) translateY.setValue(g.dy / 2);
-      },
-      onPanResponderRelease: (_, g) => {
-        if (g.dy < -100) {
-          Animated.parallel([
-            Animated.timing(translateY, {
-              toValue: -600, // smaller move (faster)
-              duration: 400, // shorter animation
-              easing: Easing.out(Easing.cubic),
-              useNativeDriver: true,
-            }),
-            Animated.timing(opacity, {
-              toValue: 0,
-              duration: 350,
-              useNativeDriver: true,
-            }),
-          ]).start(() => navigation.navigate('Login'));
-        } else {
-          Animated.spring(translateY, {
-            toValue: 0,
-            friction: 5,
+const Start = ({ navigation }) => {
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Image animation (appears first)
+  const imageFade = useRef(new Animated.Value(0)).current;
+  const imageSlide = useRef(new Animated.Value(-30)).current;
+
+  // Text animations (staggered after image)
+  const titleFade = useRef(new Animated.Value(0)).current;
+  const titleSlide = useRef(new Animated.Value(40)).current;
+
+  const subtitleFade = useRef(new Animated.Value(0)).current;
+  const subtitleSlide = useRef(new Animated.Value(40)).current;
+
+  const descFade = useRef(new Animated.Value(0)).current;
+  const descSlide = useRef(new Animated.Value(40)).current;
+
+  const heroFade = useRef(new Animated.Value(0)).current;
+  const heroSlide = useRef(new Animated.Value(40)).current;
+
+  const floatAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Step 1: Image fades in
+    Animated.parallel([
+      Animated.timing(imageFade, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(imageSlide, {
+        toValue: 0,
+        duration: 700,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Step 2: Title slides in after image
+      Animated.parallel([
+        Animated.timing(titleFade, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(titleSlide, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Step 3: Subtitle with short delay
+      Animated.sequence([
+        Animated.delay(200),
+        Animated.parallel([
+          Animated.timing(subtitleFade, {
+            toValue: 1,
+            duration: 600,
             useNativeDriver: true,
-          }).start();
-        }
-      },
-    })
-  ).current;
+          }),
+          Animated.timing(subtitleSlide, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+
+      // Step 4: Description with more delay
+      Animated.sequence([
+        Animated.delay(400),
+        Animated.parallel([
+          Animated.timing(descFade, {
+            toValue: 1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(descSlide, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+
+      // Step 5: Hero image last
+      Animated.sequence([
+        Animated.delay(600),
+        Animated.parallel([
+          Animated.timing(heroFade, {
+            toValue: 1,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+          Animated.timing(heroSlide, {
+            toValue: 0,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+    });
+
+    // Floating loop for logo
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -15,
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  const getSectionAnimStyle = (index) => {
+    const sectionHeight = height * 0.7;
+    const inputRange = [
+      (index - 1) * sectionHeight,
+      index * sectionHeight,
+      (index + 1) * sectionHeight
+    ];
+
+    const translateY = scrollY.interpolate({
+      inputRange,
+      outputRange: [100, 0, -50],
+      extrapolate: 'clamp',
+    });
+
+    const opacity = scrollY.interpolate({
+      inputRange: [
+        (index - 1) * sectionHeight,
+        index * sectionHeight - 200,
+        index * sectionHeight
+      ],
+      outputRange: [0, 1, 1],
+      extrapolate: 'clamp',
+    });
+
+    return { transform: [{ translateY }], opacity };
+  };
 
   return (
     <LinearGradient
-      colors={['#000000ff', '#31a9d0']}
+      colors={['#0f0f13', '#1a0610', '#2a0a18']}
       style={styles.container}
-      {...panResponder.panHandlers}
     >
-      <Animated.View style={[styles.content, { transform: [{ translateY }], opacity }]}>
-        <Image source={require('../../assets/images/Tailor.png')} style={styles.image} />
-        <Text style={styles.text}>Swipe up to start</Text>
-      </Animated.View>
+      <SafeAreaView style={styles.safeArea}>
+        <Animated.ScrollView
+          contentContainerStyle={styles.scrollContent}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* SECTION 1: HERO & APP INTRO */}
+          <View style={[styles.section, { paddingTop: 60 }]}>
+
+            {/* Logo — appears first */}
+            <Animated.View
+              style={[
+                styles.imageContainer,
+                {
+                  opacity: imageFade,
+                  transform: [{ translateY: imageSlide }, { translateY: floatAnim }],
+                },
+              ]}
+            >
+              <Image
+                source={require('../../assets/images/MyLogo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </Animated.View>
+
+            {/* Title — animates in after logo */}
+            <Animated.Text
+              style={[
+                styles.title,
+                { opacity: titleFade, transform: [{ translateY: titleSlide }] },
+              ]}
+            >
+              TailorX
+            </Animated.Text>
+
+            <View style={styles.separator} />
+
+            {/* Subtitle */}
+            <Animated.Text
+              style={[
+                styles.subtitle,
+                { opacity: subtitleFade, transform: [{ translateY: subtitleSlide }] },
+              ]}
+            >
+              The Art of Bespoke Tailoring
+            </Animated.Text>
+
+            {/* Description */}
+            <Animated.Text
+              style={[
+                styles.description,
+                { opacity: descFade, transform: [{ translateY: descSlide }] },
+              ]}
+            >
+              Welcome to the ultimate platform bridging the gap between fashion enthusiasts and expert tailors. Say goodbye to ill-fitting clothes and hello to custom-crafted wardrobes designed precisely for you.
+            </Animated.Text>
+
+            {/* Hero image — last to appear */}
+            <Animated.View
+              style={[
+                styles.heroImageContainer,
+                { opacity: heroFade, transform: [{ translateY: heroSlide }] },
+              ]}
+            >
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=800&auto=format&fit=crop' }}
+                style={styles.heroImage}
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(26, 6, 16, 1)']}
+                style={styles.heroImageOverlay}
+              />
+            </Animated.View>
+
+          </View>
+
+          {/* SECTION 2: WHO WE SERVE */}
+          <Animated.View style={[styles.section, getSectionAnimStyle(1)]}>
+            <Text style={styles.sectionHeader}>Who We Serve</Text>
+            <View style={styles.separator} />
+
+            <View style={styles.card}>
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1598554747436-c9293d6a588f?q=80&w=800&auto=format&fit=crop' }}
+                style={styles.cardImage}
+              />
+              <View style={styles.cardContent}>
+                <Ionicons name="person" size={24} color="#E6B0B0" />
+                <Text style={styles.cardTitle}>For Customers</Text>
+                <Text style={styles.cardText}>
+                  Discover talented tailors nearby, book appointments, share your precise measurements, and get bespoke outfits tailored perfectly to your body—all from your smartphone.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.card}>
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=800&auto=format&fit=crop' }}
+                style={styles.cardImage}
+              />
+              <View style={styles.cardContent}>
+                <Ionicons name="cut" size={24} color="#E6B0B0" />
+                <Text style={styles.cardTitle}>For Tailors</Text>
+                <Text style={styles.cardText}>
+                  Showcase your craftsmanship to a broader audience. Manage orders efficiently, communicate with customers, and grow your bespoke tailoring business like never before.
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* GET STARTED CTA */}
+          <Animated.View style={[styles.ctaContainer, getSectionAnimStyle(2)]}>
+            <LinearGradient
+              colors={['rgba(230, 176, 176, 0.1)', 'transparent']}
+              style={styles.ctaBackgroundGlow}
+            />
+            <Text style={styles.ctaText}>Ready to upgrade your wardrobe?</Text>
+            <TouchableOpacity
+              style={styles.button}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Login')}
+            >
+              <LinearGradient
+                colors={['#9D2A4B', '#D6406A']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.buttonGradient}
+              >
+                <Text style={styles.buttonText}>Get Started Now</Text>
+                <Ionicons name="arrow-forward" size={20} color="#fff" style={styles.buttonIcon} />
+              </LinearGradient>
+            </TouchableOpacity>
+          </Animated.View>
+
+        </Animated.ScrollView>
+      </SafeAreaView>
     </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  image: {
-    width: 300,
-    height: 400,
-    resizeMode: 'contain',
-    marginBottom: 20,
+  container: {
+    flex: 1,
   },
-  text: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    textShadowColor: 'rgba(255,255,255,0.6)',
+  safeArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 60,
+  },
+  section: {
+    minHeight: height * 0.85,
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+    marginBottom: 40,
+  },
+  imageContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(230, 176, 176, 0.2)',
+  },
+  logo: {
+    width: '65%',
+    height: '65%',
+    resizeMode: 'contain',
+  },
+  title: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: '#E6B0B0', // Rose gold
+    letterSpacing: 2,
+    textShadowColor: 'rgba(230, 176, 176, 0.4)',
+    textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
-    marginTop: 250,
+  },
+  separator: {
+    width: 60,
+    height: 3,
+    backgroundColor: '#9D2A4B',
+    marginVertical: 16,
+    borderRadius: 2,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 4,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.75)',
+    textAlign: 'center',
+    lineHeight: 26,
+    marginBottom: 30,
+  },
+  heroImageContainer: {
+    width: width - 48,
+    height: 240,
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginTop: 15,
+    shadowColor: '#E6B0B0',
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.25,
+    shadowRadius: 25,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(230, 176, 176, 0.3)',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroImageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    top: '50%',
+  },
+  sectionHeader: {
+    fontSize: 34,
+    fontWeight: '800',
+    color: '#E6B0B0',
+    marginBottom: 10,
+    letterSpacing: 1.5,
+    textShadowColor: 'rgba(230, 176, 176, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
+  },
+  card: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(230, 176, 176, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+  },
+  cardImage: {
+    width: '100%',
+    height: 140,
+  },
+  cardContent: {
+    padding: 20,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  cardText: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    lineHeight: 22,
+  },
+  ctaContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    marginTop: 20,
+    paddingVertical: 40,
+    position: 'relative',
+  },
+  ctaBackgroundGlow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 30,
+    transform: [{ scale: 1.5 }],
+  },
+  ctaText: {
+    fontSize: 22,
+    color: '#E6B0B0',
+    fontWeight: '700',
+    marginBottom: 25,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  button: {
+    width: '100%',
+    shadowColor: '#D6406A',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  buttonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 22,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 19,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  buttonIcon: {
+    marginLeft: 12,
   },
 });
 

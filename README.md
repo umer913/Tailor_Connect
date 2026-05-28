@@ -1,8 +1,33 @@
-# Welcome to your Expo app 👋
+# TailorX
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+TailorX is a mobile app that connects customers with tailors. It includes customer, tailor, and admin flows such as booking services, managing orders, and handling payments. The frontend is built with Expo/React Native, and the backend is an Express server connected to MongoDB.
 
-## Get started
+## Tech Stack
+
+- Expo + React Native (frontend)
+- Express (backend)
+- MongoDB (database)
+- Mongoose (ODM)
+- Cloudinary (image storage)
+- PayFast (card payments)
+- Nodemailer (email OTP)
+
+## Project Structure
+
+- app/ - Expo screens and routing
+- backend/ - Express API server
+- assets/ - Images and static assets
+
+## Key Features
+
+- Role-based flows for customer, tailor, and admin
+- Tailor services listing and browsing
+- Order creation, tracking, and status updates
+- Appointment scheduling
+- In-app chat and complaint handling
+- PayFast checkout with server-side verification
+
+## Setup
 
 1. Install dependencies
 
@@ -10,70 +35,86 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Start the Expo app
 
    ```bash
    npx expo start
    ```
 
-3. Start backend server
+3. Start the backend server (in another terminal)
 
    ```bash
    node backend/server.js
    ```
 
-## Payment Setup
+## Environment Variables
 
-This project now supports:
-
-- Card payments using Stripe Checkout
-- EasyPaisa manual transfer submission
-- JazzCash manual transfer submission
-- Bank transfer submission
-
-To enable card charging:
-
-1. Open backend/.env
-2. Set STRIPE_SECRET_KEY with your Stripe secret key
-3. Keep PAYMENT_SUCCESS_URL and PAYMENT_CANCEL_URL as deep-link values (default already added)
-
-For transfer methods, set your merchant/account values in backend/.env:
-
-- EASYPAISA_ACCOUNT_TITLE, EASYPAISA_ACCOUNT_NUMBER
-- JAZZCASH_ACCOUNT_TITLE, JAZZCASH_ACCOUNT_NUMBER
-- BANK_NAME, BANK_ACCOUNT_TITLE, BANK_ACCOUNT_NUMBER, BANK_IBAN
-
-Payment status is tracked server-side in backend/payments-store.json and shown in My Orders.
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Create backend/.env with the values below (adjust as needed):
 
 ```bash
-npm run reset-project
+MONGODB_URI=
+MONGODB_DB_NAME=tailorx
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+EMAIL_USER=
+EMAIL_PASS=
+
+PAYFAST_MERCHANT_ID=
+PAYFAST_MERCHANT_KEY=
+PAYFAST_PASSPHRASE=
+PAYFAST_SANDBOX=true
+PAYFAST_NOTIFY_BASE_URL=http://localhost:3000
+
+PAYMENT_SUCCESS_URL=tailorx://payment-success
+PAYMENT_CANCEL_URL=tailorx://payment-cancel
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## MongoDB Setup
 
-## Learn more
+Create a MongoDB database (Atlas or local) and update MONGODB_URI. The backend uses Mongoose models located under backend/models.
 
-To learn more about developing your project with Expo, look at the following resources:
+Collections used by the backend:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- profiles
+- services
+- orders
+- appointments
+- availability
+- chatmessages
+- tailorreviews
+- complaints
 
-## Join the community
+Images are uploaded to Cloudinary folders:
 
-Join our community of developers creating universal apps.
+- tailorx/fabric (order fabric images)
+- tailorx/chat (chat attachments)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Payments
+
+- PayFast checkout is started from the app and handled in the backend.
+- Payment status is stored in backend/payments-store.json and displayed in the app.
+- If you delete payments-store.json, the backend will recreate it, but old payment history will be lost.
+
+## Common Scripts
+
+- Start Expo: `npx expo start`
+- Android: `npm run android`
+- iOS: `npm run ios`
+- Web: `npm run web`
+- Lint: `npm run lint`
+
+## Notes
+
+- Update API base URL in the app to match your machine/network if needed.
+- For PayFast in production, set PAYFAST_SANDBOX=false and update merchant keys.
+
+## Screenshots
+
+Add screenshots under assets/images and link them here. Example placeholders:
+
+- Customer dashboard (add image)
+- Tailor services list (add image)
+- Payment screen (add image)

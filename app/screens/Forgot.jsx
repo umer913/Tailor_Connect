@@ -23,7 +23,7 @@ const Forgot = ({ navigation }) => {
   const handleSendOTP = async () => {
     if (!email) return Alert.alert("Error", "Please enter your email");
     try {
-      const res = await axios.post("http://UF-MacBook-Pro.local:3000/forgot-password", { email });
+      const res = await axios.post("http://UF-MacBook-Pro.local:3001/auth/forgot-password", { email });
       Alert.alert("Success", res.data.message || "OTP sent to your email");
       setStep(3);
     } catch (err) {
@@ -37,7 +37,7 @@ const Forgot = ({ navigation }) => {
       return Alert.alert("Error", "Please enter all fields");
 
     try {
-      const res = await axios.post("http://UF-MacBook-Pro.local:3000/reset-password", {
+      const res = await axios.post("http://UF-MacBook-Pro.local:3001/auth/reset-password", {
         email,
         otp,
         newPassword,
@@ -50,7 +50,7 @@ const Forgot = ({ navigation }) => {
   };
 
   return (
-      <LinearGradient colors={['#a8edea', '#fed6e3']} style={{ flex: 1 }}>
+      <LinearGradient colors={['#0f0f13', '#1a0610', '#2a0a18']} style={{ flex: 1 }}>
     <SafeAreaView style={{ flex: 1}}>
       <KeyboardAvoidingView
         style={{ flex: 1, justifyContent: "center", paddingHorizontal: 20 }}
@@ -68,6 +68,7 @@ const Forgot = ({ navigation }) => {
               </Text>
               <TextInput
                 placeholder="Enter your email"
+                placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
@@ -88,6 +89,7 @@ const Forgot = ({ navigation }) => {
               </Text>
               <TextInput
                 placeholder="Enter OTP"
+                placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
                 style={styles.input}
                 value={otp}
                 onChangeText={setOtp}
@@ -95,6 +97,7 @@ const Forgot = ({ navigation }) => {
               />
               <TextInput
                 placeholder="Enter New Password"
+                placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
                 style={styles.input}
                 value={newPassword}
                 onChangeText={setNewPassword}
@@ -119,49 +122,53 @@ export default Forgot;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 20,
     padding: 28,
     width: "100%",
-    shadowColor: "#6C63FF",
-    shadowOpacity: 0.7,
-    shadowRadius: 30,
+    shadowColor: "#000",
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
     alignItems: "center",
     marginBottom: 200,
+    borderWidth: 1,
+    borderColor: 'rgba(230, 176, 176, 0.15)',
   },
   title: {
     fontSize: 26,
     fontWeight: "bold",
-    color: "#333",
+    color: "#E6B0B0",
     marginBottom: 6,
     textAlign: "center",
+    letterSpacing: 1,
   },
   subtitle: {
     fontSize: 14,
-    color: "#555",
+    color: "rgba(255, 255, 255, 0.7)",
     marginBottom: 25,
     textAlign: "center",
   },
   input: {
     width: "100%",
-    backgroundColor: "#F7F7F7",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
     fontSize: 16,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: "#c7c7c7ff",
+    borderColor: "rgba(230, 176, 176, 0.2)",
+    color: "#fff",
   },
   button: {
-    backgroundColor: "#6C63FF",
+    backgroundColor: "#9D2A4B",
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
     width: "100%",
-    shadowColor: "#6C63FF",
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowColor: "#9D2A4B",
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
     marginTop: 10,
   },
   buttonText: {

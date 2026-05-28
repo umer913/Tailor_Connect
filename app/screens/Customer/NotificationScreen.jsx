@@ -1,277 +1,289 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+
+const TYPE_CONFIG = {
+  appointment: { icon: 'calendar', gradient: ['#9D2A4B', '#5c1428'], label: 'Appointment' },
+  order: { icon: 'receipt', gradient: ['#D6406A', '#9D2A4B'], label: 'Order' },
+};
+
+const SCREEN_W = Dimensions.get("window").width;
+const IS_TABLET = SCREEN_W >= 768;
+const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 920 : IS_TABLET ? 760 : SCREEN_W;
+const PAGE_GUTTER = IS_TABLET ? 28 : 20;
+
+const STATUS_COLORS = {
+  pending: '#f59e0b',
+  accepted: '#10b981',
+  completed: '#06b6d4',
+  in_progress: '#8b5cf6',
+  rejected: '#ef4444',
+  cancelled: '#ef4444',
+};
 
 const NotificationScreen = ({ route, navigation }) => {
   const { email } = route.params || {};
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
+  useEffect(() => { fetchNotifications(); }, []);
 
-  // Refresh when screen is focused
   useFocusEffect(
-    React.useCallback(() => {
-      fetchNotifications();
-    }, [email])
+    React.useCallback(() => { fetchNotifications(); }, [email])
   );
 
   const fetchNotifications = async () => {
-    if (!email) {
-      console.error(`[NOTIFICATION SCREEN] No email provided`);
-      return;
-    }
-
+    if (!email) return;
     setLoading(true);
     try {
-      // Fetch order notifications
-      const orderUrl = "http://UF-MacBook-Pro.local:3000/get-notifications";
-      const orderResponse = await axios.get(orderUrl, { params: { email } });
-      const orderNotifications = (orderResponse.data.notifications || []).map(n => ({
-        ...n,
-        type: 'order'
-      }));
+      const orderRes = await axios.get("http://UF-MacBook-Pro.local:3001/notifications/get-notifications", { params: { email } });
+      const orderNotifs = (orderRes.data.notifications || []).map(n => ({ ...n, type: 'order' }));
 
-      // Fetch appointment notifications
-      const appointmentUrl = "http://UF-MacBook-Pro.local:3000/get-appointment-notifications";
-      const appointmentResponse = await axios.get(appointmentUrl, { params: { email } });
-      const appointmentNotifications = (appointmentResponse.data.notifications || []).map(n => ({
-        ...n,
-        type: 'appointment'
-      }));
+      const apptRes = await axios.get("http://UF-MacBook-Pro.local:3001/notifications/get-appointment-notifications", { params: { email } });
+      const apptNotifs = (apptRes.data.notifications || []).map(n => ({ ...n, type: 'appointment' }));
 
-      // Combine and sort by created_at
-      const allNotifications = [...orderNotifications, ...appointmentNotifications]
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      setNotifications(allNotifications);
+      const all = [...orderNotifs, ...apptNotifs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setNotifications(all);
     } catch (err) {
-      console.error("[NOTIFICATION SCREEN] Error fetching notifications:", err.message);
-    } finally {
-      setLoading(false);
-    }
+      console.error("[NOTIFICATION SCREEN] Error:", err.message);
+    } finally { setLoading(false); }
   };
 
   const clearAllNotifications = async () => {
     try {
-      const url = "http://UF-MacBook-Pro.local:3000/clear-all-notifications";
-      await axios.put(url, { email });
+      await axios.put("http://UF-MacBook-Pro.local:3001/notifications/clear-all-notifications", { email });
       setNotifications([]);
-    } catch (err) {
-      console.error("Error clearing notifications:", err.message);
-    }
+    } catch (err) { console.error("Error clearing notifications:", err.message); }
   };
 
-  const dismissNotification = async (notificationItem) => {
+  const dismissNotification = async (item) => {
     try {
-      if (notificationItem.type === 'appointment') {
-        const url = "http://UF-MacBook-Pro.local:3000/dismiss-appointment-notification";
-        await axios.put(url, { appointment_id: notificationItem.id });
+      if (item.type === 'appointment') {
+        await axios.put("http://UF-MacBook-Pro.local:3001/notifications/dismiss-appointment-notification", { appointment_id: item.id });
       } else {
-        const url = "http://UF-MacBook-Pro.local:3000/dismiss-notification";
-        await axios.put(url, { order_id: notificationItem.id });
+        await axios.put("http://UF-MacBook-Pro.local:3001/notifications/dismiss-notification", { order_id: item.id });
       }
-      setNotifications(notifications.filter(n => n.id !== notificationItem.id));
-    } catch (err) {
-      console.error("Error dismissing notification:", err.message);
-    }
+      setNotifications(notifications.filter(n => n.id !== item.id));
+    } catch (err) { console.error("Error dismissing notification:", err.message); }
   };
+
+  const formatTime = (ts) => {
+    if (!ts) return '';
+    try {
+      const d = new Date(ts);
+      return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
+  };
+
+  const statusColor = (s) => STATUS_COLORS[(s || '').toLowerCase()] || '#E6B0B0';
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={["#0f0f13", "#1a0610", "#2a0a18"]} style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0f0f13" />
+
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={28} color="#99aaff" />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={22} color="#E6B0B0" />
         </TouchableOpacity>
-        <Text style={styles.title}>Notifications</Text>
-        <TouchableOpacity onPress={fetchNotifications} style={{ padding: 8 }}>
-          <Ionicons name="refresh" size={24} color="#99aaff" />
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Notifications</Text>
+          {notifications.length > 0 && (
+            <View style={styles.countBadge}>
+              <Text style={styles.countText}>{notifications.length}</Text>
+            </View>
+          )}
+        </View>
+        <TouchableOpacity onPress={fetchNotifications} style={styles.refreshBtn}>
+          <Ionicons name="refresh" size={20} color="#E6B0B0" />
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
+          <View style={styles.loadingDot} />
+          <Text style={styles.loadingText}>Fetching notifications...</Text>
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Ionicons name="checkmark-circle-outline" size={48} color="#7b9bff" />
-          <Text style={styles.emptyText}>No new notifications</Text>
+          <LinearGradient colors={["rgba(157,42,75,0.25)", "rgba(214,64,106,0.1)"]} style={styles.emptyIconWrap}>
+            <Ionicons name="checkmark-circle-outline" size={42} color="#E6B0B0" />
+          </LinearGradient>
+          <Text style={styles.emptyTitle}>All caught up!</Text>
+          <Text style={styles.emptyText}>No new notifications at the moment</Text>
         </View>
       ) : (
         <>
-          <ScrollView style={styles.listContainer}>
-            {notifications.map((item) => (
-              <View key={item.id.toString()} style={styles.notificationCard}>
-                <View style={styles.notificationHeader}>
-                  <View style={styles.tailorInfo}>
-                    {item.type === 'appointment' ? (
-                      <>
-                        <Text style={styles.serviceType}>Appointment with {item.tailor_name}</Text>
-                        <Text style={styles.waitingText}>Status: {item.status}</Text>
-                        <Text style={styles.waitingText}>Time: {item.datetime}</Text>
-                      </>
-                    ) : (
-                      <>
-                        <Text style={styles.serviceType}>{item.service_type} Order from {item.tailor_name}</Text>
-                        <Text style={[styles.waitingText, { fontWeight: '600', color: '#FF6B6B' }]}>
-                          Status: {item.status?.toUpperCase()}
+          <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+            {notifications.map((item) => {
+              const cfg = TYPE_CONFIG[item.type] || TYPE_CONFIG.order;
+              const sc = statusColor(item.status);
+              return (
+                <View key={String(item.id)} style={styles.card}>
+                  {/* left accent */}
+                  <LinearGradient colors={cfg.gradient} style={styles.cardBar} />
+
+                  <View style={styles.cardBody}>
+                    {/* icon + title row */}
+                    <View style={styles.cardTop}>
+                      <LinearGradient colors={cfg.gradient} style={styles.iconWrap}>
+                        <Ionicons name={cfg.icon} size={16} color="#fff" />
+                      </LinearGradient>
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        {item.type === 'appointment' ? (
+                          <Text style={styles.cardTitle}>Appointment with {item.tailor_name}</Text>
+                        ) : (
+                          <Text style={styles.cardTitle}>{item.service_type} Order</Text>
+                        )}
+                        <Text style={styles.cardTailorSub}>
+                          {item.type === 'order' ? `from ${item.tailor_name}` : cfg.label}
                         </Text>
-                        <Text style={styles.waitingText}>Quantity: {item.quantity}</Text>
-                      </>
+                      </View>
+                      <TouchableOpacity style={styles.dismissBtn} onPress={() => dismissNotification(item)}>
+                        <Ionicons name="close" size={16} color="#ffffffff" />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Details */}
+                    <View style={styles.detailsRow}>
+                      <View style={[styles.statusPill, { backgroundColor: `${sc}22`, borderColor: `${sc}44` }]}>
+                        <View style={[styles.statusDot, { backgroundColor: sc }]} />
+                        <Text style={[styles.statusPillText, { color: sc }]}>
+                          {(item.status || '').toUpperCase()}
+                        </Text>
+                      </View>
+
+                      {item.type === 'appointment' && item.datetime && (
+                        <Text style={styles.timeText}>{formatTime(item.datetime)}</Text>
+                      )}
+                      {item.type === 'order' && item.quantity != null && (
+                        <Text style={styles.timeText}>Qty: {item.quantity}</Text>
+                      )}
+                    </View>
+
+                    {item.created_at && (
+                      <Text style={styles.createdAt}>{formatTime(item.created_at)}</Text>
                     )}
                   </View>
-                  <TouchableOpacity
-                    style={styles.dismissBtn}
-                    onPress={() => dismissNotification(item)}
-                  >
-                    <Ionicons name="close" size={20} color="#8e9ccf" />
-                  </TouchableOpacity>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </ScrollView>
 
-          {notifications.length > 0 && (
-            <TouchableOpacity
-              style={styles.clearAllBtn}
-              onPress={clearAllNotifications}
-            >
-              <Ionicons name="trash-outline" size={20} color="#fff" />
-              <Text style={styles.clearAllText}>Clear All</Text>
+          <View style={styles.footer}>
+            <TouchableOpacity style={styles.clearAllBtn} onPress={clearAllNotifications}>
+              <Ionicons name="trash-outline" size={18} color="#f87171" style={{ marginRight: 8 }} />
+              <Text style={styles.clearAllText}>Clear All Notifications</Text>
             </TouchableOpacity>
-          )}
+          </View>
         </>
       )}
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0c1435',
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: Platform.OS === 'ios' ? 56 : 42,
+    paddingBottom: 16,
+    paddingHorizontal: PAGE_GUTTER,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(155,179,255,0.15)',
-    backgroundColor: 'rgba(38, 52, 90, 0.5)',
+    borderBottomColor: 'rgba(230,176,176,0.08)',
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#d1d9ff',
-    letterSpacing: 0.8,
+  backBtn: {
+    width: 44, height: 44, borderRadius: 14,
+    backgroundColor: 'rgba(157,42,75,0.15)',
+    borderWidth: 1, borderColor: 'rgba(157,42,75,0.3)',
+    alignItems: 'center', justifyContent: 'center',
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  countBadge: {
+    marginLeft: 8, backgroundColor: '#9D2A4B',
+    borderRadius: 10, minWidth: 22, height: 22,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6,
   },
-  loadingText: {
-    color: '#8e9ccf',
-    fontSize: 16,
-    fontWeight: '600',
+  countText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  refreshBtn: {
+    width: 44, height: 44, borderRadius: 14,
+    backgroundColor: 'rgba(157,42,75,0.1)',
+    alignItems: 'center', justifyContent: 'center',
   },
-  emptyText: {
-    color: '#8e9ccf',
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 12,
+  centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingDot: {
+    width: 60, height: 60, borderRadius: 30,
+    backgroundColor: 'rgba(157,42,75,0.2)', marginBottom: 14,
   },
-  listContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+  loadingText: { color: '#E6B0B0', fontSize: 15, fontWeight: '600' },
+  emptyIconWrap: {
+    width: 90, height: 90, borderRadius: 28,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+    borderWidth: 1, borderColor: 'rgba(157,42,75,0.3)',
   },
-  notificationCard: {
-    backgroundColor: 'rgba(38, 52, 90, 0.5)',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(155,179,255,0.15)',
-  },
-  notificationHeader: {
+  emptyTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 8 },
+  emptyText: { color: '#E6B0B0', fontSize: 15, fontWeight: '600' },
+  listContainer: { flex: 1, paddingHorizontal: PAGE_GUTTER, paddingTop: 16, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  card: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    borderRadius: 18,
+    marginBottom: 12,
+    backgroundColor: 'rgba(26, 6, 16, 0.45)',
+    borderWidth: 1, borderColor: 'rgba(157,42,75,0.18)',
+    overflow: 'hidden',
+    shadowColor: '#9D2A4B',
+    shadowOpacity: 0.1, shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 }, elevation: 4,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
   },
-  tailorInfo: {
-    flex: 1,
+  cardBar: { width: 4 },
+  cardBody: { flex: 1, padding: 14 },
+  cardTop: { flexDirection: 'row', alignItems: 'center' },
+  iconWrap: {
+    width: 38, height: 38, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
   },
-  tailorName: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#d1d9ff',
-    marginBottom: 4,
-  },
-  serviceType: {
-    fontSize: 16,
-    color: '#8e9ccf',
-    fontWeight: '800',
-  },
+  cardTitle: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  cardTailorSub: { color: '#E6B0B0', fontSize: 12, fontWeight: '600', marginTop: 1 },
   dismissBtn: {
-    padding: 8,
-    backgroundColor: 'rgba(255, 51, 102, 0.15)',
-    borderRadius: 10,
+    width: 32, height: 32, borderRadius: 10,
+    backgroundColor: 'rgba(239, 68, 68, 1)',
+    alignItems: 'center', justifyContent: 'center',
   },
-  notificationDetails: {
-    gap: 10,
+  detailsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 10 },
+  statusPill: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 8, borderWidth: 1,
   },
-  waitingText: {
-    fontSize: 14,
-    color: '#ffb366',
-    fontWeight: '700',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  label: {
-    fontSize: 12,
-    color: '#8e9ccf',
-    fontWeight: '600',
-  },
-  value: {
-    fontSize: 14,
-    color: '#c3d1ff',
-    fontWeight: '700',
-  },
+  statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
+  statusPillText: { fontSize: 11, fontWeight: '800' },
+  timeText: { color: '#E6B0B0', fontSize: 12, fontWeight: '600' },
+  createdAt: { color: '#E6B0B0', fontSize: 11, marginTop: 6, fontWeight: '500' },
+  footer: { padding: 16, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   clearAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 51, 102, 0.25)',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 51, 102, 0.4)',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    paddingVertical: 14, borderRadius: 16,
+    borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)',
   },
-  clearAllText: {
-    color: '#ff6699',
-    fontSize: 16,
-    fontWeight: '700',
-    marginLeft: 10,
-    letterSpacing: 0.5,
-  },
+  clearAllText: { color: '#f87171', fontSize: 15, fontWeight: '700' },
 });
 
 export default NotificationScreen;

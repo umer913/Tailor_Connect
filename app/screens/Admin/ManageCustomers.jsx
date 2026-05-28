@@ -3,12 +3,12 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function ManageCustomers() {
@@ -21,7 +21,7 @@ export default function ManageCustomers() {
 
   const fetchCustomers = async () => {
     try {
-      const res = await axios.get("http://UF-MacBook-Pro.local:3000/get-customers");
+      const res = await axios.get("http://UF-MacBook-Pro.local:3001/admin/get-customers");
       setCustomers(res.data.customers || []);
     } catch (err) {
       console.log(err);
@@ -36,7 +36,7 @@ export default function ManageCustomers() {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete("http://UF-MacBook-Pro.local:3000/remove-customer", {
+            await axios.delete("http://UF-MacBook-Pro.local:3001/admin/remove-customer", {
               data: { email },
             });
             setCustomers((prev) => prev.filter((c) => c.email !== email));

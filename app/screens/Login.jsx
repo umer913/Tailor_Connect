@@ -4,16 +4,16 @@ import axios from "axios";
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react'; //Runs function (effects) after render screen(useEffect).
 import {
-  Animated,
-  Easing,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Animated,
+    Easing,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 const Login = ({ navigation }) => {
@@ -45,127 +45,129 @@ const Login = ({ navigation }) => {
       ]),
       //after running parrel block button-aniamtion will run
       Animated.timing(buttonAnim, {
-          toValue: 1,
-          duration: 400, 
-          useNativeDriver: true }),
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true
+      }),
     ]).start();
   }, []);//will run atleast 1 time after screen render
 
   const handleLogin = async () => {
-  setError("");
+    setError("");
 
 
-  if (!email || !password) {
-    setError("All fields are required");
-    return;
-  }
-  if (!email.includes("@")) {
-    setError("Please enter a valid email address");
-    return;
-  }
+    if (!email || !password) {
+      setError("All fields are required");
+      return;
+    }
+    if (!email.includes("@")) {
+      setError("Please enter a valid email address");
+      return;
+    }
 
 
-  try {
-    // sending a request to this server running on my Mac at port 3000
-    const response = await axios.post("http://UF-MacBook-Pro.local:3000/login", {
-      email,
-      password,
-    });
+    try {
+      // sending a request to this server running on my Mac at port 3000
+      const response = await axios.post("http://UF-MacBook-Pro.local:3001/auth/login", {
+        email,
+        password,
+      });
 
-    const data = response.data;
-    console.log("Response:", data);
+      const data = response.data;
+      console.log("Response:", data);
 
-    // Role-based navigation
-    if (data.user.role === "customer") {
-      console.log("Navigating with email:", data.user.email);
-  navigation.navigate("CustomerDrawer", { email: data.user.email });
-} else if (data.user.role === "tailor") {
-  navigation.navigate("TailorDrawer", { email: data.user.email });
-    console.log("Navigating with email:", data.user.email);
-} else if (data.user.role === "admin") {
-  navigation.navigate("AdminDashboard", { email: data.user.email });
-} else {
-  setError("Unknown role.");
-}
+      // Role-based navigation
+      if (data.user.role === "customer") {
+        console.log("Navigating with email:", data.user.email);
+        navigation.navigate("CustomerDrawer", { email: data.user.email });
+      } else if (data.user.role === "tailor") {
+        navigation.navigate("TailorDrawer", { email: data.user.email });
+        console.log("Navigating with email:", data.user.email);
+      } else if (data.user.role === "admin") {
+        navigation.navigate("AdminDashboard", { email: data.user.email });
+      } else {
+        setError("Unknown role.");
+      }
 
-  } catch (err) {
-   
+    } catch (err) {
 
-    setError(err.response?.data?.error || "Network error: " + err.message);
-  }
-};
+
+      setError(err.response?.data?.error || "Network error: " + err.message);
+    }
+  };
 
   return (
-     <LinearGradient colors={['#a8edea', '#fed6e3']} style={{ flex: 1 }}>
-    <SafeAreaView style={{ flex: 1 }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View
-            style={[
-              styles.card,
-            ]}
-          >
+    <LinearGradient colors={['#0f0f13', '#1a0610', '#2a0a18']} style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <View
+              style={[
+                styles.card,
+              ]}
+            >
 
-            <Animated.Image
-              source={require('../../assets/images/tailor.jpeg')}
-              style={[styles.logo, { transform: [{ scale: logoScale }, { translateY: logoSlideAnim }] }]}
-            />
-
-            <Text style={styles.title}>Welcome Back </Text>
-            <Text style={styles.subtitle}>Log in to continue to TailorX</Text>
-
-            <TextInput
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              placeholderTextColor={'gray'}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-
-            <View style={styles.passwordContainer}>
-              <TextInput
-                placeholder="Password"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={setPassword}
-                style={[styles.passwordInput]}
-                placeholderTextColor={'gray'}
+              <Animated.Image
+                source={require('../../assets/images/MyLogo.png')}
+                resizeMode="contain"
+                style={[styles.logo, { transform: [{ scale: logoScale }, { translateY: logoSlideAnim }] }]}
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={22}
-                  color="#666"
-                />
-              </TouchableOpacity>
-              
-            </View>
 
-            <Animated.View style={{ width: '100%', opacity: buttonAnim, transform: [{ scale: buttonAnim }] }}>
-              <TouchableOpacity style={styles.button} onPress={handleLogin}>
-                <Text style={styles.buttonText}>Sign In</Text>
+              <Text style={styles.title}>Welcome Back </Text>
+              <Text style={styles.subtitle}>Log in to continue to TailorX</Text>
+
+              <TextInput
+                placeholder="Email"
+                value={email}
+                onChangeText={setEmail}
+                style={styles.input}
+                placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  placeholder="Password"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  style={[styles.passwordInput]}
+                  placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons
+                    name={showPassword ? 'eye-off' : 'eye'}
+                    size={22}
+                    color="rgba(255, 255, 255, 0.6)"
+                  />
+                </TouchableOpacity>
+
+              </View>
+
+              <Animated.View style={{ width: '100%', opacity: buttonAnim, transform: [{ scale: buttonAnim }] }}>
+                <TouchableOpacity style={styles.button} onPress={handleLogin}>
+                  <Text style={styles.buttonText}>Sign In</Text>
+                </TouchableOpacity>
+              </Animated.View>
+              {Error ? (
+                <Text style={{ color: "red", marginBottom: 10 }}>{Error}</Text>
+              ) : null}
+              <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+                <Text style={styles.link}>
+                  Don't have an account?</Text>
               </TouchableOpacity>
-            </Animated.View>
- {Error ? (
-        <Text style={{ color: "red", marginBottom: 10 }}>{Error}</Text>
-      ) : null}
-            <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-              <Text style={styles.link}>
-                Don't have an account?</Text>
-            </TouchableOpacity>
-                 <TouchableOpacity onPress={() => navigation.navigate('Forgot')}>
-              <Text style={styles.link}>
-                Forgot your password? Reset..</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              <TouchableOpacity onPress={() => navigation.navigate('Forgot')}>
+                <Text style={styles.link}>
+                  Forgot your password? Reset..</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
@@ -173,15 +175,17 @@ export default Login;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 20,
     padding: 28,
     width: '100%',
-    shadowColor: '#6C63FF',
-    shadowOpacity: 0.7,
-    shadowRadius: 50,
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
     alignItems: 'center',
-    marginBottom:130,
+    marginBottom: 130,
+    borderWidth: 1,
+    borderColor: 'rgba(230, 176, 176, 0.15)',
   },
   logo: {
     width: 180,
@@ -191,32 +195,34 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#E6B0B0',
     marginBottom: 6,
+    letterSpacing: 1,
   },
   subtitle: {
     fontSize: 14,
-    color: '#555',
+    color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 25,
   },
   input: {
     width: '100%',
-    backgroundColor: '#F7F7F7',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
     fontSize: 16,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#c7c7c7ff',
+    borderColor: 'rgba(230, 176, 176, 0.2)',
+    color: '#fff',
   },
   passwordContainer: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F7F7F7',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: '#c7c7c7ff',
+    borderColor: 'rgba(230, 176, 176, 0.2)',
     borderRadius: 12,
     paddingHorizontal: 14,
     marginBottom: 20,
@@ -225,16 +231,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     paddingVertical: 12,
+    color: '#fff',
   },
   button: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: '#9D2A4B',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     width: '100%',
-    shadowColor: '#6C63FF',
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowColor: '#9D2A4B',
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
     marginBottom: 10,
   },
   buttonText: {
@@ -244,9 +251,9 @@ const styles = StyleSheet.create({
   },
   link: {
     marginTop: 18,
-    fontWeight:'bold',
+    fontWeight: 'bold',
     fontSize: 15,
-    color: '#555',
+    color: '#E6B0B0',
   },
 });
 

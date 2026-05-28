@@ -15,8 +15,11 @@ import {
     View,
 } from "react-native";
 
-const SERVER = "http://UF-MacBook-Pro.local:3000";
-const { width } = Dimensions.get("window");
+const SERVER = "http://UF-MacBook-Pro.local:3001";
+const SCREEN_W = Dimensions.get("window").width;
+const IS_TABLET = SCREEN_W >= 768;
+const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 980 : IS_TABLET ? 840 : SCREEN_W;
+const PAGE_GUTTER = IS_TABLET ? 28 : 18;
 
 const getStatusColor = (resolvedAt) => (resolvedAt ? "#00ff99" : "#ffcc00");
 const getStatusLabel = (resolvedAt) => (resolvedAt ? "Resolved" : "Pending");
@@ -199,7 +202,7 @@ export default function ManageComplain() {
       data={complaints}
       keyExtractor={(item) => item.id.toString()}
       renderItem={renderItem}
-      contentContainerStyle={{ paddingBottom: 40 }}
+      contentContainerStyle={styles.listContent}
     />
   )}
 </View>
@@ -212,6 +215,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 60,
     alignItems: "center",
+    paddingHorizontal: PAGE_GUTTER,
+  },
+
+  listContent: {
+    paddingBottom: 40,
+    width: '100%',
+    alignItems: 'center',
   },
 
   title: {
@@ -226,7 +236,8 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    width: width * 0.9,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
     backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: 22,
     padding: 18,

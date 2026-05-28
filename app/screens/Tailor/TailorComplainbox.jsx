@@ -5,17 +5,18 @@ import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Dimensions,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 
-const SERVER = "http://UF-MacBook-Pro.local:3000";
+const SERVER = "http://UF-MacBook-Pro.local:3001";
 const TARGET_REQUIRED_TYPES = [
   "Customer Misbehaviour",
   "Payment Not Received",
@@ -28,6 +29,17 @@ const COMPLAINT_TYPE_OPTIONS = [
   { label: "Order Cancellation Dispute", value: "Order Cancellation" },
   { label: "Other", value: "Other" },
 ];
+
+const STATUS_COLORS = {
+  open: { bg: '#FEF3C7', text: '#D97706', border: '#FDE68A' },
+  resolved: { bg: '#D1FAE5', text: '#059669', border: '#A7F3D0' },
+  pending: { bg: '#EDE9FE', text: '#7C3AED', border: '#DDD6FE' },
+};
+
+const SCREEN_W = Dimensions.get("window").width;
+const IS_TABLET = SCREEN_W >= 768;
+const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 920 : IS_TABLET ? 760 : SCREEN_W;
+const PAGE_GUTTER = IS_TABLET ? 28 : 20;
 
 export default function TailorComplainBox({ route }) {
   const email = route.params?.email;
@@ -59,7 +71,6 @@ export default function TailorComplainBox({ route }) {
     setFollowUps((prev) => ({ ...prev, [id]: "" }));
   };
 
-  /* ================= IMAGE PICK ================= */
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -70,10 +81,9 @@ export default function TailorComplainBox({ route }) {
     }
   };
 
-  /* ================= FETCH ================= */
   const fetchComplaints = async () => {
     try {
-      const res = await axios.get(`${SERVER}/my-complaints/${email}`);
+      const res = await axios.get(`${SERVER}/complaints/my-complaints/${email}`);
       setComplaints(res.data);
     } catch {
       Alert.alert("Error fetching complaints");
@@ -84,16 +94,15 @@ export default function TailorComplainBox({ route }) {
     fetchComplaints();
   }, []);
 
-  /* ================= DELETE ================= */
   const deleteComplaint = async (id) => {
-    Alert.alert("Delete Complaint", "Are you sure?", [
+    Alert.alert("Delete Complaint", "Are you sure you want to remove this complaint?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete(`${SERVER}/delete-complaint/${id}/${email}`);
+            await axios.delete(`${SERVER}/complaints/delete-complaint/${id}/${email}`);
             fetchComplaints();
           } catch {
             Alert.alert("Error deleting complaint");
@@ -103,25 +112,19 @@ export default function TailorComplainBox({ route }) {
     ]);
   };
 
-  /* ================= SUBMIT ================= */
   const submitComplaint = async () => {
     if (!subject || !description) {
       Alert.alert("Please fill required fields");
       return;
     }
-
-    // 🔥 Only require email + orderId for these 3 types
     if (shouldRequireTargetFields) {
       if (!againstEmail || !orderId) {
-        Alert.alert(
-          "Customer Email and Order ID are required for this complaint type"
-        );
+        Alert.alert("Customer Email and Order ID are required for this complaint type");
         return;
       }
     }
-
     try {
-      await axios.post(`${SERVER}/file-complaint`, {
+      await axios.post(`${SERVER}/complaints/file-complaint`, {
         filed_by_email: email,
         filed_by_role: "tailor",
         against_email: shouldRequireTargetFields ? againstEmail : null,
@@ -131,7 +134,6 @@ export default function TailorComplainBox({ route }) {
         description,
         attachment_url: image || null
       });
-
       Alert.alert("Complaint submitted successfully");
       resetForm();
       fetchComplaints();
@@ -146,14 +148,12 @@ export default function TailorComplainBox({ route }) {
       Alert.alert("Write a message first");
       return;
     }
-
     try {
       await axios.post(`${SERVER}/complaints/follow-up`, {
         complaint_id: complaintId,
         filed_by_email: email,
         message,
       });
-
       clearFollowUpText(complaintId);
       fetchComplaints();
       Alert.alert("Follow-up sent");
@@ -163,126 +163,170 @@ export default function TailorComplainBox({ route }) {
     }
   };
 
-  /* ================= UI ================= */
   return (
-    <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#2B0F14", "#3A1419", "#4A1C22"]}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+    <LinearGradient colors={["#050811", "#0b1220", "#141c30"]} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-          {/* HEADER */}
-          <View style={styles.header}>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <View style={styles.headerIconWrap}>
+            <Ionicons name="megaphone" size={22} color="#F59E0B" />
+          </View>
+          <View style={{ marginLeft: 14 }}>
+            <Text style={styles.headerSub}>Raise a concern</Text>
             <Text style={styles.headerTitle}>Complaint Center</Text>
-            <Text style={styles.headerSub}>File a complaint</Text>
+          </View>
+        </View>
+
+        {/* FORM CARD */}
+        <View style={styles.formCard}>
+          <Text style={styles.formCardTitle}>New Complaint</Text>
+
+          {/* Complaint Type */}
+          <Text style={styles.fieldLabel}>Complaint Type</Text>
+          <View style={styles.pickerWrapper}>
+
+            <Picker
+              selectedValue={complaintType}
+              onValueChange={setComplaintType}
+              style={styles.picker}
+              itemStyle={styles.pickerItem}
+              dropdownIconColor="#ffffff"
+            >
+              {COMPLAINT_TYPE_OPTIONS.map((option) => (
+                <Picker.Item key={option.value} label={option.label} value={option.value} color="#ffffff" />
+              ))}
+            </Picker>
           </View>
 
-          {/* FORM CARD */}
-          <View style={styles.formCard}>
-
-            {/* Complaint Type */}
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={complaintType}
-                onValueChange={setComplaintType}
-                style={styles.picker}
-                itemStyle={styles.pickerItem}
-                dropdownIconColor="#4A1C22"
-              >
-                {COMPLAINT_TYPE_OPTIONS.map((option) => (
-                  <Picker.Item key={option.value} label={option.label} value={option.value} color="#4A1C22" />
-                ))}
-              </Picker>
-            </View>
-
-            {/* 🔥 CONDITIONAL FIELDS */}
-            {shouldRequireTargetFields && (
-              <>
+          {/* Conditional Fields */}
+          {shouldRequireTargetFields && (
+            <>
+              <Text style={styles.fieldLabel}>Customer Email *</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="mail-outline" size={16} color="#F59E0B" style={styles.inputIcon} />
                 <TextInput
-                  placeholder="Customer Email *"
-                  placeholderTextColor="#888"
-                  style={styles.input}
+                  placeholder="customer@email.com"
+                  placeholderTextColor="#94a3b8"
+                  style={styles.inputWithIcon}
                   value={againstEmail}
                   onChangeText={setAgainstEmail}
+                  keyboardType="email-address"
                 />
+              </View>
 
+              <Text style={styles.fieldLabel}>Order ID *</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="receipt-outline" size={16} color="#F59E0B" style={styles.inputIcon} />
                 <TextInput
-                  placeholder="Order ID *"
-                  placeholderTextColor="#888"
-                  style={styles.input}
+                  placeholder="Order ID"
+                  placeholderTextColor="#94a3b8"
+                  style={styles.inputWithIcon}
                   value={orderId}
                   onChangeText={setOrderId}
                 />
-              </>
-            )}
+              </View>
+            </>
+          )}
 
+          <Text style={styles.fieldLabel}>Subject *</Text>
+          <View style={styles.inputWrapper}>
+            <Ionicons name="text-outline" size={16} color="#F59E0B" style={styles.inputIcon} />
             <TextInput
-              placeholder="Subject *"
-              placeholderTextColor="#888"
-              style={styles.input}
+              placeholder="Brief subject line"
+              placeholderTextColor="#94a3b8"
+              style={styles.inputWithIcon}
               value={subject}
               onChangeText={setSubject}
             />
-
-            <TextInput
-              placeholder="Description *"
-              placeholderTextColor="#888"
-              style={[styles.input, { height: 90 }]}
-              multiline
-              value={description}
-              onChangeText={setDescription}
-            />
-
-            <TouchableOpacity style={styles.imageBtn} onPress={pickImage}>
-              <Text style={{ color: "#4A1C22", fontWeight: "600" }}>
-                Upload Proof Image
-              </Text>
-            </TouchableOpacity>
-
-            {image && (
-              <Image source={{ uri: image }} style={styles.previewImage} />
-            )}
-
-            <TouchableOpacity style={styles.submitBtn} onPress={submitComplaint}>
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                Submit Complaint
-              </Text>
-            </TouchableOpacity>
           </View>
 
-          {/* MY COMPLAINTS */}
-          <View style={{ paddingHorizontal: 20 }}>
-            <Text style={styles.sectionTitle}>My Complaints</Text>
+          <Text style={styles.fieldLabel}>Description *</Text>
+          <TextInput
+            placeholder="Describe your complaint in detail..."
+            placeholderTextColor="#94a3b8"
+            style={styles.textArea}
+            multiline
+            value={description}
+            onChangeText={setDescription}
+          />
+
+          <TouchableOpacity style={styles.imageBtn} onPress={pickImage} activeOpacity={0.85}>
+            <Ionicons name="camera-outline" size={18} color="#F59E0B" />
+            <Text style={styles.imageBtnText}>Upload Proof Image</Text>
+          </TouchableOpacity>
+
+          {image && (
+            <View style={styles.previewImageWrap}>
+              <Image source={{ uri: image }} style={styles.previewImage} />
+              <TouchableOpacity
+                style={styles.removeImageBtn}
+                onPress={() => setImage(null)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="close-circle" size={22} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <TouchableOpacity style={styles.submitBtn} onPress={submitComplaint} activeOpacity={0.88}>
+            <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.submitBtnGradient}>
+              <Ionicons name="send-outline" size={18} color="#fff" />
+              <Text style={styles.submitBtnText}>Submit Complaint</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* MY COMPLAINTS */}
+        {complaints.length > 0 && (
+          <View style={styles.complaintsSection}>
+            <Text style={styles.sectionTitle}>
+              <Ionicons name="folder-open-outline" size={16} color="#F59E0B" /> My Complaints ({complaints.length})
+            </Text>
 
             {complaints.map((item) => (
               <View key={item.id} style={styles.card}>
-                <Text style={styles.cardTitle}>{item.subject}</Text>
-                <Text>{item.description}</Text>
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardTitleRow}>
+                    <Ionicons name="document-text-outline" size={16} color="#F59E0B" />
+                    <Text style={styles.cardTitle}>{item.subject}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={() => deleteComplaint(item.id)}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="trash-outline" size={15} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.cardDescription}>{item.description}</Text>
 
                 {item.attachment_url && (
-                  <Image
-                    source={{ uri: item.attachment_url }}
-                    style={styles.cardImage}
-                  />
+                  <Image source={{ uri: item.attachment_url }} style={styles.cardImage} />
                 )}
- {item.admin_response && (
+
+                {item.admin_response && (
                   <View style={styles.adminBox}>
-                    <Text style={styles.adminLabel}>Admin Response</Text>
-                    <Text style={{ color: "#cd0000" }}>
-                      {item.admin_response}
-                    </Text>
+                    <View style={styles.adminLabelRow}>
+                      <Ionicons name="shield-checkmark-outline" size={14} color="#EF4444" />
+                      <Text style={styles.adminLabel}>Admin Response</Text>
+                    </View>
+                    <Text style={styles.adminResponseText}>{item.admin_response}</Text>
                   </View>
                 )}
 
                 {!item.resolved_at && (
                   <View style={styles.followUpBox}>
-                    <Text style={styles.followUpTitle}>Continue This Complaint</Text>
-                    <Text style={styles.followUpHint}>Send more context before admin marks it resolved.</Text>
+                    <View style={styles.followUpHeaderRow}>
+                      <Ionicons name="chatbubble-ellipses-outline" size={14} color="#F59E0B" />
+                      <Text style={styles.followUpTitle}>Continue This Complaint</Text>
+                    </View>
+                    <Text style={styles.followUpHint}>Add more context before admin resolves it.</Text>
 
                     <TextInput
-                      placeholder="Add follow-up message"
-                      placeholderTextColor="#888"
+                      placeholder="Add follow-up message..."
+                      placeholderTextColor="#94a3b8"
                       value={followUps[item.id] || ""}
                       onChangeText={(text) => setFollowUpText(item.id, text)}
                       style={styles.followUpInput}
@@ -292,176 +336,371 @@ export default function TailorComplainBox({ route }) {
                     <TouchableOpacity
                       style={styles.followUpButton}
                       onPress={() => sendFollowUp(item.id)}
+                      activeOpacity={0.85}
                     >
-                      <View style={styles.followUpButtonContent}>
-                        <Ionicons name="send" size={15} color="#fff" />
-                        <Text style={styles.followUpButtonText}>Send Follow-up</Text>
-                      </View>
+                      <Ionicons name="send" size={14} color="#fff" />
+                      <Text style={styles.followUpButtonText}>Send Follow-up</Text>
                     </TouchableOpacity>
                   </View>
                 )}
-
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => deleteComplaint(item.id)}
-                >
-                  <Text style={{ color: "#fff" }}>Remove</Text>
-                </TouchableOpacity>
               </View>
             ))}
           </View>
-
-        </ScrollView>
-      </LinearGradient>
-    </View>
+        )}
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
-/* ================= STYLES ================= */
-
 const styles = StyleSheet.create({
-  header: {
-    marginTop: 70,
-    marginLeft: 25,
-    marginBottom: 20
+  scrollContent: {
+    paddingBottom: 50,
+    paddingHorizontal: PAGE_GUTTER,
+    width: "100%",
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: "center",
   },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 68,
+    marginBottom: 24,
+    paddingHorizontal: 0,
+    width: '100%',
+  },
+
+  headerIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  headerSub: {
+    fontSize: 11,
+    color: '#94a3b8',
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 3,
+  },
+
   headerTitle: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#E6B0B0"
+    fontWeight: "800",
+    color: "#ffffff",
+    letterSpacing: -0.2,
   },
-  headerSub: {
-    color: "#fff",
-    marginTop: 4
-  },
+
   formCard: {
-    backgroundColor: "#fff",
-    margin: 20,
+    backgroundColor: "rgba(15, 23, 42, 0.65)",
+    marginHorizontal: 0,
     padding: 20,
-    borderRadius: 20
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+    marginBottom: 24,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
   },
+
+  formCardTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginBottom: 18,
+    letterSpacing: -0.2,
+  },
+
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 7,
+    marginTop: 4,
+  },
+
   pickerWrapper: {
-    backgroundColor: "#f4f4f4",
-    borderRadius: 12,
-    marginBottom: 10
+    backgroundColor: "rgba(59, 130, 246, 0.08)",
+    borderRadius: 14,
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+    overflow: 'hidden',
   },
-  picker: {
-    color: "#4A1C22"
+
+  pickerIcon: { marginLeft: 12 },
+
+  picker: { flex: 1, color: "#ffffff" },
+  pickerItem: { color: "#ffffff" },
+
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: "rgba(59, 130, 246, 0.08)",
+    borderRadius: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+    paddingRight: 12,
   },
-  pickerItem: {
-    color: "#4A1C22"
+
+  inputIcon: { marginLeft: 12 },
+
+  inputWithIcon: {
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 13,
+    fontSize: 14,
+    color: '#ffffff',
   },
-  input: {
-    backgroundColor: "#f4f4f4",
-    padding: 12,
-    borderRadius: 12,
-    marginVertical: 6
-  },
-  imageBtn: {
-    backgroundColor: "#E6B0B0",
-    padding: 12,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8
-  },
-  submitBtn: {
-    backgroundColor: "#4A1C22",
+
+  textArea: {
+    backgroundColor: "rgba(59, 130, 246, 0.08)",
     padding: 14,
     borderRadius: 14,
-    alignItems: "center",
-    marginTop: 15
+    marginBottom: 14,
+    fontSize: 14,
+    color: '#ffffff',
+    minHeight: 90,
+    textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
   },
+
+  imageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: "rgba(245, 158, 11, 0.1)",
+    padding: 13,
+    borderRadius: 14,
+    marginTop: 4,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.25)',
+    borderStyle: 'dashed',
+  },
+
+  imageBtnText: {
+    color: "#F59E0B",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
+  previewImageWrap: {
+    position: 'relative',
+    marginBottom: 14,
+  },
+
   previewImage: {
     width: "100%",
     height: 180,
-    borderRadius: 12,
-    marginTop: 10
+    borderRadius: 14,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#E6B0B0",
-    marginBottom: 10
+
+  removeImageBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#fff',
+    borderRadius: 11,
   },
-  card: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 18,
-    marginVertical: 10
+
+  submitBtn: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: 4,
   },
-  cardTitle: {
-    fontWeight: "bold",
+
+  submitBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+
+  submitBtnText: {
+    color: "#fff",
+    fontWeight: "800",
     fontSize: 16,
-    color: "#4A1C22",
-    marginBottom: 5
   },
+
+  complaintsSection: {
+    paddingHorizontal: 0,
+    marginBottom: 20,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+  },
+
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#ffffff",
+    marginBottom: 14,
+  },
+
+  card: {
+    backgroundColor: "rgba(15, 23, 42, 0.65)",
+    padding: 16,
+    borderRadius: 20,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+  },
+
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+
+  cardTitle: {
+    fontWeight: "800",
+    fontSize: 15,
+    color: "#ffffff",
+    flex: 1,
+  },
+
+  cardDescription: {
+    color: '#94a3b8',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10,
+  },
+
   cardImage: {
     width: "100%",
     height: 150,
-    borderRadius: 12,
-    marginTop: 10
+    borderRadius: 14,
+    marginBottom: 12,
   },
-  adminBox: {
-    backgroundColor: "#ffecec",
-    borderWidth: 1,
-    borderColor: "#f5c6c6",
+
+  deleteBtn: {
+    width: 32,
+    height: 32,
     borderRadius: 10,
-    padding: 10,
-    marginTop: 10,
-  },
-  followUpBox: {
-    marginTop: 12,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: "#fff3f3",
+    backgroundColor: 'rgba(239,68,68,0.1)',
     borderWidth: 1,
-    borderColor: "#f1d0d0",
+    borderColor: 'rgba(239,68,68,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
+
+  adminBox: {
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.2)",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+  },
+
+  adminLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+
+  adminLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FCA5A5",
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+
+  adminResponseText: {
+    color: "#ffffff",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  followUpBox: {
+    marginTop: 6,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "rgba(15, 23, 42, 0.8)",
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.2)",
+  },
+
+  followUpHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+
   followUpTitle: {
-    color: "#6b2028",
+    color: "#F59E0B",
     fontWeight: "700",
     fontSize: 13,
   },
+
   followUpHint: {
-    marginTop: 4,
-    marginBottom: 10,
-    color: "#8d5c62",
+    marginBottom: 12,
+    color: "#94a3b8",
     fontSize: 12,
   },
+
   followUpInput: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "rgba(59, 130, 246, 0.06)",
     borderWidth: 1,
-    borderColor: "#e3d2d2",
+    borderColor: "rgba(59, 130, 246, 0.15)",
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     minHeight: 72,
-    color: "#4A1C22",
+    color: "#ffffff",
     textAlignVertical: "top",
+    fontSize: 14,
   },
+
   followUpButton: {
     marginTop: 10,
-    backgroundColor: "#4A1C22",
-    paddingVertical: 11,
-    borderRadius: 10,
+    backgroundColor: "#3B82F6",
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#6b2a33",
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
   },
-  followUpButtonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
+
   followUpButtonText: {
     color: "#fff",
     fontWeight: "700",
+    fontSize: 14,
   },
-  adminLabel: { fontSize: 22,fontWeight: "bold", color: "#cd0000" },
-  deleteBtn: {
-    marginTop: 12,
-    backgroundColor: "#d85b5b",
-    padding: 10,
-    borderRadius: 10,
-    alignItems: "center"
-  }
 });

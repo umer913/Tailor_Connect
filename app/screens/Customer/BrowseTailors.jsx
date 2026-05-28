@@ -11,6 +11,7 @@ import {
   Dimensions,
   Easing,
   Image,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -21,9 +22,13 @@ import {
   View,
 } from "react-native";
 
-const API_BASE_URL = "http://UF-MacBook-Pro.local:3000";
+const API_BASE_URL = "http://UF-MacBook-Pro.local:3001";
 const DEFAULT_PRICE_CEILING = 100000;
 const FILTER_DRAWER_WIDTH = Math.min(Dimensions.get("window").width * 0.84, 360);
+const SCREEN_W = Dimensions.get("window").width;
+const IS_TABLET = SCREEN_W >= 768;
+const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 980 : IS_TABLET ? 760 : SCREEN_W;
+const PAGE_GUTTER = IS_TABLET ? 28 : 20;
 const ALL_SERVICE_TYPES = [
   "Shalwar Kameez",
   "Kurta",
@@ -100,10 +105,15 @@ const BrowseTailors = ({ navigation, route }) => {
   const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const drawerProgress = useRef(new Animated.Value(0)).current;
+  const [reviewSummary, setReviewSummary] = useState({});
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [reviewModalTailor, setReviewModalTailor] = useState(null);
+  const [reviewList, setReviewList] = useState([]);
+  const [isReviewLoading, setIsReviewLoading] = useState(false);
 
   const getServicesForTailor = async (email) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/get-tailor-services`, {
+      const response = await axios.get(`${API_BASE_URL}/services/get-tailor-services`, {
         params: { email },
       });
       return response.data.services || [];
@@ -125,12 +135,12 @@ const BrowseTailors = ({ navigation, route }) => {
 
   const fetchTailors = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/get-tailors-with-services`);
+      const response = await axios.get(`${API_BASE_URL}/tailors/get-tailors-with-services`);
       setTailors(response.data.tailors || []);
       return;
     } catch {
       try {
-        const fallbackResponse = await axios.get(`${API_BASE_URL}/get-tailors`);
+        const fallbackResponse = await axios.get(`${API_BASE_URL}/tailors/get-tailors`);
         const fallbackTailors = fallbackResponse.data.tailors || [];
         const tailorsWithServices = await addServicesToTailors(fallbackTailors);
         setTailors(tailorsWithServices);
@@ -144,6 +154,27 @@ const BrowseTailors = ({ navigation, route }) => {
   useEffect(() => {
     fetchTailors();
   }, []);
+
+  useEffect(() => {
+    const fetchReviewSummary = async () => {
+      const ids = (tailors || []).map((tailor) => tailor.email).filter(Boolean);
+      if (!ids.length) {
+        setReviewSummary({});
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_BASE_URL}/reviews/tailor-reviews/summary`, {
+          params: { tailor_ids: ids.join(",") },
+        });
+        setReviewSummary(response?.data?.summary || {});
+      } catch {
+        setReviewSummary({});
+      }
+    };
+
+    fetchReviewSummary();
+  }, [tailors]);
 
   const priceBounds = useMemo(() => {
     const allIntervals = tailors.flatMap((tailor) => extractPriceIntervals(tailor));
@@ -488,6 +519,39 @@ const BrowseTailors = ({ navigation, route }) => {
     });
   };
 
+  const openReviewModal = async (tailor) => {
+    setReviewModalTailor(tailor);
+    setReviewModalVisible(true);
+    setIsReviewLoading(true);
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/reviews/tailor-reviews`, {
+        params: { tailor_id: tailor.email },
+      });
+      setReviewList(response?.data?.reviews || []);
+    } catch {
+      setReviewList([]);
+    } finally {
+      setIsReviewLoading(false);
+    }
+  };
+
+  const renderStars = (average) => {
+    const safeAvg = Number(average) || 0;
+    return [1, 2, 3, 4, 5].map((value) => {
+      const showFull = safeAvg >= value;
+      const showHalf = !showFull && safeAvg >= value - 0.5;
+      return (
+        <Ionicons
+          key={value}
+          name={showFull ? "star" : showHalf ? "star-half" : "star-outline"}
+          size={16}
+          color="#f59e0b"
+        />
+      );
+    });
+  };
+
   const openFilterDrawer = () => {
     setIsFilterDrawerOpen(true);
     Animated.timing(drawerProgress, {
@@ -534,12 +598,16 @@ const BrowseTailors = ({ navigation, route }) => {
   });
 
   return (
-    <LinearGradient colors={["#1b254f", "#0c1435", "#080927"]} style={styles.container}>
+    <LinearGradient colors={["#0f0f13", "#1a0610", "#2a0a18"]} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.85}>
-            <Ionicons name="chevron-back" size={22} color="#99aaff" />
+            <Ionicons name="chevron-back" size={22} color="#E6B0B0" />
           </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Browse Tailors</Text>
+            <Text style={styles.headerSub}>Find your perfect tailor</Text>
+          </View>
           <TouchableOpacity style={styles.menuButton} onPress={toggleFilterDrawer} activeOpacity={0.85}>
             <Animated.View style={[styles.menuBarsWrap, { transform: [{ rotate: menuIconRotate }] }]}>
               <View style={styles.menuBar} />
@@ -549,72 +617,82 @@ const BrowseTailors = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Browse Tailors</Text>
-          <Text style={styles.headerSub}>Choose the best tailor for you</Text>
-        </View>
-
         <View style={styles.searchBox}>
-          <Ionicons name="search-outline" size={18} color="#7b9bff" style={styles.searchIcon} />
+          <Ionicons name="search-outline" size={18} color="#E6B0B0" style={styles.searchIcon} />
           <TextInput
             value={searchText}
             onChangeText={setSearchText}
-            placeholder="Search tailor by name"
-            placeholderTextColor="#7b8dbb"
+            placeholder="Search tailor by name..."
+            placeholderTextColor="#8c7a82"
             style={styles.searchInput}
           />
           {searchText ? (
             <TouchableOpacity onPress={() => setSearchText("")} activeOpacity={0.85}>
-              <Ionicons name="close-circle" size={18} color="#7b9bff" />
+              <Ionicons name="close-circle" size={18} color="#E6B0B0" />
             </TouchableOpacity>
           ) : null}
         </View>
         {visibleTailors.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Ionicons name="cut-outline" size={46} color="#506ba9" />
-            <Text style={styles.emptyTitle}>{nearbyOnly ? "No nearby tailors found" : "No tailors found"}</Text>
+            <LinearGradient colors={["rgba(157,42,75,0.2)", "rgba(214,64,106,0.1)"]} style={styles.emptyIconWrap}>
+              <Ionicons name="cut-outline" size={40} color="#E6B0B0" />
+            </LinearGradient>
+            <Text style={styles.emptyTitle}>{nearbyOnly ? "No nearby tailors" : "No tailors found"}</Text>
             <Text style={styles.emptyText}>
               {searchText
                 ? "Try a different name or clear the search."
                 : selectedServiceTypes.length
                   ? "Try changing or clearing your selected services."
-                : isPriceFilterActive
-                  ? "Try changing or clearing your price range."
-                : nearbyOnly
-                  ? "Try switching off the nearby filter or update your saved locations."
-                  : "Try again later when more profiles are available."}
+                  : isPriceFilterActive
+                    ? "Try changing or clearing your price range."
+                    : nearbyOnly
+                      ? "Try switching off the nearby filter."
+                      : "Try again later when more profiles are available."}
             </Text>
           </View>
         ) : (
           <View style={styles.cardList}>
             {visibleTailors.map((tailor) => (
               <TouchableOpacity key={tailor.id} style={styles.card} activeOpacity={0.9} onPress={() => openServices(tailor)}>
+                {/* chat button */}
                 <TouchableOpacity
                   style={styles.messageCardButton}
                   activeOpacity={0.85}
-                  onPress={(event) => {
-                    event.stopPropagation();
-                    openChatbox(tailor);
-                  }}>
-                  <Ionicons name="chatbubble-ellipses-outline" size={17} color="#d1d9ff" />
+                  onPress={(event) => { event.stopPropagation(); openChatbox(tailor); }}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={22} color="#e0e7ff" />
                 </TouchableOpacity>
 
-                <View style={styles.imageWrap}>
-                  <Image
-                    source={require("../../../assets/images/imTailor.png")}
-                    style={styles.image}
-                    resizeMode="contain"
-                  />
-                </View>
+                {/* Avatar + name */}
+                <LinearGradient colors={["rgba(157,42,75,0.2)", "rgba(214,64,106,0.1)"]} style={styles.imageWrap}>
+                  {tailor.profile_image_url ? (
+                    <Image source={{ uri: tailor.profile_image_url }} style={styles.image} resizeMode="contain" />
+                  ) : (
+                    <Ionicons name="person" size={44} color="#E6B0B0" />
+                  )}
+                </LinearGradient>
 
                 <Text style={styles.name}>{tailor.full_name}</Text>
 
+                <Pressable
+                  style={styles.ratingRow}
+                  onPress={(event) => { event.stopPropagation(); openReviewModal(tailor); }}
+                >
+                  <View style={styles.ratingStars}>
+                    {renderStars(reviewSummary[tailor.email]?.avg)}
+                  </View>
+                  <Text style={styles.ratingText}>
+                    {reviewSummary[tailor.email]?.count
+                      ? `${reviewSummary[tailor.email].avg} (${reviewSummary[tailor.email].count})`
+                      : "No reviews yet"}
+                  </Text>
+                </Pressable>
+
                 <View style={styles.infoRow}>
                   <View style={styles.infoIconWrap}>
-                    <Ionicons name="location-outline" size={16} color="#7b9bff" />
+                    <Ionicons name="location-outline" size={15} color="#E6B0B0" />
                   </View>
                   <View style={styles.locationInfoContent}>
-                    <Text style={styles.infoText}>{tailor.location || "Location not added"}</Text>
+                    <Text style={styles.infoText} numberOfLines={1}>{tailor.location || "Location not added"}</Text>
                     {tailor.distanceKm != null ? (
                       <Text style={styles.distanceText}>{tailor.distanceKm.toFixed(1)} km away</Text>
                     ) : null}
@@ -623,21 +701,26 @@ const BrowseTailors = ({ navigation, route }) => {
 
                 <View style={styles.infoRow}>
                   <View style={styles.infoIconWrap}>
-                    <Ionicons name="call-outline" size={16} color="#7b9bff" />
+                    <Ionicons name="call-outline" size={15} color="#E6B0B0" />
                   </View>
                   <Text style={styles.infoText}>{tailor.phone_number || "Phone not added"}</Text>
                 </View>
 
                 <View style={styles.actionsRow}>
                   <TouchableOpacity style={styles.primaryButton} onPress={() => openServices(tailor)} activeOpacity={0.85}>
-                    <Ionicons name="grid-outline" size={16} color="#d1d9ff" style={styles.buttonIcon} />
-                    <Text style={styles.primaryButtonText}>View Services</Text>
+                    <LinearGradient colors={["#9D2A4B", "#D6406A"]} style={styles.btnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                      <Ionicons name="grid-outline" size={15} color="#fff" style={{ marginRight: 6 }} />
+                      <Text style={styles.primaryButtonText}>View Services</Text>
+                    </LinearGradient>
                   </TouchableOpacity>
 
                   <TouchableOpacity style={styles.secondaryButton} onPress={() => openAppointment(tailor)} activeOpacity={0.85}>
-                    <Ionicons name="calendar-outline" size={16} color="#d1d9ff" style={styles.buttonIcon} />
-                    <Text style={styles.secondaryButtonText}>Book Appointment</Text>
+                    <LinearGradient colors={["#9D2A4B", "#D6406A"]} style={styles.btnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                      <Ionicons name="calendar-outline" size={15} color="#ffffffff" style={{ marginRight: 6 }} />
+                      <Text style={styles.secondaryButtonText}>Appointment</Text>
+                    </LinearGradient>
                   </TouchableOpacity>
+
                 </View>
               </TouchableOpacity>
             ))}
@@ -651,17 +734,8 @@ const BrowseTailors = ({ navigation, route }) => {
             <Animated.View style={[styles.drawerBackdrop, { opacity: drawerOverlayOpacity }]} />
           </Pressable>
 
-          <Animated.View style={[styles.drawerPanel, { transform: [{ translateX: drawerTranslateX }] }]}> 
-            <View style={styles.drawerHeader}>
-              <Text style={styles.drawerTitle}>Filters</Text>
-              <TouchableOpacity style={styles.menuButton} onPress={toggleFilterDrawer} activeOpacity={0.85}>
-                <Animated.View style={[styles.menuBarsWrap, { transform: [{ rotate: menuIconRotate }] }]}>
-                  <View style={styles.menuBar} />
-                  <View style={styles.menuBar} />
-                  <View style={styles.menuBar} />
-                </Animated.View>
-              </TouchableOpacity>
-            </View>
+          <Animated.View style={[styles.drawerPanel, { transform: [{ translateX: drawerTranslateX }] }]}>
+
 
             <ScrollView contentContainerStyle={styles.drawerContent} showsVerticalScrollIndicator={false}>
               <View style={styles.filtersPanel}>
@@ -669,7 +743,7 @@ const BrowseTailors = ({ navigation, route }) => {
                   <View style={styles.serviceHeader}>
                     <View style={styles.serviceHeaderLeft}>
                       <View style={styles.serviceHeaderIcon}>
-                        <Ionicons name="options-outline" size={18} color="#d1d9ff" />
+                        <Ionicons name="options-outline" size={18} color="#E6B0B0" />
                       </View>
                       <View>
                         <Text style={styles.serviceTitle}>Service Filter</Text>
@@ -682,7 +756,7 @@ const BrowseTailors = ({ navigation, route }) => {
                         style={styles.clearServiceButton}
                         onPress={() => setSelectedServiceTypes([])}
                         activeOpacity={0.85}>
-                        <Ionicons name="close-circle-outline" size={15} color="#99aaff" style={styles.buttonIcon} />
+                        <Ionicons name="close-circle-outline" size={15} color="#E6B0B0" style={styles.buttonIcon} />
                         <Text style={styles.clearServiceText}>Clear</Text>
                       </TouchableOpacity>
                     ) : null}
@@ -698,7 +772,7 @@ const BrowseTailors = ({ navigation, route }) => {
                         <Ionicons
                           name={isServiceDropdownOpen ? "chevron-up-outline" : "chevron-down-outline"}
                           size={18}
-                          color="#99aaff"
+                          color="#E6B0B0"
                         />
                       </TouchableOpacity>
 
@@ -718,7 +792,7 @@ const BrowseTailors = ({ navigation, route }) => {
                                   onPress={() => toggleServiceType(serviceType)}
                                   activeOpacity={0.85}>
                                   <Text style={[styles.serviceOptionText, isSelected && styles.serviceOptionTextActive]}>{serviceType}</Text>
-                                  {isSelected ? <Ionicons name="checkmark-circle" size={18} color="#99aaff" /> : null}
+                                  {isSelected ? <Ionicons name="checkmark-circle" size={18} color="#E6B0B0" /> : null}
                                 </TouchableOpacity>
                               );
                             })}
@@ -737,7 +811,7 @@ const BrowseTailors = ({ navigation, route }) => {
                   <View style={styles.priceHeader}>
                     <View style={styles.priceHeaderLeft}>
                       <View style={styles.priceHeaderIcon}>
-                        <Ionicons name="pricetag-outline" size={18} color="#d1d9ff" />
+                        <Ionicons name="pricetag-outline" size={18} color="#E6B0B0" />
                       </View>
                       <View>
                         <Text style={styles.priceTitle}>Price Range</Text>
@@ -754,7 +828,7 @@ const BrowseTailors = ({ navigation, route }) => {
                           setIsPriceFilterActive(false);
                         }}
                         activeOpacity={0.85}>
-                        <Ionicons name="close-circle-outline" size={15} color="#99aaff" style={styles.buttonIcon} />
+                        <Ionicons name="close-circle-outline" size={15} color="#E6B0B0" style={styles.buttonIcon} />
                         <Text style={styles.clearPriceText}>Clear</Text>
                       </TouchableOpacity>
                     ) : null}
@@ -774,9 +848,9 @@ const BrowseTailors = ({ navigation, route }) => {
                           maximumValue={selectedMaxPrice || priceBounds.max}
                           value={selectedMinPrice || priceBounds.min}
                           step={priceBounds.step}
-                          minimumTrackTintColor="#99aaff"
-                          maximumTrackTintColor="#506ba9"
-                          thumbTintColor="#d1d9ff"
+                          minimumTrackTintColor="#E6B0B0"
+                          maximumTrackTintColor="#9D2A4B"
+                          thumbTintColor="#E6B0B0"
                           onValueChange={(value) => {
                             setSelectedMinPrice(Math.round(value));
                             setIsPriceFilterActive(true);
@@ -792,9 +866,9 @@ const BrowseTailors = ({ navigation, route }) => {
                           maximumValue={priceBounds.max}
                           value={selectedMaxPrice || priceBounds.max}
                           step={priceBounds.step}
-                          minimumTrackTintColor="#99aaff"
-                          maximumTrackTintColor="#506ba9"
-                          thumbTintColor="#d1d9ff"
+                          minimumTrackTintColor="#E6B0B0"
+                          maximumTrackTintColor="#9D2A4B"
+                          thumbTintColor="#E6B0B0"
                           onValueChange={(value) => {
                             setSelectedMaxPrice(Math.round(value));
                             setIsPriceFilterActive(true);
@@ -813,7 +887,7 @@ const BrowseTailors = ({ navigation, route }) => {
                   <View style={styles.locationHeaderBar}>
                     <View style={styles.locationHeaderLeft}>
                       <View style={styles.locationHeaderIcon}>
-                        <Ionicons name="locate-outline" size={18} color="#d1d9ff" />
+                        <Ionicons name="locate-outline" size={18} color="#E6B0B0" />
                       </View>
                       <View style={styles.locationHeaderTextWrap}>
                         <Text style={styles.locationTitle}>Location Filter</Text>
@@ -838,7 +912,7 @@ const BrowseTailors = ({ navigation, route }) => {
                       }}
                       activeOpacity={0.85}>
                       {isFetchingLocation ? (
-                        <ActivityIndicator size="small" color="#d1d9ff" />
+                        <ActivityIndicator size="small" color="#E6B0B0" />
                       ) : (
                         <>
                           <View style={[styles.locationToggleKnob, nearbyOnly && styles.locationToggleKnobActive]} />
@@ -849,7 +923,7 @@ const BrowseTailors = ({ navigation, route }) => {
                   </View>
 
                   <View style={styles.locationStrip}>
-                    <Ionicons name="location-outline" size={16} color="#7b9bff" />
+                    <Ionicons name="location-outline" size={16} color="#E6B0B0" />
                     <Text style={styles.locationStripText} numberOfLines={2}>
                       {currentLocation?.text || "No location selected yet"}
                     </Text>
@@ -860,7 +934,7 @@ const BrowseTailors = ({ navigation, route }) => {
                       value={typedLocation}
                       onChangeText={setTypedLocation}
                       placeholder="Type city or area"
-                      placeholderTextColor="#7b8dbb"
+                      placeholderTextColor="#E6B0B0"
                       style={styles.manualLocationInput}
                     />
 
@@ -882,7 +956,7 @@ const BrowseTailors = ({ navigation, route }) => {
                           <ActivityIndicator size="small" color="#99aaff" />
                         ) : (
                           <>
-                            <Ionicons name="refresh-outline" size={16} color="#99aaff" style={styles.buttonIcon} />
+                            <Ionicons name="refresh-outline" size={16} color="#E6B0B0" style={styles.buttonIcon} />
                             <Text style={styles.clearLocationText}>Refresh</Text>
                           </>
                         )}
@@ -904,6 +978,51 @@ const BrowseTailors = ({ navigation, route }) => {
           </Animated.View>
         </View>
       ) : null}
+
+      <Modal
+        visible={reviewModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReviewModalVisible(false)}
+      >
+        <View style={styles.reviewModalBackdrop}>
+          <View style={styles.reviewModalCard}>
+            <View style={styles.reviewModalHeader}>
+              <Text style={styles.reviewModalTitle}>Reviews</Text>
+              <TouchableOpacity onPress={() => setReviewModalVisible(false)}>
+                <Ionicons name="close" size={20} color="#e0e7ff" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.reviewModalSubtitle}>{reviewModalTailor?.full_name || "Tailor"}</Text>
+
+            {isReviewLoading ? (
+              <View style={styles.reviewLoadingRow}>
+                <ActivityIndicator size="small" color="#99aaff" />
+                <Text style={styles.reviewLoadingText}>Loading reviews...</Text>
+              </View>
+            ) : reviewList.length ? (
+              <ScrollView style={styles.reviewList} showsVerticalScrollIndicator={false}>
+                {reviewList.map((review) => (
+                  <View key={review.id} style={styles.reviewItem}>
+                    <View style={styles.reviewStarsRow}>
+                      {renderStars(review.rating)}
+                      <Text style={styles.reviewRatingValue}>{review.rating}</Text>
+                    </View>
+                    <Text style={styles.reviewDescription}>
+                      {review.description || "No description provided."}
+                    </Text>
+                    <Text style={styles.reviewMetaText}>{review.customer_id}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.reviewEmptyRow}>
+                <Text style={styles.reviewEmptyText}>No reviews yet.</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -911,613 +1030,134 @@ const BrowseTailors = ({ navigation, route }) => {
 export default BrowseTailors;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   scrollContent: {
-    paddingTop: Platform.OS === "ios" ? 65 : 45,
-    paddingHorizontal: 20,
-    paddingBottom: 36,
-  },
-  topBar: {
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 16,
-    marginLeft: -350, 
-  },
-  menuButton: {
-    backgroundColor: "rgba(38, 52, 90, 0.5)",
-    width: 44,
-    height: 44,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  menuBarsWrap: {
-    height: 18,
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  menuBar: {
-    width: 18,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: "#99aaff",
-  },
-  backButton: {
-    backgroundColor: "rgba(38, 52, 90, 0.5)",
-    padding: 11,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.12)",
-  },
-  drawerRoot: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 20,
-  },
-  drawerBackdropTouchTarget: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  drawerBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(6, 10, 24, 0.55)",
-  },
-  drawerPanel: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: FILTER_DRAWER_WIDTH,
-    backgroundColor: "#1f2a59",
-    borderRightWidth: 1,
-    borderRightColor: "rgba(155,179,255,0.15)",
-    paddingTop: Platform.OS === "ios" ? 58 : 40,
-  },
-  drawerHeader: {
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(155,179,255,0.12)",
-  },
-  drawerTitle: {
-    color: "#d1d9ff",
-    fontSize: 19,
-    fontWeight: "800",
-  },
-  drawerContent: {
-    padding: 16,
-    paddingBottom: 30,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#d1d9ff",
-  },
-  headerSub: {
-    fontSize: 14,
-    color: "#8e9ccf",
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  searchBox: {
-    backgroundColor: "rgba(38, 52, 90, 0.5)",
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.15)",
-    marginBottom: 16,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: "#d1d9ff",
-    fontSize: 14,
-    fontWeight: "600",
-    paddingVertical: 0,
-  },
-  filtersPanel: {
-    backgroundColor: "rgba(38, 52, 90, 0.5)",
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.15)",
-    marginBottom: 22,
-  },
-  filterSection: {
-    paddingVertical: 2,
-  },
-  filterDivider: {
-    height: 1,
-    backgroundColor: "rgba(155,179,255,0.12)",
-    marginVertical: 14,
-  },
-  serviceHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 12,
-  },
-  serviceHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  serviceHeaderIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: "rgba(42,60,114,0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.18)",
-    marginRight: 12,
-  },
-  serviceTitle: {
-    color: "#d1d9ff",
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  serviceSubtitle: {
-    color: "#8e9ccf",
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  clearServiceButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(16, 24, 52, 0.97)",
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.1)",
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  clearServiceText: {
-    color: "#99aaff",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  serviceDropdownButton: {
-    minHeight: 44,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.2)",
-    backgroundColor: "rgba(20, 28, 54, 0.6)",
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  serviceDropdownText: {
-    flex: 1,
-    color: "#d1d9ff",
-    fontSize: 13,
-    fontWeight: "700",
-    marginRight: 8,
-  },
-  serviceDropdownMenu: {
-    marginTop: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.2)",
-    backgroundColor: "rgba(16, 24, 52, 0.97)",
-  },
-  serviceDropdownScroll: {
-    maxHeight: 220,
-  },
-  serviceOptionRow: {
-    minHeight: 42,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(155,179,255,0.08)",
-  },
-  serviceOptionRowActive: {
-    backgroundColor: "rgba(155,179,255,0.12)",
-  },
-  serviceOptionText: {
-    color: "#aabbff",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  serviceOptionTextActive: {
-    color: "#d1d9ff",
-  },
-  noServiceHint: {
-    color: "#8e9ccf",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  priceHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 14,
-  },
-  priceHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  priceHeaderIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: "rgba(42,60,114,0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.18)",
-    marginRight: 12,
-  },
-  priceTitle: {
-    color: "#d1d9ff",
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  priceSubtitle: {
-    color: "#8e9ccf",
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  clearPriceButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(16, 24, 52, 0.97)",
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.1)",
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  clearPriceText: {
-    color: "#99aaff",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  priceValueText: {
-    color: "#d1d9ff",
-    fontSize: 14,
-    fontWeight: "800",
-    marginBottom: 12,
-  },
-  sliderGroup: {
-    gap: 10,
-  },
-  sliderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  sliderLabel: {
-    width: 34,
-    color: "#99aaff",
-    fontSize: 12,
-    fontWeight: "700",
-    marginRight: 8,
-  },
-  slider: {
-    flex: 1,
-    height: 36,
-  },
-  noPriceHint: {
-    color: "#8e9ccf",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  locationHeaderBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  locationHeaderLeft: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  locationHeaderIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: "rgba(42,60,114,0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.18)",
-  },
-  locationHeaderTextWrap: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  locationTitle: {
-    color: "#d1d9ff",
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  locationSubtitle: {
-    color: "#8e9ccf",
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  locationToggle: {
-    minWidth: 78,
-    height: 38,
-    borderRadius: 999,
-    backgroundColor: "rgba(16, 24, 52, 0.97)",
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.1)",
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  locationToggleActive: {
-    backgroundColor: "rgba(155,179,255,0.2)",
-    borderColor: "rgba(155,179,255,0.2)",
-  },
-  locationToggleKnob: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#506ba9",
-  },
-  locationToggleKnobActive: {
-    backgroundColor: "#d1d9ff",
-  },
-  locationToggleText: {
-    color: "#d1d9ff",
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  locationStrip: {
-    marginTop: 14,
-    backgroundColor: "rgba(20, 28, 54, 0.5)",
-    borderRadius: 18,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.08)",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  manualLocationRow: {
-    marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  manualLocationInput: {
-    flex: 1,
-    minHeight: 42,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.15)",
-    backgroundColor: "rgba(20, 28, 54, 0.6)",
-    color: "#d1d9ff",
-    fontSize: 13,
-    fontWeight: "600",
-    paddingHorizontal: 12,
-  },
-  applyLocationButton: {
-    minHeight: 42,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.2)",
-    backgroundColor: "rgba(155,179,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  applyLocationButtonText: {
-    color: "#d1d9ff",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  locationStripText: {
-    flex: 1,
-    color: "#d1d9ff",
-    fontSize: 13,
-    fontWeight: "600",
-    lineHeight: 18,
-    marginLeft: 10,
-  },
-  locationBottomRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 14,
-  },
-  clearLocationButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: "rgba(16, 24, 52, 0.97)",
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.1)",
-    minWidth: 96,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  clearLocationText: {
-    color: "#99aaff",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  locationHintSpacer: {
-    height: 1,
-  },
-  resolvingRowCompact: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 12,
-  },
-  resolvingText: {
-    color: "#8e9ccf",
-    fontSize: 12,
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-  cardList: {
-    gap: 18,
-  },
-  card: {
-    backgroundColor: "rgba(38, 52, 90, 0.5)",
-    borderRadius: 24,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.15)",
-    shadowColor: "#18294a",
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-    alignItems: "center",
-  },
-  messageCardButton: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: "rgba(16, 24, 52, 0.97)",
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2,
-  },
-  imageWrap: {
-    backgroundColor: "rgba(38, 52, 90, 0.4)",
-    padding: 16,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.15)",
-    marginBottom: 12,
-  },
-  image: {
-    width: 150,
-    height: 90,
-  },
-  name: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#d1d9ff",
-    marginBottom: 12,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-    alignSelf: "stretch",
-  },
-  infoIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: "rgba(38, 52, 90, 0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  infoText: {
-    marginLeft: 10,
-    color: "#c3d1ff",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  locationInfoContent: {
-    flex: 1,
-  },
-  distanceText: {
-    color: "#7b9bff",
-    fontSize: 12,
-    fontWeight: "700",
-    marginLeft: 10,
-    marginTop: 4,
-  },
-  actionsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 14,
-  },
-  primaryButton: {
-    flex: 1,
-    backgroundColor: "#2a3c72",
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.15)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  secondaryButton: {
-    minWidth: 108,
-    backgroundColor: "#2a3c72",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.08)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  primaryButtonText: {
-    color: "#d1d9ff",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  secondaryButtonText: {
-    color: "#d1d9ff",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  emptyCard: {
-    backgroundColor: "rgba(38, 52, 90, 0.5)",
-    borderRadius: 24,
-    paddingVertical: 40,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(155,179,255,0.15)",
-  },
-  emptyTitle: {
-    color: "#d1d9ff",
-    fontSize: 20,
-    fontWeight: "800",
-    marginTop: 14,
-  },
-  emptyText: {
-    color: "#8e9ccf",
-    fontSize: 14,
-    fontWeight: "600",
-    marginTop: 6,
-    textAlign: "center",
-  },
+    paddingTop: Platform.OS === 'ios' ? 58 : 42,
+    paddingHorizontal: PAGE_GUTTER,
+    paddingBottom: 34,
+    width: "100%",
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: "center",
+  },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  headerCenter: { flex: 1, alignItems: 'center' },
+  menuButton: { backgroundColor: 'rgba(157,42,75,0.15)', width: 44, height: 44, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(157,42,75,0.3)', alignItems: 'center', justifyContent: 'center' },
+  menuBarsWrap: { height: 16, justifyContent: 'space-between', alignItems: 'center' },
+  menuBar: { width: 18, height: 2, borderRadius: 2, backgroundColor: '#E6B0B0' },
+  backButton: { backgroundColor: 'rgba(157,42,75,0.15)', padding: 11, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(157,42,75,0.3)' },
+  // ── Drawer ──
+  drawerRoot: { ...StyleSheet.absoluteFillObject, zIndex: 20 },
+  drawerBackdropTouchTarget: { ...StyleSheet.absoluteFillObject },
+  drawerBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,8,13,0.85)' },
+  drawerPanel: { position: 'absolute', top: 0, bottom: 0, left: 0, width: FILTER_DRAWER_WIDTH, backgroundColor: '#1a0610', borderRightWidth: 1, borderRightColor: 'rgba(157,42,75,0.2)', paddingTop: Platform.OS === 'ios' ? 58 : 40 },
+  drawerHeader: { paddingHorizontal: 16, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(157,42,75,0.15)' },
+  drawerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  drawerIconWrap: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  drawerTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  drawerContent: { padding: 16, paddingBottom: 30, width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
+  // ── Header ──
+  headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  headerSub: { fontSize: 12, color: '#E6B0B0', fontWeight: '600', marginTop: 2 },
+  // ── Search ──
+  searchBox: { backgroundColor: 'rgba(26,6,16,0.7)', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 14, borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', marginBottom: 18, flexDirection: 'row', alignItems: 'center' },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, color: '#fff', fontSize: 14, fontWeight: '600', paddingVertical: 0 },
+  // ── Filters Panel (inline) ──
+  filtersPanel: { backgroundColor: 'rgba(26,6,16,0.7)', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', marginBottom: 22 },
+  filterSection: { paddingVertical: 2 },
+  filterDivider: { height: 1, backgroundColor: 'rgba(157,42,75,0.15)', marginVertical: 14 },
+  serviceHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 },
+  serviceHeaderLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  serviceHeaderIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(157,42,75,0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(157,42,75,0.25)', marginRight: 10 },
+  serviceTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  serviceSubtitle: { color: '#E6B0B0', fontSize: 12, fontWeight: '600', marginTop: 2 },
+  clearServiceButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(26,6,16,0.9)', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8 },
+  clearServiceText: { color: '#E6B0B0', fontSize: 12, fontWeight: '700' },
+  serviceDropdownButton: { minHeight: 44, borderRadius: 13, borderWidth: 1, borderColor: 'rgba(157,42,75,0.25)', backgroundColor: 'rgba(26,6,16,0.7)', paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  serviceDropdownText: { flex: 1, color: '#fff', fontSize: 13, fontWeight: '700', marginRight: 8 },
+  serviceDropdownMenu: { marginTop: 6, borderRadius: 13, borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', backgroundColor: 'rgba(26,6,16,0.95)' },
+  serviceDropdownScroll: { maxHeight: 220 },
+  serviceOptionRow: { minHeight: 42, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(157,42,75,0.08)' },
+  serviceOptionRowActive: { backgroundColor: 'rgba(157,42,75,0.15)' },
+  serviceOptionText: { color: '#E6B0B0', fontSize: 13, fontWeight: '700' },
+  serviceOptionTextActive: { color: '#fff' },
+  noServiceHint: { color: '#E6B0B0', fontSize: 12, fontWeight: '600' },
+  priceHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 },
+  priceHeaderLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  priceHeaderIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(157,42,75,0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(157,42,75,0.25)', marginRight: 10 },
+  priceTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  priceSubtitle: { color: '#E6B0B0', fontSize: 11, fontWeight: '600', marginTop: 2 },
+  clearPriceButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(26,6,16,0.9)', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8 },
+  clearPriceText: { color: '#E6B0B0', fontSize: 12, fontWeight: '700' },
+  priceValueText: { color: '#fff', fontSize: 14, fontWeight: '800', marginBottom: 12 },
+  sliderGroup: { gap: 10 },
+  sliderRow: { flexDirection: 'row', alignItems: 'center' },
+  sliderLabel: { width: 34, color: '#E6B0B0', fontSize: 12, fontWeight: '700', marginRight: 8 },
+  slider: { flex: 1, height: 36 },
+  noPriceHint: { color: '#E6B0B0', fontSize: 12, fontWeight: '600' },
+  locationHeaderBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  locationHeaderLeft: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  locationHeaderIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(157,42,75,0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(157,42,75,0.25)' },
+  locationHeaderTextWrap: { flex: 1, marginLeft: 10 },
+  locationTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  locationSubtitle: { color: '#E6B0B0', fontSize: 12, fontWeight: '600', marginTop: 2 },
+  locationToggle: { minWidth: 76, height: 36, borderRadius: 999, backgroundColor: 'rgba(26,6,16,0.9)', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  locationToggleActive: { backgroundColor: 'rgba(157,42,75,0.2)', borderColor: 'rgba(157,42,75,0.4)' },
+  locationToggleKnob: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#E6B0B0' },
+  locationToggleKnobActive: { backgroundColor: '#fff' },
+  locationToggleText: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  locationStrip: { marginTop: 12, backgroundColor: 'rgba(26,6,16,0.6)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: 'rgba(157,42,75,0.15)', flexDirection: 'row', alignItems: 'center' },
+  manualLocationRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  manualLocationInput: { flex: 1, minHeight: 42, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(157,42,75,0.25)', backgroundColor: 'rgba(26,6,16,0.7)', color: '#fff', fontSize: 13, fontWeight: '600', paddingHorizontal: 12 },
+  applyLocationButton: { minHeight: 42, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(157,42,75,0.35)', backgroundColor: 'rgba(157,42,75,0.2)', alignItems: 'center', justifyContent: 'center' },
+  applyLocationButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  locationStripText: { flex: 1, color: '#fff', fontSize: 13, fontWeight: '600', lineHeight: 18, marginLeft: 8 },
+  locationBottomRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 },
+  clearLocationButton: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 14, backgroundColor: 'rgba(26,6,16,0.9)', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', minWidth: 90, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  clearLocationText: { color: '#E6B0B0', fontSize: 12, fontWeight: '700' },
+  locationHintSpacer: { height: 1 },
+  resolvingRowCompact: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
+  resolvingText: { color: '#E6B0B0', fontSize: 12, fontWeight: '600', marginLeft: 8 },
+  // ── Cards ──
+  cardList: { gap: 18, width: '100%' },
+  card: { backgroundColor: 'rgba(26,6,16,0.7)', borderRadius: 24, padding: 18, borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', shadowColor: '#9D2A4B', shadowOpacity: 0.15, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8, alignItems: 'center', width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  messageCardButton: { position: 'absolute', top: 12, right: 12, width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(157,42,75,0.2)', borderWidth: 1, borderColor: 'rgba(157,42,75,0.35)', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  imageWrap: { padding: 14, borderRadius: 20, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', alignItems: 'center', justifyContent: 'center' },
+  image: { width: 130, height: 80 },
+  name: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 12 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', marginBottom: 8, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12, backgroundColor: 'rgba(26,6,16,0.6)', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)' },
+  ratingStars: { flexDirection: 'row', gap: 2, marginRight: 8 },
+  ratingText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, alignSelf: 'stretch' },
+  infoIconWrap: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(157,42,75,0.12)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)' },
+  infoText: { marginLeft: 10, color: '#fff', fontSize: 14, fontWeight: '600', flex: 1 },
+  locationInfoContent: { flex: 1 },
+  distanceText: { color: '#E6B0B0', fontSize: 12, fontWeight: '700', marginLeft: 10, marginTop: 2 },
+  actionsRow: { flexDirection: 'row', gap: 10, marginTop: 14, alignSelf: 'stretch' },
+  primaryButton: { flex: 1, borderRadius: 14, overflow: 'hidden' },
+  btnGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 13, borderRadius: 14, width: '100%' },
+  secondaryButton: { flex: 1, borderRadius: 14, overflow: 'hidden' },
+  buttonIcon: { marginRight: 6 },
+  primaryButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  secondaryButtonText: { color: '#ffffffff', fontSize: 12, fontWeight: '700' },
+  // ── Empty ──
+  emptyCard: { borderRadius: 24, paddingVertical: 50, paddingHorizontal: 24, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', backgroundColor: 'rgba(26,6,16,0.5)', width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  emptyIconWrap: { width: 90, height: 90, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderWidth: 1, borderColor: 'rgba(157,42,75,0.3)' },
+  emptyTitle: { color: '#fff', fontSize: 20, fontWeight: '800', marginTop: 4 },
+  emptyText: { color: '#E6B0B0', fontSize: 14, fontWeight: '600', marginTop: 8, textAlign: 'center', lineHeight: 21 },
+  reviewModalBackdrop: { flex: 1, backgroundColor: 'rgba(15,8,13,0.8)', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  reviewModalCard: { width: '100%', maxHeight: '80%', borderRadius: 18, padding: 16, backgroundColor: '#1a0610', borderWidth: 1, borderColor: 'rgba(157,42,75,0.3)' },
+  reviewModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  reviewModalTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  reviewModalSubtitle: { fontSize: 12, fontWeight: '700', color: '#94a3b8', marginTop: 4, marginBottom: 12 },
+  reviewLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 20, justifyContent: 'center' },
+  reviewLoadingText: { color: '#99aaff', fontSize: 12, fontWeight: '700' },
+  reviewList: { marginTop: 6 },
+  reviewItem: { padding: 12, borderRadius: 14, backgroundColor: 'rgba(26,6,16,0.7)', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', marginBottom: 10 },
+  reviewStarsRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  reviewRatingValue: { color: '#f59e0b', fontWeight: '800', fontSize: 12 },
+  reviewDescription: { color: '#fff', fontSize: 13, fontWeight: '600', marginBottom: 6 },
+  reviewMetaText: { color: '#94a3b8', fontSize: 11, fontWeight: '600' },
+  reviewEmptyRow: { alignItems: 'center', paddingVertical: 24 },
+  reviewEmptyText: { color: '#99aaff', fontSize: 12, fontWeight: '700' },
 });

@@ -36,17 +36,17 @@ const Tab = createBottomTabNavigator();
 const customerTabColors = {
   header: '#1b254f',
   active: '#FFFFFF',
-  inactive: '#BFD6EC',
-  background: '#1F4E79',
-  border: '#173C5E',
+  inactive: '#0f0f13',
+  background: '#ffffffff',
+  border: '#ffffffff',
 };
 
 const tailorTabColors = {
-  header: '#9D2A4B',
-  active: '#FFFFFF',
-  inactive: '#9D2A4B',
-  background: '#1F4E79',
-  border: '#173C5E',
+  header: '#0f172a',
+  active: '#F59E0B',
+  inactive: '#94a3b8',
+  background: '#0b1220',
+  border: '#1e293b',
 };
 
 // Customer tab navigation
@@ -59,12 +59,12 @@ function CustomerDrawer({ route }) {
       screenOptions={{
         headerStyle: { backgroundColor: customerTabColors.header },
         headerTintColor: '#fff',
-        tabBarActiveTintColor: customerTabColors.active,
+        tabBarActiveTintColor: '#ffffffff',
         tabBarInactiveTintColor: customerTabColors.inactive,
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
         tabBarStyle: {
-          backgroundColor:"#3957a6",
-          borderTopColor: customerTabColors.border,
+          backgroundColor: '#9D2A4B',
+          borderTopColor: "#9D2A4B",
           height: 72,
           paddingBottom: 8,
           paddingTop: 6,
@@ -77,6 +77,7 @@ function CustomerDrawer({ route }) {
         initialParams={{ email }}
         options={{
           title: 'Home',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
@@ -103,6 +104,7 @@ function CustomerDrawer({ route }) {
         initialParams={{ email }}
         component={TailorServices}
         options={{
+          headerShown: false,
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },
         }}
@@ -112,6 +114,7 @@ function CustomerDrawer({ route }) {
         initialParams={{ email }}
         component={OrderForm}
         options={{
+          headerShown: false,
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },
         }}
@@ -121,6 +124,7 @@ function CustomerDrawer({ route }) {
         initialParams={{ email }}
         component={MyAppointments}
         options={{
+          headerShown: false,
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },
         }}
@@ -130,7 +134,7 @@ function CustomerDrawer({ route }) {
         component={CustomerOrders}
         initialParams={{ email, }}
         options={{
-          title: 'Orders',
+          headerShown: false,
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },
           tabBarIcon: ({ color, size }) => (
@@ -143,6 +147,7 @@ function CustomerDrawer({ route }) {
         component={CustomerChatbox}
         initialParams={{ email }}
         options={{
+          headerShown: false,
           title: 'Chat',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
@@ -154,6 +159,7 @@ function CustomerDrawer({ route }) {
         component={CustomerComplainbox}
         initialParams={{ email }}
         options={{
+          headerShown: false,
           title: 'Complaints',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="alert-circle-outline" size={size} color={color} />
@@ -165,6 +171,7 @@ function CustomerDrawer({ route }) {
         component={NotificationScreen}
         initialParams={{ email }}
         options={{
+          headerShown: false,
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },
         }}
@@ -174,6 +181,7 @@ function CustomerDrawer({ route }) {
         component={Payment}
         initialParams={{ email }}
         options={{
+          headerShown: false,
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },
         }}
@@ -188,14 +196,15 @@ function TailorDrawer({ route }) {
       initialRouteName="TailorDashboard"
       backBehavior="history"
       screenOptions={{
-        headerStyle: { backgroundColor: "#E6B0B0" },
-        headerTintColor: '#000000',
-        tabBarActiveTintColor: "#000000",
+        headerShown: false,
+        headerStyle: { backgroundColor: tailorTabColors.header },
+        headerTintColor: '#ffffff',
+        tabBarActiveTintColor: tailorTabColors.active,
         tabBarInactiveTintColor: tailorTabColors.inactive,
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
         tabBarStyle: {
-          backgroundColor: "#E6B0B0",
-          borderTopColor: "#4a262d",
+          backgroundColor: tailorTabColors.header,
+          borderTopColor: tailorTabColors.border,
           height: 72,
           paddingBottom: 8,
           paddingTop: 6,
@@ -268,12 +277,12 @@ const Stack = createStackNavigator();
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ gestureEnabled: false }} initialRouteName="Login">
+      <Stack.Navigator screenOptions={{ gestureEnabled: false }} initialRouteName="Start">
+        <Stack.Screen options={{ headerShown: false }} name="Start" component={Start} />
         <Stack.Screen options={{ headerShown: false }} name="Login" component={Login} />
         <Stack.Screen options={{ headerShown: false }} name="Signup" component={Signup} />
-        {/* Customer navigation (bottom tabs) */}
+        <Stack.Screen options={{ headerShown: false }} name="Forgot" component={Forgot} />
         <Stack.Screen options={{ headerShown: false }} name="CustomerDrawer" component={CustomerDrawer} />
-        {/* Tailor navigation (bottom tabs) */}
         <Stack.Screen options={{ headerShown: false }} name="TailorDrawer" component={TailorDrawer} />
         <Stack.Screen name="OrderForm" component={OrderForm} />
         <Stack.Screen options={{ headerShown: false }} name="AdminDashboard" component={AdminDashboard} />
@@ -284,11 +293,8 @@ const App = () => {
         <Stack.Screen name="ManageOrders" component={ManageOrders} />
         <Stack.Screen name="ManageComplain" component={ManageComplain} />
         <Stack.Screen options={{ headerShown: false }} name="TailorServices" component={TailorServices} />
-        <Stack.Screen name="Forgot" component={Forgot} />
-
         <Stack.Screen options={{ headerShown: false }} name="MyOrders" component={MyOrders} />
         <Stack.Screen options={{ headerShown: false }} name="Form" component={Form} />
-        <Stack.Screen options={{ headerShown: false }} name="Start" component={Start} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from "axios";
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from "react";
 
 import {
@@ -11,7 +12,9 @@ import {
   Image,
   Keyboard,
   Modal,
+  Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -22,6 +25,13 @@ import {
 import { PinchGestureHandler, State } from "react-native-gesture-handler";
 
 const window = Dimensions.get("window");
+const SCREEN_W = window.width;
+const IS_TABLET = SCREEN_W >= 768;
+const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 920 : IS_TABLET ? 760 : SCREEN_W;
+const PAGE_GUTTER = IS_TABLET ? 28 : 20;
+const isWeb = Platform.OS === "web";
+const buyModalMaxWidth = isWeb ? Math.min(window.width * 0.72, 760) : undefined;
+const buyModalMaxHeight = isWeb ? Math.min(window.height * 0.82, 780) : undefined;
 
 const measurementFields = {
   "Shalwar Kameez": {
@@ -134,7 +144,7 @@ const serviceOptionsGrouped = {
       "Neck Style": ["Boat Neck", "Round Neck", "V Neck"],
       "Side Slit Height": ["Short", "Medium", "Long"],
     },
-    
+
     "Dress Pants": {
       "Waist Style": ["High Waist", "Mid Waist"],
       "Leg Style": ["Flared", "Straight"],
@@ -147,20 +157,20 @@ const serviceOptionsGrouped = {
 };
 
 export default function OrderForm({ route, navigation }) {
-  const { CustomerEmail, tailorEmail,  price, serviceType, gender, images: passedImages,description,name } = route.params || {};
+  const { CustomerEmail, tailorEmail, price, serviceType, gender, images: passedImages, description, name } = route.params || {};
 
   console.log("Customer Email:", CustomerEmail);
-  console.log("Tailor=",tailorEmail)
-  
+  console.log("Tailor=", tailorEmail)
+
   const images = Array.isArray(passedImages) ? passedImages : [];
-const [openGroup, setOpenGroup] = useState(null);
+  const [openGroup, setOpenGroup] = useState(null);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [zoomVisible, setZoomVisible] = useState(false);
   const [buyModalVisible, setBuyModalVisible] = useState(false);
   const [selectedFormGender, setSelectedFormGender] = useState(null);
   const [orderQuantity, setOrderQuantity] = useState(1);
-const [fabricImage, setFabricImage] = useState(null);
+  const [fabricImage, setFabricImage] = useState(null);
 
   const [measurements, setMeasurements] = useState({ male: {}, female: {} });
   const [errors, setErrors] = useState({});
@@ -170,7 +180,7 @@ const [fabricImage, setFabricImage] = useState(null);
   const [cartModalVisible, setCartModalVisible] = useState(false);
   const [activeCartItem, setActiveCartItem] = useState(null);
 
-const [scale] = useState(new Animated.Value(1));
+  const [scale] = useState(new Animated.Value(1));
 
   // Load cart from AsyncStorage on mount
   useEffect(() => {
@@ -209,28 +219,28 @@ const [scale] = useState(new Animated.Value(1));
   };
 
   // Define fields and optionGroups based on current selections
-function normalizeGender(gender) {
-  if (!gender) return null;
-  gender = gender.toLowerCase();
-  if (gender === "men" || gender === "male") return "male";
-  if (gender === "women" || gender === "female") return "female";
-  if (gender === "both") return "both";
-  return null;
-}
+  function normalizeGender(gender) {
+    if (!gender) return null;
+    gender = gender.toLowerCase();
+    if (gender === "men" || gender === "male") return "male";
+    if (gender === "women" || gender === "female") return "female";
+    if (gender === "both") return "both";
+    return null;
+  }
 
-const normalizedGender = normalizeGender(gender);
-const effectiveGender = selectedFormGender || normalizedGender;
+  const normalizedGender = normalizeGender(gender);
+  const effectiveGender = selectedFormGender || normalizedGender;
 
-// Use activeCartItem data when ordering from cart, otherwise page-level props
-const activeServiceType = activeCartItem ? activeCartItem.serviceType : serviceType;
-const activeGenderRaw = activeCartItem ? activeCartItem.gender : gender;
-const activeNormalizedGender = normalizeGender(activeGenderRaw);
-const activeEffectiveGender = selectedFormGender || activeNormalizedGender;
-const activeUnitPrice = parseNumericPrice(activeCartItem ? activeCartItem.price : price);
-const activeTotalPrice = Number((activeUnitPrice * orderQuantity).toFixed(2));
+  // Use activeCartItem data when ordering from cart, otherwise page-level props
+  const activeServiceType = activeCartItem ? activeCartItem.serviceType : serviceType;
+  const activeGenderRaw = activeCartItem ? activeCartItem.gender : gender;
+  const activeNormalizedGender = normalizeGender(activeGenderRaw);
+  const activeEffectiveGender = selectedFormGender || activeNormalizedGender;
+  const activeUnitPrice = parseNumericPrice(activeCartItem ? activeCartItem.price : price);
+  const activeTotalPrice = Number((activeUnitPrice * orderQuantity).toFixed(2));
 
-const fields = measurementFields[activeServiceType]?.[activeEffectiveGender] || [];
-const optionsGroups = serviceOptionsGrouped[activeEffectiveGender]?.[activeServiceType] || {};
+  const fields = measurementFields[activeServiceType]?.[activeEffectiveGender] || [];
+  const optionsGroups = serviceOptionsGrouped[activeEffectiveGender]?.[activeServiceType] || {};
 
 
   // Image moving controls
@@ -246,10 +256,10 @@ const optionsGroups = serviceOptionsGrouped[activeEffectiveGender]?.[activeServi
       scale.setValue(1);
     }
   };
-console.log("selectedFormGender:", selectedFormGender);
-console.log("gender prop:", gender);
-console.log("effectiveGender:", effectiveGender);
-console.log("fields:", fields);
+  console.log("selectedFormGender:", selectedFormGender);
+  console.log("gender prop:", gender);
+  console.log("effectiveGender:", effectiveGender);
+  console.log("fields:", fields);
 
   // Pick fabric image from gallery
   const pickFabricImage = async () => {
@@ -309,10 +319,10 @@ console.log("fields:", fields);
   };
 
   const handleSubmitOrder = async () => {
-const srcGender = activeCartItem ? activeCartItem.gender : gender;
-const finalGenderRaw = (srcGender || "").toLowerCase();
-const finalGender = normalizeGender(finalGenderRaw);
-const formGender = finalGender === "both" ? selectedFormGender : finalGender;
+    const srcGender = activeCartItem ? activeCartItem.gender : gender;
+    const finalGenderRaw = (srcGender || "").toLowerCase();
+    const finalGender = normalizeGender(finalGenderRaw);
+    const formGender = finalGender === "both" ? selectedFormGender : finalGender;
 
     if (!formGender) {
       Alert.alert("Choose gender", "Please choose Men or Women form.");
@@ -322,8 +332,7 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
     if (!isFormValid()) {
       Alert.alert(
         "Missing fields",
-        `Please fill all required measurement fields and select options for ${
-          formGender === "male" ? "men" : "women"
+        `Please fill all required measurement fields and select options for ${formGender === "male" ? "men" : "women"
         }.`
       );
       return;
@@ -353,16 +362,16 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
       }
 
       const response = await axios.post(
-        "http://UF-MacBook-Pro.local:3000/place-order",
+        "http://UF-MacBook-Pro.local:3001/orders/place-order",
         formData,
-   
+
       );
 
       if (response.data.error) {
         throw new Error(response.data.error);
       }
 
-     
+
 
       // If ordering from cart, remove item from cart
       if (activeCartItem) {
@@ -378,11 +387,11 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
       setFabricImage(null);
       setActiveCartItem(null);
       navigation.navigate("Form", {
-      CustomerEmail: CustomerEmail,
-      tailorEmail: activeCartItem ? activeCartItem.tailorEmail : tailorEmail,
-      name: activeCartItem ? activeCartItem.tailorName : name,
-      orderId: response.data.order_id,
-    })
+        CustomerEmail: CustomerEmail,
+        tailorEmail: activeCartItem ? activeCartItem.tailorEmail : tailorEmail,
+        name: activeCartItem ? activeCartItem.tailorName : name,
+        orderId: response.data.order_id,
+      })
       // Navigate after successful submission
     } catch (error) {
       Alert.alert("Error", error.message || "Failed to place order.");
@@ -401,7 +410,7 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
       formData.append("quantity", orderQuantity.toString());
       formData.append("measurements", JSON.stringify({})); // empty
       formData.append("options", JSON.stringify({}));      // empty
-  
+
       if (fabricImage) {
         const uriParts = fabricImage.split('.');
         const fileType = uriParts[uriParts.length - 1];
@@ -411,19 +420,19 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
           type: `image/${fileType === "jpg" ? "jpeg" : fileType}`,
         });
       }
-  
+
       const response = await axios.post(
-        "http://UF-MacBook-Pro.local:3000/place-order",
+        "http://UF-MacBook-Pro.local:3001/orders/place-order",
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },
         }
       );
-  
+
       if (response.data.error) {
         throw new Error(response.data.error);
       }
-  
+
       Alert.alert(
         "Order placed",
         "Your order has been submitted successfully.",
@@ -445,32 +454,33 @@ const formGender = finalGender === "both" ? selectedFormGender : finalGender;
       Alert.alert("Error", error.message || "Failed to place order.");
     }
   };
-  
-return (
-  <>
- <TouchableOpacity
-          style={styles.backButton}
-         onPress={() => navigation.navigate("TailorServices", { CustomerEmail, email: tailorEmail,   // VERY IMPORTANT
-  name, })}
-        >
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
 
-        {/* Cart Icon */}
-        <TouchableOpacity
-          style={styles.cartIconButton}
-          onPress={() => setCartModalVisible(true)}
-        >
-          <Ionicons name="cart" size={24} color="#fff" />
-          {cart.length > 0 && (
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{cart.length}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      <ScrollView style={styles.container}>
-     
-        
+  return (
+    <LinearGradient colors={["#0f0f13", "#1a0610", "#2a0a18"]} style={styles.screen}>
+      <StatusBar barStyle="light-content" backgroundColor="#0f0f13" />
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={22} color="#E6B0B0" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.cartIconButton}
+            onPress={() => setCartModalVisible(true)}
+          >
+            <Ionicons name="cart" size={24} color="#E6B0B0" />
+            {cart.length > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{cart.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+
 
         {/* Service Title */}
         <Text style={styles.title}>{serviceType || "Service"}</Text>
@@ -558,375 +568,394 @@ return (
 
         <View style={{ height: 30 }} />
       </ScrollView>
-   
 
-    {/* Zoom Modal */}
-    <Modal visible={zoomVisible} transparent animationType="fade">
-      <View style={styles.modalBackground}>
-        <PinchGestureHandler
-          onGestureEvent={Animated.event(
-            [{ nativeEvent: { scale: scale } }],
-            { useNativeDriver: true }
-          )}
-          onHandlerStateChange={(event) => {
-            if (event.nativeEvent.oldState === State.ACTIVE) {
-              let newScale = event.nativeEvent.scale;
-              if (newScale < 1 || newScale > 4) {
-                Animated.spring(scale, {
-                  toValue: Math.min(Math.max(newScale, 1), 4),
-                  useNativeDriver: true,
-                }).start();
+
+      {/* Zoom Modal */}
+      <Modal visible={zoomVisible} transparent animationType="fade">
+        <View style={styles.modalBackground}>
+          <PinchGestureHandler
+            onGestureEvent={Animated.event(
+              [{ nativeEvent: { scale: scale } }],
+              { useNativeDriver: true }
+            )}
+            onHandlerStateChange={(event) => {
+              if (event.nativeEvent.oldState === State.ACTIVE) {
+                let newScale = event.nativeEvent.scale;
+                if (newScale < 1 || newScale > 4) {
+                  Animated.spring(scale, {
+                    toValue: Math.min(Math.max(newScale, 1), 4),
+                    useNativeDriver: true,
+                  }).start();
+                }
               }
-            }
-          }}
-        >
-          <Animated.Image
-            source={images[currentIndex]}
-            style={[styles.zoomedImage, { transform: [{ scale }] }]}
-          />
-        </PinchGestureHandler>
+            }}
+          >
+            <Animated.Image
+              source={images[currentIndex]}
+              style={[styles.zoomedImage, { transform: [{ scale }] }]}
+            />
+          </PinchGestureHandler>
 
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => {
-            setZoomVisible(false);
-            scale.setValue(1);
-          }}
-        >
-          <Text style={styles.closeText}>Close</Text>
-        </TouchableOpacity>
-      </View>
-    </Modal>
-
-    {/* Cart Modal */}
-    <Modal visible={cartModalVisible} transparent animationType="slide">
-      <View style={styles.buyModalOverlay}>
-        <View style={[styles.buyModalContainer, { alignItems: 'center' }]}>
-          <View style={[styles.buyCard, { maxHeight: '70%' }]}>
-            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.buyTitle}>My Cart</Text>
-              <TouchableOpacity onPress={() => setCartModalVisible(false)}>
-                <Ionicons name="close-circle" size={28} color="#d92323" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView>
-              {cart.length === 0 ? (
-                <Text style={{ textAlign: 'center', color: '#888', marginTop: 20 }}>Your cart is empty.</Text>
-              ) : (
-                cart.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.cartItem}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      const itemGender = normalizeGender(item.gender);
-                      setActiveCartItem(item);
-                      setSelectedFormGender(
-                        itemGender === 'male' || itemGender === 'female' ? itemGender : null
-                      );
-                      setMeasurements({ male: {}, female: {} });
-                      setErrors({});
-                      setSelectedOptionGroups({});
-                      setFabricImage(null);
-                      setCartModalVisible(false);
-                      setBuyModalVisible(true);
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontWeight: '700', fontSize: 15 }}>{item.serviceType}</Text>
-                      <Text style={{ color: '#555', fontSize: 13 }}>Rs. {item.price}</Text>
-                      <Text style={{ color: '#888', fontSize: 12 }}>{item.tailorName}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => removeFromCart(item.id)} style={{ marginRight: 10 }}>
-                      <Ionicons name="trash-outline" size={22} color="#d92323" />
-                    </TouchableOpacity>
-                    <Ionicons name="chevron-forward" size={20} color="#2b2a74ff" />
-                  </TouchableOpacity>
-                ))
-              )}
-            </ScrollView>
-  
-          </View>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => {
+              setZoomVisible(false);
+              scale.setValue(1);
+            }}
+          >
+            <Text style={styles.closeText}>Close</Text>
+          </TouchableOpacity>
         </View>
-      </View>
-    </Modal>
+      </Modal>
 
-    {/* Buy Modal */}
-    <Modal visible={buyModalVisible} transparent animationType="slide">
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      {/* Cart Modal */}
+      <Modal visible={cartModalVisible} transparent animationType="slide">
         <View style={styles.buyModalOverlay}>
-          <View style={styles.buyModalContainer}>
-            <View style={styles.buyCard}>
-              <Text style={styles.buyTitle}>
-                Place Order — {activeServiceType || 'Measurements'}
-              </Text>
-
-              {/* Quantity Selector */}
-              <View style={styles.quantitySection}>
-                <Text style={styles.quantityLabel}>Quantity: How many do you want to stitch?</Text>
-                <View style={styles.quantityControlRow}>
-                  <TouchableOpacity
-                    style={styles.decrementBtn}
-                    onPress={() => setOrderQuantity(Math.max(1, orderQuantity - 1))}
-                  >
-                    <Text style={styles.decrementText}>−</Text>
-                  </TouchableOpacity>
-                  <View style={styles.quantityDisplayBox}>
-                    <Text style={styles.quantityDisplayText}>{orderQuantity}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.incrementBtn}
-                    onPress={() => setOrderQuantity(Math.min(15, orderQuantity + 1))}
-                  >
-                    <Text style={styles.incrementText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={{ color: "#444", marginTop: 8, fontSize: 13 }}>
-                  Unit: Rs. {activeUnitPrice} | Total: Rs. {activeTotalPrice}
-                </Text>
+          <View style={[styles.buyModalContainer, { alignItems: 'center' }]}>
+            <View style={[styles.buyCard, { maxHeight: '70%' }]}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={styles.buyTitle}>My Cart</Text>
+                <TouchableOpacity onPress={() => setCartModalVisible(false)}>
+                  <Ionicons name="close-circle" size={28} color="#9D2A4B" />
+                </TouchableOpacity>
               </View>
-
-              {/* Gender Selector */}
-              {((activeGenderRaw || "").toLowerCase() === "both" ||
-                (activeGenderRaw || "").trim() === "") && (
-                <View style={styles.selectorRow}>
-                  {[
-                    "male",
-                    "female"
-                  ].map((genderKey) => (
+              <ScrollView>
+                {cart.length === 0 ? (
+                  <Text style={{ textAlign: 'center', color: '#E6B0B0', marginTop: 20 }}>Your cart is empty.</Text>
+                ) : (
+                  cart.map((item) => (
                     <TouchableOpacity
-                      key={genderKey}
-                      style={[
-                        styles.selectorBtn,
-                        selectedFormGender === genderKey &&
-                          styles.selectorBtnActive,
-                      ]}
+                      key={item.id}
+                      style={styles.cartItem}
+                      activeOpacity={0.7}
                       onPress={() => {
-                        setSelectedFormGender(genderKey);
+                        const itemGender = normalizeGender(item.gender);
+                        setActiveCartItem(item);
+                        setSelectedFormGender(
+                          itemGender === 'male' || itemGender === 'female' ? itemGender : null
+                        );
+                        setMeasurements({ male: {}, female: {} });
                         setErrors({});
                         setSelectedOptionGroups({});
+                        setFabricImage(null);
+                        setCartModalVisible(false);
+                        setBuyModalVisible(true);
                       }}
                     >
-                      <Text
-                        style={[
-                          styles.selectorText,
-                          selectedFormGender === genderKey &&
-                            styles.selectorTextActive,
-                        ]}
-                      >
-                        {genderKey === "male" ? "Men" : "Women"}
-                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: '700', fontSize: 15, color: '#fff' }}>{item.serviceType}</Text>
+                        <Text style={{ color: '#E6B0B0', fontSize: 13 }}>Rs. {item.price}</Text>
+                        <Text style={{ color: '#E6B0B0', fontSize: 12 }}>{item.tailorName}</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => removeFromCart(item.id)} style={{ marginRight: 10 }}>
+                        <Ionicons name="trash-outline" size={22} color="#9D2A4B" />
+                      </TouchableOpacity>
+                      <Ionicons name="chevron-forward" size={20} color="#E6B0B0" />
                     </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              <ScrollView>
-                {/* Measurement Fields */}
-                {fields.length > 0 ? (
-                  <>
-                    {fields.map((field) => {
-                      const key = field
-                        .toLowerCase()
-                        .replace(/\s+/g, "");
-                      const value =
-                        measurements[selectedFormGender]?.[key] || "";
-                      const hasError = errors[key];
-
-                      return (
-                        <View key={key} style={{ marginBottom: 8 }}>
-                          <Text style={{ fontWeight: "700", marginBottom: 4 }}>{field}</Text>
-                          <TextInput
-                            placeholder={`${field} (${measurementRanges[field] || "inches"} in)`}
-                            placeholderTextColor="#777"
-                            value={value}
-                            onChangeText={(v) => {
-                              const numericValue = v.replace(
-                                /[^0-9.]/g,
-                                ""
-                              );
-                              setField(
-                                selectedFormGender,
-                                field,
-                                numericValue
-                              );
-                            }}
-                            maxLength={4}
-                            keyboardType="numeric"
-                            style={[
-                              styles.input,
-                              hasError && { borderColor: "red" },
-                            ]}
-                          />
-                          {hasError && (
-                            <Text
-                              style={{
-                                color: "red",
-                                fontSize: 12,
-                                marginTop: -8,
-                                marginBottom: 8,
-                              }}
-                            >
-                              This field is required
-                            </Text>
-                          )}
-                        </View>
-                      );
-                    })}
-
-                    {/* Options */}
-                    {Object.entries(optionsGroups).map(
-                      ([groupName, options]) => (
-                        <View key={groupName} style={{ marginBottom: 16 }}>
-                          <Text style={{ fontWeight: "700", marginBottom: 8, fontSize: 14 }}>
-                            {groupName}
-                          </Text>
-                          
-                          {/* Custom Dropdown Button */}
-                          <TouchableOpacity
-                            style={[
-                              styles.dropdownButton,
-                              selectedOptionGroups[groupName] == null && { borderColor: "#FF6B6B" },
-                            ]}
-                            onPress={() => setOpenDropdown(openDropdown === groupName ? null : groupName)}
-                          >
-                            <Text style={[
-                              styles.dropdownButtonText,
-                              !selectedOptionGroups[groupName] && { color: "#999" }
-                            ]}>
-                              {selectedOptionGroups[groupName] || `Select ${groupName}`}
-                            </Text>
-                            <Ionicons 
-                              name={openDropdown === groupName ? "chevron-up" : "chevron-down"} 
-                              size={20} 
-                              color="#E6B0B0" 
-                            />
-                          </TouchableOpacity>
-
-                          {/* Dropdown Menu */}
-                          {openDropdown === groupName && (
-                            <View style={styles.dropdownMenu}>
-                              {options.map((opt) => (
-                                <TouchableOpacity
-                                  key={opt}
-                                  style={[
-                                    styles.dropdownOption,
-                                    selectedOptionGroups[groupName] === opt && styles.dropdownOptionSelected,
-                                  ]}
-                                  onPress={() => {
-                                    setSelectedOptionGroups((prev) => ({
-                                      ...prev,
-                                      [groupName]: opt,
-                                    }));
-                                    setOpenDropdown(null);
-                                  }}
-                                >
-                                  <Text style={[
-                                    styles.dropdownOptionText,
-                                    selectedOptionGroups[groupName] === opt && styles.dropdownOptionTextSelected,
-                                  ]}>
-                                    {opt}
-                                  </Text>
-                                  {selectedOptionGroups[groupName] === opt && (
-                                    <Ionicons name="checkmark-circle" size={18} color="#E6B0B0" />
-                                  )}
-                                </TouchableOpacity>
-                              ))}
-                            </View>
-                          )}
-                        </View>
-                      )
-                    )}
-                  </>
-                ) : (
-                  <Text style={{ textAlign: "center", marginTop: 20 }}>
-                  
-                  </Text>
+                  ))
                 )}
               </ScrollView>
 
-              {/* Fabric Upload */}
-              <View style={{ marginBottom: 16 }}>
-                <Text style={{ fontWeight: "700", marginBottom: 6 }}>
-                  Upload Fabric Picture
-                </Text>
-
-                <TouchableOpacity
-                  style={styles.fabricUploadBox}
-                  onPress={pickFabricImage}
-                  activeOpacity={0.8}
-                >
-                  {fabricImage ? (
-                    <>
-                      <Image
-                        source={{ uri: fabricImage }}
-                        style={styles.fabricImage}
-                      />
-                      <TouchableOpacity
-                        style={styles.removeImageBtn}
-                        onPress={() => setFabricImage(null)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.removeImageText}>Remove</Text>
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <Text style={{ color: "#777", textAlign: "center" }}>
-                      Tap to upload fabric image
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              {/* Buttons */}
-              <View style={styles.buyButtonsRow}>
-                <TouchableOpacity
-                  style={[styles.modalBtn, styles.modalBtnCancel]}
-                  onPress={() => {
-                    setBuyModalVisible(false);
-                    setSelectedFormGender(null);
-                    setErrors({});
-                    setSelectedOptionGroups({});
-                    setActiveCartItem(null);
-                  }}
-                >
-                  <Text style={styles.modalBtnTextCancel}>Cancel</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.modalBtn,
-                    styles.modalBtnSubmit,
-                    { opacity: isFormValid() ? 1 : 0.6 },
-                  ]}
-                  onPress={handleSubmitOrder}
-                  disabled={!isFormValid()}
-                >
-                  <Text style={styles.modalBtnTextSubmit}>Next</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           </View>
         </View>
-      </TouchableWithoutFeedback>
-    </Modal>
-  </>
-);
+      </Modal>
+
+      {/* Buy Modal */}
+      <Modal visible={buyModalVisible} transparent animationType="slide">
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.buyModalOverlay}>
+            <View style={styles.buyModalContainer}>
+              <View
+                style={[
+                  styles.buyCard,
+                  isWeb && { width: buyModalMaxWidth, maxWidth: buyModalMaxWidth, maxHeight: buyModalMaxHeight },
+                ]}
+              >
+                <Text style={styles.buyTitle}>
+                  Place Order — {activeServiceType || 'Measurements'}
+                </Text>
+
+                {/* Quantity Selector */}
+                <View style={styles.quantitySection}>
+                  <Text style={styles.quantityLabel}>Quantity: How many do you want to stitch?</Text>
+                  <View style={styles.quantityControlRow}>
+                    <TouchableOpacity
+                      style={styles.decrementBtn}
+                      onPress={() => setOrderQuantity(Math.max(1, orderQuantity - 1))}
+                    >
+                      <Text style={styles.decrementText}>−</Text>
+                    </TouchableOpacity>
+                    <View style={styles.quantityDisplayBox}>
+                      <Text style={styles.quantityDisplayText}>{orderQuantity}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.incrementBtn}
+                      onPress={() => setOrderQuantity(Math.min(15, orderQuantity + 1))}
+                    >
+                      <Text style={styles.incrementText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={{ color: "#E6B0B0", marginTop: 8, fontSize: 13 }}>
+                    Unit: Rs. {activeUnitPrice} | Total: Rs. {activeTotalPrice}
+                  </Text>
+                </View>
+
+                {/* Gender Selector */}
+                {((activeGenderRaw || "").toLowerCase() === "both" ||
+                  (activeGenderRaw || "").trim() === "") && (
+                    <View style={styles.selectorRow}>
+                      {[
+                        "male",
+                        "female"
+                      ].map((genderKey) => (
+                        <TouchableOpacity
+                          key={genderKey}
+                          style={[
+                            styles.selectorBtn,
+                            selectedFormGender === genderKey &&
+                            styles.selectorBtnActive,
+                          ]}
+                          onPress={() => {
+                            setSelectedFormGender(genderKey);
+                            setErrors({});
+                            setSelectedOptionGroups({});
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.selectorText,
+                              selectedFormGender === genderKey &&
+                              styles.selectorTextActive,
+                            ]}
+                          >
+                            {genderKey === "male" ? "Men" : "Women"}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+
+                <ScrollView
+                  style={styles.buyScroll}
+                  contentContainerStyle={styles.buyScrollContent}
+                  showsVerticalScrollIndicator={true}
+                >
+                  {/* Measurement Fields */}
+                  {fields.length > 0 ? (
+                    <>
+                      {fields.map((field) => {
+                        const key = field
+                          .toLowerCase()
+                          .replace(/\s+/g, "");
+                        const value =
+                          measurements[selectedFormGender]?.[key] || "";
+                        const hasError = errors[key];
+
+                        return (
+                          <View key={key} style={{ marginBottom: 8 }}>
+                            <Text style={{ fontWeight: "700", marginBottom: 4 }}>{field}</Text>
+                            <TextInput
+                              placeholder={`${field} (${measurementRanges[field] || "inches"} in)`}
+                              placeholderTextColor="#777"
+                              value={value}
+                              onChangeText={(v) => {
+                                const numericValue = v.replace(
+                                  /[^0-9.]/g,
+                                  ""
+                                );
+                                setField(
+                                  selectedFormGender,
+                                  field,
+                                  numericValue
+                                );
+                              }}
+                              maxLength={4}
+                              keyboardType="numeric"
+                              style={[
+                                styles.input,
+                                hasError && { borderColor: "red" },
+                              ]}
+                            />
+                            {hasError && (
+                              <Text
+                                style={{
+                                  color: "red",
+                                  fontSize: 12,
+                                  marginTop: -8,
+                                  marginBottom: 8,
+                                }}
+                              >
+                                This field is required
+                              </Text>
+                            )}
+                          </View>
+                        );
+                      })}
+
+                      {/* Options */}
+                      {Object.entries(optionsGroups).map(
+                        ([groupName, options]) => (
+                          <View key={groupName} style={{ marginBottom: 16 }}>
+                            <Text style={{ fontWeight: "700", marginBottom: 8, fontSize: 14 }}>
+                              {groupName}
+                            </Text>
+
+                            {/* Custom Dropdown Button */}
+                            <TouchableOpacity
+                              style={[
+                                styles.dropdownButton,
+                                selectedOptionGroups[groupName] == null && { borderColor: "#FF6B6B" },
+                              ]}
+                              onPress={() => setOpenDropdown(openDropdown === groupName ? null : groupName)}
+                            >
+                              <Text style={[
+                                styles.dropdownButtonText,
+                                !selectedOptionGroups[groupName] && { color: "#999" }
+                              ]}>
+                                {selectedOptionGroups[groupName] || `Select ${groupName}`}
+                              </Text>
+                              <Ionicons
+                                name={openDropdown === groupName ? "chevron-up" : "chevron-down"}
+                                size={20}
+                                color="#E6B0B0"
+                              />
+                            </TouchableOpacity>
+
+                            {/* Dropdown Menu */}
+                            {openDropdown === groupName && (
+                              <View style={styles.dropdownMenu}>
+                                {options.map((opt) => (
+                                  <TouchableOpacity
+                                    key={opt}
+                                    style={[
+                                      styles.dropdownOption,
+                                      selectedOptionGroups[groupName] === opt && styles.dropdownOptionSelected,
+                                    ]}
+                                    onPress={() => {
+                                      setSelectedOptionGroups((prev) => ({
+                                        ...prev,
+                                        [groupName]: opt,
+                                      }));
+                                      setOpenDropdown(null);
+                                    }}
+                                  >
+                                    <Text style={[
+                                      styles.dropdownOptionText,
+                                      selectedOptionGroups[groupName] === opt && styles.dropdownOptionTextSelected,
+                                    ]}>
+                                      {opt}
+                                    </Text>
+                                    {selectedOptionGroups[groupName] === opt && (
+                                      <Ionicons name="checkmark-circle" size={18} color="#E6B0B0" />
+                                    )}
+                                  </TouchableOpacity>
+                                ))}
+                              </View>
+                            )}
+                          </View>
+                        )
+                      )}
+                    </>
+                  ) : (
+                    <Text style={{ textAlign: "center", marginTop: 20 }}>
+
+                    </Text>
+                  )}
+                </ScrollView>
+
+                {/* Fabric Upload */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                    Upload Fabric Picture
+                  </Text>
+
+                  <TouchableOpacity
+                    style={styles.fabricUploadBox}
+                    onPress={pickFabricImage}
+                    activeOpacity={0.8}
+                  >
+                    {fabricImage ? (
+                      <>
+                        <Image
+                          source={{ uri: fabricImage }}
+                          style={styles.fabricImage}
+                        />
+                        <TouchableOpacity
+                          style={styles.removeImageBtn}
+                          onPress={() => setFabricImage(null)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.removeImageText}>Remove</Text>
+                        </TouchableOpacity>
+                      </>
+                    ) : (
+                      <Text style={{ color: "#777", textAlign: "center" }}>
+                        Tap to upload fabric image
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {/* Buttons */}
+                <View style={styles.buyButtonsRow}>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, styles.modalBtnCancel]}
+                    onPress={() => {
+                      setBuyModalVisible(false);
+                      setSelectedFormGender(null);
+                      setErrors({});
+                      setSelectedOptionGroups({});
+                      setActiveCartItem(null);
+                    }}
+                  >
+                    <Text style={styles.modalBtnTextCancel}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.modalBtn,
+                      styles.modalBtnSubmit,
+                      { opacity: isFormValid() ? 1 : 0.6 },
+                    ]}
+                    onPress={handleSubmitOrder}
+                    disabled={!isFormValid()}
+                  >
+                    <Text style={styles.modalBtnTextSubmit}>Next</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    </LinearGradient>
+  );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   container: {
-    borderRadius: 12,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
+    paddingHorizontal: PAGE_GUTTER,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18,
     marginTop: 60,
-    maxHeight: '90%',
-    padding: 20,
-    backgroundColor: "#fff",
   },
   title: {
     fontSize: 24,
     fontWeight: "700",
     marginBottom: 10,
-    color: "#111",
+    color: "#fff",
   },
   priceRow: {
     flexDirection: "row",
@@ -934,13 +963,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   newPrice: {
-    color: "#d92323",
+    color: "#E6B0B0",
     fontWeight: "700",
     fontSize: 22,
   },
   genderText: {
     fontSize: 14,
-    color: "#444",
+    color: "#E6B0B0",
     marginBottom: 20,
   },
 
@@ -979,7 +1008,7 @@ const styles = StyleSheet.create({
 
   buyButton: {
     marginTop: 12,
-    backgroundColor: "#222",
+    backgroundColor: "#D6406A",
     paddingVertical: 14,
     borderRadius: 8,
   },
@@ -992,13 +1021,14 @@ const styles = StyleSheet.create({
 
   input: {
     borderWidth: 1,
-    borderColor: "#aaa",
+    borderColor: "rgba(157, 42, 75, 0.3)",
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 12,
     fontSize: 15,
-    color: "#111",
+    color: "#fff",
+    backgroundColor: "rgba(26, 6, 16, 0.5)",
   },
   inputError: {
     borderColor: "red",
@@ -1011,17 +1041,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   quantitySection: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "rgba(26, 6, 16, 0.5)",
     borderRadius: 10,
     padding: 14,
-    marginBottom: 1,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "rgba(157, 42, 75, 0.2)",
   },
   quantityLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
+    color: "#E6B0B0",
     marginBottom: 10,
   },
   quantityControlRow: {
@@ -1032,7 +1062,7 @@ const styles = StyleSheet.create({
   },
   decrementBtn: {
     width: 40,
-    height:30,
+    height: 30,
     borderRadius: 8,
     backgroundColor: "#e74c3c",
     justifyContent: "center",
@@ -1047,7 +1077,7 @@ const styles = StyleSheet.create({
   },
   incrementBtn: {
     width: 40,
-    height:30,
+    height: 30,
     borderRadius: 8,
     backgroundColor: "#27ae60",
     justifyContent: "center",
@@ -1064,38 +1094,36 @@ const styles = StyleSheet.create({
     minWidth: 50,
     height: 42,
     borderRadius: 8,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "rgba(26, 6, 16, 0.6)",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#333",
+    borderWidth: 1,
+    borderColor: "rgba(157, 42, 75, 0.3)",
   },
   quantityDisplayText: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#333",
+    color: "#fff",
   },
-descriptionCard: {
-  backgroundColor: "#fafafa",
-  borderRadius: 12,
-  padding: 16,
-  marginTop: 16,
-  borderWidth: 1,
-  borderColor: "#e0e0e0",
-},
-
-descriptionTitle: {
-  fontSize: 16,
-  fontWeight: "700",
-  color: "#111",
-  marginBottom: 6,
-},
-
-descriptionText: {
-  fontSize: 14,
-  lineHeight: 22,
-  color: "#444",
-},
+  descriptionCard: {
+    backgroundColor: "rgba(26, 6, 16, 0.45)",
+    borderRadius: 10,
+    padding: 14,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "rgba(157, 42, 75, 0.2)",
+  },
+  descriptionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 8,
+    color: "#fff",
+  },
+  descriptionText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: "#fff",
+  },
 
   modalBackground: {
     flex: 1,
@@ -1126,26 +1154,33 @@ descriptionText: {
 
   buyModalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
+    backgroundColor: "rgba(15,15,19,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
   },
   buyModalContainer: {
     width: "100%",
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   buyCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#1a0610",
+    borderWidth: 1,
+    borderColor: "rgba(157, 42, 75, 0.3)",
     padding: 18,
     borderRadius: 22,
-    margin: 20,
-marginBottom: 100,
-    maxHeight: "80%",
-    width: "90%",
+    width: "100%",
+    maxWidth: 760,
+    maxHeight: "85%",
   },
   buyTitle: {
     fontSize: 20,
     fontWeight: "700",
     marginBottom: 12,
     textAlign: "center",
+    color: "#fff",
   },
 
   selectorRow: {
@@ -1155,7 +1190,7 @@ marginBottom: 100,
   },
   selectorBtn: {
     borderWidth: 1,
-    borderColor: "#aaa",
+    borderColor: "rgba(157, 42, 75, 0.3)",
     borderRadius: 6,
     paddingVertical: 8,
     paddingHorizontal: 20,
@@ -1163,38 +1198,38 @@ marginBottom: 100,
     marginVertical: 12,
   },
   imageWrapper: {
-  position: "relative",
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-},
+    position: "relative",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-leftArrow: {
-  position: "absolute",
-  left: 5,
-  backgroundColor: "#00000050",
-  paddingVertical: 10,
-  paddingHorizontal: 14,
-  borderRadius: 50,
-  zIndex: 10,
-},
+  leftArrow: {
+    position: "absolute",
+    left: 5,
+    backgroundColor: "#00000050",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 50,
+    zIndex: 10,
+  },
 
-rightArrow: {
-  position: "absolute",
-  right: 5,
-  backgroundColor: "#00000050",
-  paddingVertical: 10,
-  paddingHorizontal: 14,
-  borderRadius: 50,
-  zIndex: 10,
-},
+  rightArrow: {
+    position: "absolute",
+    right: 5,
+    backgroundColor: "#00000050",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 50,
+    zIndex: 10,
+  },
 
   selectorBtnActive: {
-    backgroundColor: "#333",
-    borderColor: "#333",
+    backgroundColor: "#9D2A4B",
+    borderColor: "#9D2A4B",
   },
   selectorText: {
-    color: "#333",
+    color: "#E6B0B0",
     fontWeight: "700",
     fontSize: 14,
   },
@@ -1206,24 +1241,30 @@ rightArrow: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
+  buyScroll: {
+    flexGrow: 0,
+  },
+  buyScrollContent: {
+    paddingBottom: 12,
+  },
   modalBtn: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 8,
     marginHorizontal: 5,
-        marginBottom:20
+    marginBottom: 20
   },
   modalBtnCancel: {
-    backgroundColor: "#eee",
-
+    backgroundColor: "rgba(157, 42, 75, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(157, 42, 75, 0.3)",
   },
   modalBtnSubmit: {
-    backgroundColor: "#222",
+    backgroundColor: "#9D2A4B",
   },
   modalBtnTextCancel: {
-    color: "#444",
+    color: "#E6B0B0",
     fontWeight: "700",
-  
     textAlign: "center",
   },
   modalBtnTextSubmit: {
@@ -1234,24 +1275,24 @@ rightArrow: {
 
   pickerContainer: {
     borderWidth: 1,
-    borderColor: "#aaa",
+    borderColor: "rgba(157, 42, 75, 0.3)",
     borderRadius: 8,
     overflow: "hidden",
     height: 44,
     justifyContent: "center",
     width: "100%",
     alignSelf: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(26, 6, 16, 0.7)",
   },
 
   fabricUploadBox: {
     borderWidth: 1,
-    borderColor: "#aaa",
+    borderColor: "rgba(157, 42, 75, 0.3)",
     borderRadius: 8,
     height: 120,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fafafa",
+    backgroundColor: "rgba(26, 6, 16, 0.5)",
     marginBottom: 16,
   },
   fabricImage: {
@@ -1262,7 +1303,7 @@ rightArrow: {
   },
   addToCartButton: {
     marginTop: 10,
-    backgroundColor: '#2b2a74ff',
+    backgroundColor: '#9D2A4B',
     paddingVertical: 14,
     borderRadius: 8,
     flexDirection: 'row',
@@ -1290,20 +1331,11 @@ rightArrow: {
     fontSize: 27,
     fontWeight: '700',
   },
-  cartIconButton: {
-    position: 'absolute',
-    right: 16,
-    top: 14,
-    padding: 8,
-    backgroundColor: '#2b2a74ff',
-    borderRadius: 12,
-    zIndex: 100,
-  },
   cartBadge: {
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: '#d92323',
+    backgroundColor: '#9D2A4B',
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -1320,20 +1352,20 @@ rightArrow: {
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: 'rgba(157,42,75,0.15)',
   },
   cartMeasurementBox: {
-    backgroundColor: '#e6ebff',
+    backgroundColor: 'rgba(157, 42, 75, 0.15)',
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#2b2a74ff',
+    borderLeftColor: '#9D2A4B',
   },
   cartMeasurementTitle: {
     fontWeight: '700',
     fontSize: 14,
-    color: '#2b2a74ff',
+    color: '#E6B0B0',
     marginBottom: 8,
   },
   cartMeasurementRow: {
@@ -1341,24 +1373,39 @@ rightArrow: {
     justifyContent: 'space-between',
     paddingVertical: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#e8e8e8',
+    borderBottomColor: 'rgba(157,42,75,0.15)',
   },
   cartMeasurementLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#333',
+    color: '#fff',
   },
   cartMeasurementRange: {
     fontSize: 13,
-    color: '#666',
+    color: '#E6B0B0',
   },
   backButton: {
-    position: "absolute",
-    left: 16,
-    top: 14,
+    width: 44,
+    height: 44,
     padding: 8,
-    backgroundColor: "#2b2a74ff",
+    backgroundColor: "rgba(157,42,75,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(157,42,75,0.3)",
     borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cartIconButton: {
+    width: 44,
+    height: 44,
+    padding: 8,
+    backgroundColor: 'rgba(157,42,75,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(157,42,75,0.3)',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
   },
   removeImageBtn: {
     position: "absolute",
@@ -1369,7 +1416,7 @@ rightArrow: {
     paddingVertical: 6,
     borderRadius: 20,
   },
-  
+
   removeImageText: {
     color: "#fff",
     fontWeight: "700",
@@ -1377,26 +1424,26 @@ rightArrow: {
   },
   dropdownButton: {
     borderWidth: 1,
-    borderColor: "#E6B0B0",
+    borderColor: "rgba(157, 42, 75, 0.3)",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(26, 6, 16, 0.7)",
   },
   dropdownButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#2B0F14",
+    color: "#fff",
     flex: 1,
   },
   dropdownMenu: {
     borderWidth: 1,
-    borderColor: "#E6B0B0",
+    borderColor: "rgba(157, 42, 75, 0.3)",
     borderRadius: 8,
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(26, 6, 16, 0.95)",
     marginTop: 4,
     overflow: "hidden",
   },
@@ -1407,14 +1454,14 @@ rightArrow: {
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "rgba(157, 42, 75, 0.15)",
   },
   dropdownOptionSelected: {
-    backgroundColor: "#f8f0f0",
+    backgroundColor: "rgba(157, 42, 75, 0.15)",
   },
   dropdownOptionText: {
     fontSize: 14,
-    color: "#2B0F14",
+    color: "#fff",
     fontWeight: "500",
     flex: 1,
   },

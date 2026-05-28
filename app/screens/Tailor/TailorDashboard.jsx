@@ -21,18 +21,15 @@ const TailorDashboard = ({ route, navigation }) => {
   const [profile, setProfile] = useState({});
   const [editMode, setEditMode] = useState(false);
 
-  /* --------- PROFILE STATES (REPLACED form) --------- */
   const [fullName, setFullName] = useState("");
   const [cnic, setCnic] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [location, setLocation] = useState("");
   const [password, setPassword] = useState("");
 
-  /* --------- PROFILE CARD STATES --------- */
   const [showProfile, setShowProfile] = useState(false);
   const [profileVisible, setProfileVisible] = useState(false);
 
-  /* ---------------- ANIMATIONS ---------------- */
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(40));
 
@@ -51,15 +48,13 @@ const TailorDashboard = ({ route, navigation }) => {
     }
   }, [showProfile]);
 
-  /* ---------------- FETCH PROFILE ---------------- */
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const { data } = await axios.get(
-          "http://UF-MacBook-Pro.local:3000/get-profile",
+          "http://UF-MacBook-Pro.local:3001/profiles/get-profile",
           { params: { email } }
         );
-
         if (data.user) {
           setProfile(data.user);
           setFullName(data.user.full_name || "");
@@ -75,7 +70,6 @@ const TailorDashboard = ({ route, navigation }) => {
     fetchProfile();
   }, []);
 
-  /* ---------------- SAVE PROFILE ---------------- */
   const saveProfile = async () => {
     if (cnic.length !== 13) return alert("CNIC must be 13 digits.");
     if (phoneNumber.length !== 11) return alert("Phone must be 11 digits.");
@@ -83,27 +77,11 @@ const TailorDashboard = ({ route, navigation }) => {
 
     try {
       const { data } = await axios.put(
-        "http://UF-MacBook-Pro.local:3000/update-profile",
-        {
-          email,
-          full_name: fullName,
-          cnic,
-          phone_number: phoneNumber,
-          location,
-          password
-        }
+        "http://UF-MacBook-Pro.local:3001/profiles/update-profile",
+        { email, full_name: fullName, cnic, phone_number: phoneNumber, location, password }
       );
-
       if (data.error) return alert(data.error);
-
-      setProfile({
-        ...profile,//Spread operator overwrites data and copy previous data
-        full_name: fullName,
-        cnic,
-        phone_number: phoneNumber,
-        location
-      });
-
+      setProfile({ ...profile, full_name: fullName, cnic, phone_number: phoneNumber, location });
       setEditMode(false);
       setShowProfile(false);
       setPassword("");
@@ -115,159 +93,196 @@ const TailorDashboard = ({ route, navigation }) => {
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
-        colors={['#2B0F14', '#3A1419', '#4A1C22']}
+        colors={['#050811', '#0b1220', '#141c30']}
         style={styles.container}
-        pointerEvents={showProfile ? 'none' : 'auto'}//make screen unclickable when profile is open
+        pointerEvents={showProfile ? 'none' : 'auto'}
       >
+        {/* Top decorative accent */}
+        <View style={styles.topAccent} />
 
-        <View style={styles.greetingBox}>
-          <Text style={styles.greetingSmall}>Welcome back</Text>
-          <Text style={styles.greetingName}>
-            {profile.full_name || "Tailor"}
-          </Text>
-        </View>
-
-        {/* ----------- TOP RIGHT BUTTONS ----------- */}
-        <View style={styles.topRightContainer}>
-         
+        {/* Header Row */}
+        <View style={styles.headerRow}>
+          <View style={styles.greetingBox}>
+            <Text style={styles.greetingSmall}>Welcome back 👋</Text>
+            <Text style={styles.greetingName}>{profile.full_name || "Tailor"}</Text>
+          </View>
 
           <TouchableOpacity
-            style={styles.iconButton}
+            style={styles.avatarButton}
             onPress={() => setShowProfile(true)}
             disabled={showProfile}
+            activeOpacity={0.85}
           >
-            <Image
-              source={require('../../../assets/images/imTailor.png')}
-              style={{ height: 40, width: 46, borderRadius: 25   }}
-              resizeMode="contain"
-            />
+            <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.avatarGradient}>
+              <Image
+                source={require('../../../assets/images/imTailor.png')}
+                style={{ height: 36, width: 40, borderRadius: 20 }}
+                resizeMode="contain"
+              />
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.verticalContainer}>
-          <TouchableOpacity style={styles.locationBox} disabled={showProfile}>
-            <Ionicons name="location-outline" size={26} color="#4A1C22" />
-            <View style={{ marginLeft: 10, flex: 1 }}>
-              <Text style={styles.locationTitle}>My Location</Text>
-              <Text style={[styles.locationText, { flexWrap: 'wrap' }]}>{profile.location}</Text>
+        {/* Location Card */}
+        <TouchableOpacity style={styles.locationBox} disabled={showProfile} activeOpacity={0.85}>
+          <LinearGradient colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.05)']} style={styles.locationGradient}>
+            <View style={styles.locationIconWrap}>
+              <Ionicons name="location" size={20} color="#F59E0B" />
             </View>
-          </TouchableOpacity>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.locationTitle}>My Location</Text>
+              <Text style={styles.locationText} numberOfLines={1}>{profile.location || "Not set"}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="rgba(148, 163, 184, 0.5)" />
+          </LinearGradient>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.TruckBox} disabled={showProfile}  onPress={() => navigation.navigate("MyOrders", { email })}>
+        {/* My Orders Banner */}
+        <TouchableOpacity
+          style={styles.ordersBanner}
+          disabled={showProfile}
+          onPress={() => navigation.navigate("MyOrders", { email })}
+          activeOpacity={0.88}
+        >
+          <LinearGradient colors={['#1E3A8A', '#1E40AF', '#172554']} style={styles.ordersBannerGradient}>
+            <View style={styles.ordersLeft}>
+              <Text style={styles.ordersBannerLabel}>Your workspace</Text>
+              <Text style={styles.ordersBannerTitle}>My Orders</Text>
+              <View style={styles.ordersChip}>
+                <Text style={styles.ordersChipText}>View all →</Text>
+              </View>
+            </View>
             <Image
               source={require('../../../assets/images/Truck.png')}
               style={styles.TruckImage}
               resizeMode="contain"
             />
-            <Text style={styles.TruckText}>My Orders</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Quick Actions */}
+        <Text style={styles.sectionLabel}>Quick Actions</Text>
+        <View style={styles.horizontalButtons}>
+          <TouchableOpacity
+            style={styles.quickCard}
+            onPress={() => navigation.navigate("Appointment", { email })}
+            activeOpacity={0.85}
+          >
+            <LinearGradient colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.05)']} style={styles.quickCardGradient}>
+              <View style={styles.quickIconWrap}>
+                <Ionicons name="calendar" size={26} color="#F59E0B" />
+              </View>
+              <Text style={styles.quickCardText}>Appointments</Text>
+              <Text style={styles.quickCardSub}>Manage bookings</Text>
+            </LinearGradient>
           </TouchableOpacity>
 
-          <View style={styles.horizontalButtons}>
-            <TouchableOpacity
-              style={styles.smallButton}
-              onPress={() => navigation.navigate("Appointment", { email })}
-            >
-              <Ionicons name="calendar-outline" size={20} color="#4A1C22" />
-              <Text style={styles.smallButtonText}>Appointments</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.smallButton}>
-              <Ionicons name="cash-outline" size={20} color="#4A1C22" />
-              <Text style={styles.smallButtonText}>Earnings</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.quickCard} activeOpacity={0.85}>
+            <LinearGradient colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.05)']} style={styles.quickCardGradient}>
+              <View style={styles.quickIconWrap}>
+                <Ionicons name="cash" size={26} color="#F59E0B" />
+              </View>
+              <Text style={styles.quickCardText}>Earnings</Text>
+              <Text style={styles.quickCardSub}>Track income</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
 
+        {/* Logout */}
         <TouchableOpacity
           style={styles.logoutBtn}
           onPress={() => navigation.navigate("Login")}
+          activeOpacity={0.85}
         >
-          <Ionicons name="log-out-outline" size={24} color="#fff" />
-          <Text style={styles.logoutText}> Logout</Text>
+          <Ionicons name="log-out-outline" size={20} color="#ffffffff" />
+          <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </LinearGradient>
 
-      {/* ----------- PROFILE CARD ----------- */}
+      {/* Profile Card Overlay */}
       {profileVisible && (
         <TouchableWithoutFeedback onPress={() => setShowProfile(false)}>
           <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
             <Animated.View
-              style={[
-                styles.card,
-                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
-              ]}
+              style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
             >
               {!editMode ? (
                 <>
-                  <Text style={styles.title}>My Profile</Text>
+                  <View style={styles.cardHeaderRow}>
+                    <Text style={styles.title}>My Profile</Text>
+                  </View>
 
-                  <View style={styles.itemBox}><Text style={styles.label}>Full Name</Text><Text style={styles.value}>{profile.full_name}</Text></View>
-                  <View style={styles.itemBox}><Text style={styles.label}>CNIC</Text><Text style={styles.value}>{profile.cnic}</Text></View>
-                  <View style={styles.itemBox}><Text style={styles.label}>Phone Number</Text><Text style={styles.value}>{profile.phone_number}</Text></View>
-                  <View style={styles.itemBox}><Text style={styles.label}>Location</Text><Text style={styles.value}>{profile.location}</Text></View>
+                  {[
+                    { label: "Full Name", value: profile.full_name, icon: "person-outline" },
+                    { label: "CNIC", value: profile.cnic, icon: "card-outline" },
+                    { label: "Phone Number", value: profile.phone_number, icon: "call-outline" },
+                    { label: "Location", value: profile.location, icon: "location-outline" },
+                  ].map((item) => (
+                    <View key={item.label} style={styles.itemBox}>
+                      <Ionicons name={item.icon} size={16} color="#F59E0B" style={{ marginRight: 8 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.label}>{item.label}</Text>
+                        <Text style={styles.value}>{item.value || "—"}</Text>
+                      </View>
+                    </View>
+                  ))}
 
-                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#4a90e2" }]} onPress={() => setEditMode(true)}>
+                  <TouchableOpacity style={[styles.btn, styles.editBtnStyle]} onPress={() => setEditMode(true)}>
+                    <Ionicons name="create-outline" size={18} color="#fff" />
                     <Text style={styles.btnText}>Edit Details</Text>
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
-                  <Text style={styles.title}>Edit Profile</Text>
+                  <View style={styles.cardHeaderRow}>
+                    <Text style={styles.title}>Edit Profile</Text>
+                  </View>
 
                   <Text style={styles.fieldLabel}>Full Name</Text>
-                  <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Enter your full name" placeholderTextColor="#ccc" />
-                  
+                  <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Enter your full name" placeholderTextColor="#94a3b8" />
+
                   <Text style={styles.fieldLabel}>CNIC (13 digits)</Text>
-                  <TextInput style={styles.input} value={cnic} onChangeText={setCnic} keyboardType="numeric" maxLength={13} placeholder="12345678901234" placeholderTextColor="#ccc" />
-                  
+                  <TextInput style={styles.input} value={cnic} onChangeText={setCnic} keyboardType="numeric" maxLength={13} placeholder="1234567890123" placeholderTextColor="#94a3b8" />
+
                   <Text style={styles.fieldLabel}>Phone Number (11 digits)</Text>
-                  <TextInput style={styles.input} value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="numeric" maxLength={11} placeholder="03001234567" placeholderTextColor="#ccc" />
-                  
+                  <TextInput style={styles.input} value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="numeric" maxLength={11} placeholder="03001234567" placeholderTextColor="#94a3b8" />
+
                   <Text style={styles.fieldLabel}>Location</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
                     <TextInput
-                      style={[styles.input, { flex: 1 }]}
+                      style={[styles.input, { flex: 1, marginBottom: 0 }]}
                       value={location}
                       onChangeText={setLocation}
                       placeholder="Enter your location"
-                      placeholderTextColor="#ccc"
+                      placeholderTextColor="#94a3b8"
                     />
                     <TouchableOpacity
-                      style={{ marginLeft: 10, padding: 10, backgroundColor: '#4CAF50', borderRadius: 8 }}
+                      style={styles.locBtn}
                       onPress={async () => {
                         try {
                           const { status } = await Location.requestForegroundPermissionsAsync();
-                          if (status !== 'granted') {
-                            alert('Permission to access location was denied');
-                            return;
-                          }
-
+                          if (status !== 'granted') { alert('Permission denied'); return; }
                           const { coords } = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-                          const geocode = await Location.reverseGeocodeAsync({
-                            latitude: coords.latitude,
-                            longitude: coords.longitude,
-                          });
-
+                          const geocode = await Location.reverseGeocodeAsync({ latitude: coords.latitude, longitude: coords.longitude });
                           const address = geocode[0];
                           setLocation(`${address.city}, ${address.street}, ${address.country}`);
-                        } catch (error) {
-                          console.error('Error fetching location:', error);
-                          alert('Unable to fetch location');
-                        }
+                        } catch { alert('Unable to fetch location'); }
                       }}
                     >
-                      <Ionicons name="location-outline" size={20} color="#fff" />
+                      <Ionicons name="navigate" size={18} color="#fff" />
                     </TouchableOpacity>
                   </View>
-                  
-                  <Text style={styles.fieldLabel}>New Password (optional)</Text>
-                  <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="Leave blank to keep current password" placeholderTextColor="#ccc" />
 
-                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#4CAF50" }]} onPress={saveProfile}>
+                  <Text style={styles.fieldLabel}>New Password (optional)</Text>
+                  <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry placeholder="Leave blank to keep current" placeholderTextColor="#94a3b8" />
+
+                  <TouchableOpacity style={[styles.btn, styles.saveBtnStyle]} onPress={saveProfile}>
+                    <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
                     <Text style={styles.btnText}>Save Changes</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={[styles.btn, { backgroundColor: "#f05454" }]} onPress={() => setEditMode(false)}>
+                  <TouchableOpacity style={[styles.btn, styles.cancelBtnStyle]} onPress={() => setEditMode(false)}>
+                    <Ionicons name="close-circle-outline" size={18} color="#fff" />
                     <Text style={styles.btnText}>Cancel</Text>
                   </TouchableOpacity>
                 </>
@@ -280,212 +295,318 @@ const TailorDashboard = ({ route, navigation }) => {
   );
 };
 
-
-
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center" },
-  greetingBox: {
-    width: "90%",
-    marginTop: 90,
-    marginBottom: 20,
-    marginLeft:40
+  container: { flex: 1, paddingHorizontal: 20 },
+
+  topAccent: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
+    height: 3,
+    backgroundColor: '#F59E0B',
+    opacity: 0.6,
   },
 
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 68,
+    marginBottom: 22,
+  },
+
+  greetingBox: { flex: 1 },
+
   greetingSmall: {
-    fontSize: 25,
-    color:"#F2E6E6",
-    fontWeight: "bold",
+    fontSize: 14,
+    color: 'rgba(148, 163, 184, 0.8)',
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    marginBottom: 4,
   },
 
   greetingName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#E6B0B0",
-    marginTop: 4,
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: -0.3,
   },
 
-  greetingSub: {
-    fontSize: 14,
-    color: "#ffffffff",
-    marginTop: 6,
+  avatarButton: { marginLeft: 12 },
+
+  avatarGradient: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
 
-  topRightContainer: {
-    position: "absolute",
-    right: 20,
-    top: 50,
-    flexDirection: "row",
-    padding: 10,
-  },
-
-  iconButton: {
-    padding: 8,
-    backgroundColor: "rgba(255,255,255,0.85)",
-    borderRadius: 30,
-    marginLeft: 10,
-  },
-
-  verticalContainer: {
-    width: "80%",
-    alignSelf: "center",
-    marginTop: 35,
-  },
   locationBox: {
-    flexDirection: "row",
-    alignItems: "center",
-  backgroundColor: "#E6B0B0",
-    paddingVertical: 14,
-    paddingHorizontal: 18,
+    marginBottom: 18,
     borderRadius: 18,
-    marginBottom: 25,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.25)',
+  },
+
+  locationGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+
+  locationIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   locationTitle: {
-    color: "#000000ff",
-    fontSize: 14,
-    fontWeight: "600",
+    color: 'rgba(148, 163, 184, 0.7)',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 2,
   },
 
   locationText: {
-    color: "#000000ff",
-    fontSize: 16,
-    fontWeight: "bold",
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
   },
-   TruckBox: {
-    backgroundColor: "#ffffffff",
-    height: 150,
+
+  ordersBanner: {
     borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
+    overflow: 'hidden',
+    marginBottom: 22,
+    shadowColor: '#1E3A8A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
   },
 
-  TruckImage: {
-    width: 500,
-    height: 80,
-    marginBottom: 10,
+  ordersBannerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 22,
+    paddingHorizontal: 20,
+    minHeight: 130,
   },
 
-  TruckText: {
-    color: "#4A1C22",
-    fontSize: 20,
-    fontWeight: "700",
+  ordersLeft: { flex: 1 },
+
+  ordersBannerLabel: {
+    fontSize: 11,
+    color: 'rgba(148, 163, 184, 0.75)',
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+
+  ordersBannerTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginBottom: 12,
+  },
+
+  ordersChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+  },
+
+  ordersChipText: {
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  TruckImage: { width: 120, height: 90 },
+
+  sectionLabel: {
+    fontSize: 12,
+    color: 'rgba(148, 163, 184, 0.8)',
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 12,
   },
 
   horizontalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 30,
   },
 
-  smallButton: {
+  quickCard: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#E6B0B0",
-    paddingVertical: 14,
-    borderRadius: 16,
-    marginRight: 10,
-    shadowColor: "#1b3344ff",
-    shadowOpacity: 2,
-    shadowRadius: 5,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.25)',
   },
 
-  smallButtonText: {
-    color: "#000000ff",
-    fontSize: 15,
-    fontWeight: "700",
-    marginLeft: 6,
+  quickCardGradient: {
+    paddingVertical: 26,
+    paddingHorizontal: 18,
+    alignItems: 'flex-start',
+  },
+
+  quickIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+
+  quickCardText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+
+  quickCardSub: {
+    color: 'rgba(148, 163, 184, 0.6)',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EF4444',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 30,
+    alignSelf: 'center',
+    marginRight: 10,
+    gap: 8,
+  },
+
+  logoutText: { color: '#ffffffff', fontSize: 16, fontWeight: '700' },
+
+  /* Profile Card */
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   card: {
-    position: "absolute",
-    top: '10%',
-    alignSelf: "center",
-    width: "88%",
-    padding: 20,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    borderRadius: 20,
-    shadowColor: '#E6B0B0',
-    shadowOpacity: 3,
-    shadowRadius: 20,
-    elevation: 10,
-    zIndex: 999,
+    width: '90%',
+    maxHeight: '85%',
+    padding: 22,
+    backgroundColor: '#0b1220',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.25)',
+    shadowColor: '#3B82F6',
+    shadowOpacity: 0.15,
+    shadowRadius: 30,
+    elevation: 20,
   },
 
-  title: {
-    fontSize: 17,
-    fontWeight: "bold",
-    color: "#444",
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 20,
   },
 
-  itemBox: {
-    marginBottom: 12,
-    padding: 12,
-    borderRadius: 10,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#eee",
+  title: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#ffffff',
+    flex: 1,
   },
 
-  label: { fontSize: 13, color: "#777" },
-  value: { fontSize: 17, fontWeight: "700", color: "#333" },
+  titleDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#F59E0B',
+  },
+
+  itemBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.15)',
+  },
+
+  label: { fontSize: 11, color: 'rgba(148, 163, 184, 0.7)', fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 2 },
+  value: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
 
   input: {
-    padding: 12,
+    padding: 13,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    backgroundColor: "#fff",
-    marginBottom: 15,
-    fontSize: 16,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    marginBottom: 12,
+    fontSize: 15,
+    color: '#ffffff',
   },
 
   fieldLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#444",
-    marginTop: 10,
-    marginBottom: 8,
-    letterSpacing: 0.3,
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(148, 163, 184, 0.8)',
+    marginBottom: 6,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+
+  locBtn: {
+    marginLeft: 10,
+    padding: 13,
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
   },
 
   btn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 14,
     borderRadius: 14,
-    alignItems: "center",
-    marginTop: 10,
+    marginTop: 8,
+    gap: 8,
   },
 
-  btnText: { color: "#fff", fontSize: 17, fontWeight: "700" },
+  editBtnStyle: { backgroundColor: '#3B82F6' },
+  saveBtnStyle: { backgroundColor: '#10B981' },
+  cancelBtnStyle: { backgroundColor: '#475569', borderWidth: 1, borderColor: 'rgba(150,150,150,0.2)' },
 
-  logoutBtn: {
-    marginTop: 160,
-    bottom: 40,
-    backgroundColor: "#d85b5b",
-    paddingVertical: 14,
-    paddingHorizontal: 35,
-    borderRadius: 30,
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "center",
-  },
-
-  logoutText: { color: "#fff", fontSize: 18, fontWeight: "700", marginLeft: 6 },
-
-  overlay: {
-    ...StyleSheet.absoluteFillObject,//A Transparent layer on the screen 
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  }
+  btnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });
 
 export default TailorDashboard;

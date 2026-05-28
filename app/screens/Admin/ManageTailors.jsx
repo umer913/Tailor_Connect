@@ -3,12 +3,12 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Alert,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 
 export default function ManageTailors() {
@@ -21,7 +21,7 @@ export default function ManageTailors() {
 
   const fetchTailors = async () => {
     try {
-      const res = await axios.get("http://UF-MacBook-Pro.local:3000/get-tailors");
+      const res = await axios.get("http://UF-MacBook-Pro.local:3001/admin/get-tailors");
       setTailors(res.data.tailors || []);
     } catch (err) {
       console.log(err);
@@ -36,7 +36,7 @@ export default function ManageTailors() {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete("http://UF-MacBook-Pro.local:3000/remove-tailor", {
+            await axios.delete("http://UF-MacBook-Pro.local:3001/admin/remove-tailor", {
               data: { email },
             });
             setTailors((prev) => prev.filter((t) => t.email !== email));

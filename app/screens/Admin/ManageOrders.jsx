@@ -2,14 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
+import { resolveImageUrl } from "../../api.js";
 import {
-  Alert,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function ManageOrders() {
@@ -22,7 +23,7 @@ export default function ManageOrders() {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("http://UF-MacBook-Pro.local:3000/get-orders");
+      const res = await axios.get("http://UF-MacBook-Pro.local:3001/orders/get-orders");
       setOrders(res.data.orders || []);
     } catch (err) {
       console.log(err);
@@ -37,7 +38,7 @@ export default function ManageOrders() {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete(`http://UF-MacBook-Pro.local:3000/remove-order/${id}`);
+            await axios.delete(`http://UF-MacBook-Pro.local:3001/admin/remove-order/${id}`);
             setOrders((prev) => prev.filter((o) => o.id !== id));
           } catch (err) {
             console.log(err);
@@ -95,7 +96,7 @@ export default function ManageOrders() {
             {item.fabric_image_url && (
               <>
                 <Text style={styles.section}>Fabric</Text>
-                <Image source={{ uri: item.fabric_image_url }} style={styles.image} />
+                <Image source={{ uri: resolveImageUrl(item.fabric_image_url) }} style={styles.image} />
               </>
             )}
 
