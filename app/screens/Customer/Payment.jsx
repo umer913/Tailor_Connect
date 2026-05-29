@@ -93,14 +93,13 @@ export default function Payment({ route, navigation }) {
   const handleCheckout = async () => {
     try {
       setProcessing(true);
-      const response = await axios.post(`${API_BASE_URL}/payments/payfast-checkout`, { order_id: orderId, customer_email: customerEmail });
-      
+      const response = await axios.post(`${API_BASE_URL}/payments/stripe-checkout`, { order_id: orderId, customer_email: customerEmail });
       const paymentUrl = response?.data?.payment_url;
-      if (!paymentUrl) throw new Error("Payment URL not received.");
+      if (!paymentUrl) throw new Error("Stripe checkout URL not received.");
 
       await WebBrowser.openBrowserAsync(paymentUrl);
     } catch (error) {
-      Alert.alert("Checkout failed", error?.response?.data?.error || error?.message || "Unable to start checkout.");
+      Alert.alert("Checkout failed", error?.response?.data?.error || error?.message || "Unable to start Stripe checkout.");
     } finally { setProcessing(false); }
   };
 
@@ -180,7 +179,7 @@ export default function Payment({ route, navigation }) {
             {!isPaid && (
               <View style={styles.actionSection}>
 
-                {/* ============ PAYFAST SECTION ============ */}
+                {/* ============ STRIPE CHECKOUT ============ */}
                 <View style={styles.paymentMethodSection}>
                 
 
@@ -190,13 +189,13 @@ export default function Payment({ route, navigation }) {
                     activeOpacity={0.85}
                   >
                     <LinearGradient
-                      colors={processing ? ["#374151", "#374151"] : ["#9D2A4B", "#D6406A"]}
+                      colors={processing ? ["#374151", "#374151"] : ["#6772e5", "#7a87f5"]}
                       style={styles.primaryButton}
                       start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                     >
-                      <Ionicons name="globe-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                      <Ionicons name="card-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
                       <Text style={styles.primaryButtonText}>
-                        {processing ? "Opening PayFast..." : "Pay With PayFast"}
+                        {processing ? "Opening Stripe..." : "Pay with Card (Stripe)"}
                       </Text>
                     </LinearGradient>
                   </TouchableOpacity>

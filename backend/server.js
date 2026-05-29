@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import cors from "cors";
 import crypto from "crypto";
+import dns from "dns";
 import dotenv from "dotenv";
 import express from "express";
 import fs from "fs/promises";
@@ -11,6 +12,7 @@ import path from "path";
 import PDFDocument from "pdfkit";
 import { fileURLToPath } from "url";
 
+
 import {
   Appointment,
   ChatMessage,
@@ -19,6 +21,7 @@ import {
   Profile,
   Service,
   TailorReview,
+  Payment,
 } from "./models/index.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createAppointmentRouter } from "./routes/appointments.js";
@@ -39,7 +42,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+dns.setDefaultResultOrder("ipv4first");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PAYMENT_STORE_PATH = path.join(__dirname, "payments-store.json");
@@ -58,50 +61,6 @@ const PAYMENT_SUCCESS_URL =
 const PAYMENT_CANCEL_URL =
   process.env.PAYMENT_CANCEL_URL || "tailorx://payment-cancel";
 
-// ============ PAYFAST CONFIGURATION ============
-const PAYFAST_MERCHANT_ID = process.env.PAYFAST_MERCHANT_ID || "";
-const PAYFAST_MERCHANT_KEY = process.env.PAYFAST_MERCHANT_KEY || "";
-const PAYFAST_PASSPHRASE = process.env.PAYFAST_PASSPHRASE || "";
-const PAYFAST_SANDBOX =
-  (process.env.PAYFAST_SANDBOX || "true").toLowerCase() === "true";
-const PAYFAST_PROCESS_URL = PAYFAST_SANDBOX
-  ? "https://sandbox.payfast.co.za/eng/process"
-  : "https://www.payfast.co.za/eng/process";
-const PAYFAST_NOTIFY_BASE_URL =
-  process.env.PAYFAST_NOTIFY_BASE_URL || "http://localhost:3000";
-
-/**
- * Generate PayFast MD5 signature from an ordered set of key-value pairs.
- * PayFast requires: concatenate all fields as key=URLEncode(value) joined by &,
- * then append &passphrase=URLEncode(passphrase), then MD5 hash the whole string.
- */
-const encodePayFastValue = (value) =>
-  encodeURIComponent(String(value).trim()).replace(/%20/g, "+");
-
-const buildPayFastParamString = (data) =>
-  Object.entries(data)
-    .filter(([, value]) => value !== "" && value !== undefined && value !== null)
-    .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-    .map(([key, value]) => `${key}=${encodePayFastValue(value)}`)
-    .join("&");
-
-const buildPayFastNotifyParamString = (data) =>
-  Object.keys(data)
-    .filter((key) => key !== "signature")
-    .map((key) => `${key}=${encodePayFastValue(data[key])}`)
-    .join("&");
-
-const generatePayFastSignature = (data, passphrase) => {
-  // Build parameter string in the EXACT order the fields are provided
-  const paramString = buildPayFastParamString(data);
-
-  // Append passphrase if set
-  const withPassphrase = passphrase
-    ? `${paramString}&passphrase=${encodePayFastValue(passphrase)}`
-    : paramString;
-
-  return crypto.createHash("md5").update(withPassphrase).digest("hex");
-};
 
 const toSafeQuantity = (value) => {
   const parsed = Number.parseInt(value, 10);
@@ -137,44 +96,16 @@ const resolveOrderTotals = (order) => {
   return { quantity, unitPrice, totalAmount };
 };
 
-async function readPaymentStore() {
-  try {
-    const raw = await fs.readFile(PAYMENT_STORE_PATH, "utf8");
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      return {};
-    }
-
-    console.error("Failed reading payment store:", error.message);
-    return {};
-  }
-}
-
-async function writePaymentStore(store) {
-  await fs.writeFile(PAYMENT_STORE_PATH, JSON.stringify(store, null, 2), "utf8");
-}
-
 async function getPaymentByOrderId(orderId) {
-  const store = await readPaymentStore();
-  return store[String(orderId)] || null;
+  return await Payment.findOne({ order_id: String(orderId) }).exec();
 }
 
 async function upsertPayment(orderId, patch) {
-  const store = await readPaymentStore();
-  const key = String(orderId);
-  const existing = store[key] || { order_id: key, created_at: new Date().toISOString() };
-  const next = {
-    ...existing,
-    ...patch,
-    order_id: key,
-    updated_at: new Date().toISOString(),
-  };
-
-  store[key] = next;
-  await writePaymentStore(store);
-  return next;
+  return await Payment.findOneAndUpdate(
+    { order_id: String(orderId) },
+    { ...patch, order_id: String(orderId) },
+    { new: true, upsert: true }
+  ).exec();
 }
 
 function hashPassword(password) {
@@ -341,22 +272,14 @@ const orderRouter = createOrderRouter({
 });
 const paymentRouter = createPaymentRouter({
   Order,
+  Payment,
   PDFDocument,
-  buildPayFastParamString,
-  buildPayFastNotifyParamString,
-  generatePayFastSignature,
-  encodePayFastValue,
   getPaymentByOrderId,
   upsertPayment,
-  readPaymentStore,
   resolveOrderTotals,
-  PAYFAST_MERCHANT_ID,
-  PAYFAST_MERCHANT_KEY,
-  PAYFAST_PASSPHRASE,
-  PAYFAST_PROCESS_URL,
-  PAYFAST_NOTIFY_BASE_URL,
-  PAYMENT_SUCCESS_URL,
-  PAYMENT_CANCEL_URL,
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+  stripeSuccessRedirectUrl: process.env.STRIPE_SUCCESS_REDIRECT_URL,
+  stripeCancelRedirectUrl: process.env.STRIPE_CANCEL_REDIRECT_URL,
 });
 const appointmentRouter = createAppointmentRouter({ Appointment });
 const adminRouter = createAdminRouter({ Profile, Order, Complaint });

@@ -1,26 +1,19 @@
-import crypto from "crypto";
 import express from "express";
+import Stripe from "stripe";
 
 export const createPaymentRouter = ({
   Order,
+  Payment,
   PDFDocument,
-  buildPayFastParamString,
-  buildPayFastNotifyParamString,
-  generatePayFastSignature,
-  encodePayFastValue,
   getPaymentByOrderId,
   upsertPayment,
-  readPaymentStore,
   resolveOrderTotals,
-  PAYFAST_MERCHANT_ID,
-  PAYFAST_MERCHANT_KEY,
-  PAYFAST_PASSPHRASE,
-  PAYFAST_PROCESS_URL,
-  PAYFAST_NOTIFY_BASE_URL,
-  PAYMENT_SUCCESS_URL,
-  PAYMENT_CANCEL_URL,
+  stripeSecretKey,
+  stripeSuccessRedirectUrl,
+  stripeCancelRedirectUrl,
 }) => {
   const router = express.Router();
+  const stripe = new Stripe(stripeSecretKey);
 
   // ---------------- PAYMENT ORDER DETAILS ----------------
   router.get("/order/:orderId", async (req, res) => {
@@ -113,22 +106,22 @@ export const createPaymentRouter = ({
       doc.fontSize(12);
       doc.text(`Service: ${order.service_type || "Tailor Order"}`);
       doc.text(`Quantity: ${totals.quantity}`);
-      doc.text(`Unit Price: ${totals.unitPrice.toFixed(2)} ZAR`);
-      doc.text(`Total: ${totals.totalAmount.toFixed(2)} ZAR`);
+      doc.text(`Unit Price: ${totals.unitPrice.toFixed(2)} PKR`);
+      doc.text(`Total: ${totals.totalAmount.toFixed(2)} PKR`);
 
       doc.moveDown(1);
       doc.fontSize(13).text("Payment", { underline: true });
       doc.moveDown(0.5);
       doc.fontSize(12);
-      doc.text(`Method: ${payment.method || "payfast"}`);
+      doc.text(`Method: ${String(payment.method || "Stripe").toUpperCase()}`);
       doc.text(`Status: ${payment.status}`);
       if (payment.paid_at) {
         doc.text(
           `Paid At: ${String(payment.paid_at).slice(0, 19).replace("T", " ")}`
         );
       }
-      if (payment.payfast_payment_id) {
-        doc.text(`Transaction ID: ${payment.payfast_payment_id}`);
+      if (payment.stripe_payment_id) {
+        doc.text(`Stripe Payment ID: ${payment.stripe_payment_id}`);
       }
 
       doc.moveDown(2);
@@ -155,11 +148,12 @@ export const createPaymentRouter = ({
     }
 
     try {
-      const store = await readPaymentStore();
+      const payments = await Payment.find({ order_id: { $in: orderIds } }).exec();
       const statuses = {};
 
       for (const id of orderIds) {
-        statuses[id] = store[id]?.status || "unpaid";
+        const found = payments.find((p) => p.order_id === id);
+        statuses[id] = found?.status || "unpaid";
       }
 
       res.json({ statuses });
@@ -169,16 +163,12 @@ export const createPaymentRouter = ({
     }
   });
 
-  // ---------------- PAYFAST CHECKOUT ----------------
-  router.post("/payfast-checkout", async (req, res) => {
+  // ---------------- STRIPE CHECKOUT ----------------
+  router.post("/stripe-checkout", async (req, res) => {
     const { order_id, customer_email } = req.body;
 
     if (!order_id) {
       return res.status(400).json({ error: "order_id is required" });
-    }
-
-    if (!PAYFAST_MERCHANT_ID || !PAYFAST_MERCHANT_KEY) {
-      return res.status(500).json({ error: "PayFast is not configured on server" });
     }
 
     try {
@@ -200,59 +190,86 @@ export const createPaymentRouter = ({
         return res.status(400).json({ error: "Order amount is invalid for payment" });
       }
 
-      const paymentData = {
-        merchant_id: PAYFAST_MERCHANT_ID,
-        merchant_key: PAYFAST_MERCHANT_KEY,
-        return_url: `${PAYFAST_NOTIFY_BASE_URL}/payments/payfast-return/${order._id}`,
-        cancel_url: `${PAYFAST_NOTIFY_BASE_URL}/payments/payfast-cancel/${order._id}`,
-        notify_url: `${PAYFAST_NOTIFY_BASE_URL}/payments/payfast-notify`,
-        email_address: order.customer_email || "",
-        m_payment_id: String(order._id),
-        amount: totalAmount.toFixed(2),
-        item_name: `${order.service_type || "Tailor"} Order #${order._id}`.slice(0, 100),
-        item_description: `Order from ${order.tailor_name || "TailorX"} — Qty: ${quantity}`.slice(0, 255),
-      };
-
-      const cleanPaymentData = Object.fromEntries(
-        Object.entries(paymentData).filter(
-          ([, value]) => value !== "" && value !== undefined && value !== null
-        )
-      );
-
-      const signature = generatePayFastSignature(cleanPaymentData, "");
-      cleanPaymentData.signature = signature;
-
-      const queryString = buildPayFastParamString(cleanPaymentData);
-
-      const paymentUrl = `${PAYFAST_PROCESS_URL}?${queryString}`;
+      // Create Stripe Checkout Session
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency: "pkr",
+              product_data: {
+                name: `${order.service_type || "Tailor"} Order #${order._id}`.slice(0, 100),
+                description: `Order from ${order.tailor_name || "TailorX"} — Qty: ${quantity}`.slice(0, 255),
+              },
+              unit_amount: Math.round(totalAmount * 100), // Stripe expects amount in cents/paisas
+            },
+            quantity: 1,
+          },
+        ],
+        mode: "payment",
+        success_url: `${req.protocol}://${req.get("host")}/payments/stripe-success/${order._id}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.protocol}://${req.get("host")}/payments/stripe-cancel/${order._id}`,
+        customer_email: order.customer_email,
+        metadata: {
+          order_id: String(order._id),
+        },
+      });
 
       await upsertPayment(order._id, {
         status: "initiated",
-        method: "payfast",
+        method: "stripe",
         customer_email: order.customer_email,
         amount: totalAmount,
         currency: "PKR",
-        payfast_payment_id: String(order._id),
+        stripe_payment_id: session.id,
+        stripe_status: session.payment_status,
       });
 
       console.log(
-        `[PAYFAST] Checkout initiated for order ${order._id}, amount: ${totalAmount}`
+        `[Stripe] Checkout session created for order ${order._id}, session_id: ${session.id}`
       );
 
       res.json({
-        payment_url: paymentUrl,
+        payment_url: session.url,
         amount: totalAmount,
         currency: "PKR",
       });
     } catch (err) {
-      console.error("PayFast checkout failed:", err.message);
-      res.status(500).json({ error: "Failed to start PayFast checkout" });
+      console.error("Stripe checkout session creation failed:", err.message);
+      res.status(500).json({ error: "Failed to start Stripe checkout session" });
     }
   });
 
-  // ---------------- PAYFAST RETURN ----------------
-  router.get("/payfast-return/:orderId", async (req, res) => {
-    const orderId = req.params.orderId || "";
+  // ---------------- STRIPE SUCCESS CALLBACK ----------------
+  router.get("/stripe-success/:orderId", async (req, res) => {
+    const { orderId } = req.params;
+    const { session_id } = req.query;
+
+    try {
+      let isPaid = false;
+      let stripeStatus = "unknown";
+
+      if (session_id) {
+        const session = await stripe.checkout.sessions.retrieve(session_id);
+        isPaid = session.payment_status === "paid";
+        stripeStatus = session.payment_status;
+      }
+
+      if (isPaid) {
+        await upsertPayment(orderId, {
+          status: "paid",
+          paid_at: new Date(),
+          stripe_status: stripeStatus,
+        });
+
+        await Order.updateOne({ _id: orderId }, { status: "paid" });
+        console.log(`[Stripe Success] Order ${orderId} marked as PAID`);
+      } else {
+        console.warn(`[Stripe Success] Session for order ${orderId} was not fully paid. Status: ${stripeStatus}`);
+      }
+    } catch (err) {
+      console.error("Stripe success handler failed:", err.message);
+    }
 
     res.send(`
     <!DOCTYPE html>
@@ -260,13 +277,13 @@ export const createPaymentRouter = ({
     <head>
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>Payment Successful - TailorX</title>
-      <meta http-equiv="refresh" content="2;url=${PAYMENT_SUCCESS_URL}?order_id=${orderId}">
+      <meta http-equiv="refresh" content="2;url=${stripeSuccessRedirectUrl}?order_id=${orderId}">
       <style>
-        body { font-family: -apple-system, sans-serif; background: #0a0e27; color: #e0e7ff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .card { text-align: center; padding: 40px 30px; background: rgba(79,70,229,0.12); border: 1px solid rgba(79,70,229,0.3); border-radius: 24px; max-width: 380px; }
+        body { font-family: -apple-system, sans-serif; background: #0f0f13; color: #e0e7ff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .card { text-align: center; padding: 40px 30px; background: rgba(157,42,75,0.12); border: 1px solid rgba(157,42,75,0.3); border-radius: 24px; max-width: 380px; }
         .icon { font-size: 64px; margin-bottom: 16px; }
-        h1 { font-size: 22px; margin: 0 0 8px; }
-        p { color: #818cf8; font-size: 15px; margin: 0 0 24px; }
+        h1 { font-size: 22px; margin: 0 0 8px; color: #fff; }
+        p { color: #E6B0B0; font-size: 15px; margin: 0 0 24px; }
         .note { color: #6ee7b7; font-size: 13px; background: rgba(16,185,129,0.1); padding: 12px; border-radius: 12px; border: 1px solid rgba(16,185,129,0.2); }
       </style>
     </head>
@@ -279,7 +296,7 @@ export const createPaymentRouter = ({
       </div>
       <script>
         setTimeout(function () {
-          window.location.href = "${PAYMENT_SUCCESS_URL}?order_id=${orderId}";
+          window.location.href = "${stripeSuccessRedirectUrl}?order_id=${orderId}";
         }, 1200);
       </script>
     </body>
@@ -287,17 +304,20 @@ export const createPaymentRouter = ({
   `);
   });
 
-  // ---------------- PAYFAST CANCEL ----------------
-  router.get("/payfast-cancel/:orderId", async (req, res) => {
-    const orderId = req.params.orderId || "";
+  // ---------------- STRIPE CANCEL CALLBACK ----------------
+  router.get("/stripe-cancel/:orderId", async (req, res) => {
+    const { orderId } = req.params;
 
     try {
       const payment = await getPaymentByOrderId(orderId);
       if (payment && payment.status === "initiated") {
-        await upsertPayment(orderId, { status: "cancelled" });
+        await upsertPayment(orderId, {
+          status: "cancelled",
+          stripe_status: "cancelled",
+        });
       }
     } catch (err) {
-      console.error("Error cancelling payment:", err);
+      console.error("Error cancelling Stripe payment:", err.message);
     }
 
     res.send(`
@@ -306,12 +326,12 @@ export const createPaymentRouter = ({
     <head>
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>Payment Cancelled - TailorX</title>
-      <meta http-equiv="refresh" content="2;url=${PAYMENT_CANCEL_URL}?order_id=${orderId}">
+      <meta http-equiv="refresh" content="2;url=${stripeCancelRedirectUrl}?order_id=${orderId}">
       <style>
-        body { font-family: -apple-system, sans-serif; background: #0a0e27; color: #e0e7ff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        body { font-family: -apple-system, sans-serif; background: #0f0f13; color: #e0e7ff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
         .card { text-align: center; padding: 40px 30px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); border-radius: 24px; max-width: 380px; }
         .icon { font-size: 64px; margin-bottom: 16px; }
-        h1 { font-size: 22px; margin: 0 0 8px; }
+        h1 { font-size: 22px; margin: 0 0 8px; color: #fff; }
         p { color: #f59e0b; font-size: 15px; margin: 0 0 24px; }
         .note { color: #fcd34d; font-size: 13px; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 12px; border: 1px solid rgba(245,158,11,0.2); }
       </style>
@@ -325,7 +345,7 @@ export const createPaymentRouter = ({
       </div>
       <script>
         setTimeout(function () {
-          window.location.href = "${PAYMENT_CANCEL_URL}?order_id=${orderId}";
+          window.location.href = "${stripeCancelRedirectUrl}?order_id=${orderId}";
         }, 1200);
       </script>
     </body>
@@ -333,77 +353,8 @@ export const createPaymentRouter = ({
   `);
   });
 
-  // ---------------- PAYFAST ITN ----------------
-  router.post("/payfast-notify", async (req, res) => {
-    res.status(200).send("OK");
-
-    try {
-      const data = req.body;
-      console.log(
-        "[PAYFAST ITN] Received notification:",
-        JSON.stringify(data, null, 2)
-      );
-
-      const receivedSignature = data.signature;
-      if (!receivedSignature) {
-        console.error("[PAYFAST ITN] No signature in notification");
-        return;
-      }
-
-      const { signature: _sig, ...paramsWithoutSig } = data;
-      const notifyParamString = buildPayFastNotifyParamString(paramsWithoutSig);
-      const notifyWithPassphrase = PAYFAST_PASSPHRASE
-        ? `${notifyParamString}&passphrase=${encodePayFastValue(PAYFAST_PASSPHRASE)}`
-        : notifyParamString;
-      const expectedSignature = crypto
-        .createHash("md5")
-        .update(notifyWithPassphrase)
-        .digest("hex");
-
-      if (receivedSignature !== expectedSignature) {
-        console.error(
-          `[PAYFAST ITN] Signature mismatch! Received: ${receivedSignature}, Expected: ${expectedSignature}`
-        );
-        return;
-      }
-
-      console.log("[PAYFAST ITN] Signature verified successfully");
-
-      const orderId = data.m_payment_id;
-      const paymentStatus = String(data.payment_status || "").toUpperCase();
-      const amountGross = Number(data.amount_gross) || 0;
-
-      if (!orderId) {
-        console.error("[PAYFAST ITN] Missing m_payment_id");
-        return;
-      }
-
-      const isPaid = paymentStatus === "COMPLETE";
-
-      await upsertPayment(orderId, {
-        status: isPaid ? "paid" : "initiated",
-        method: "payfast",
-        payfast_payment_id: data.pf_payment_id || null,
-        amount: amountGross || undefined,
-        currency: "PKR",
-        paid_at: isPaid ? new Date().toISOString() : null,
-        payfast_status: paymentStatus,
-      });
-
-      if (isPaid) {
-        await Order.updateOne({ _id: orderId }, { status: "paid" });
-      }
-
-      console.log(
-        `[PAYFAST ITN] Order ${orderId} — status: ${paymentStatus}, paid: ${isPaid}`
-      );
-    } catch (err) {
-      console.error("[PAYFAST ITN] Error processing notification:", err.message);
-    }
-  });
-
-  // ---------------- VERIFY PAYFAST PAYMENT ----------------
-  router.post("/verify-payfast", async (req, res) => {
+  // ---------------- VERIFY STRIPE PAYMENT ----------------
+  router.post("/verify-stripe", async (req, res) => {
     const { order_id } = req.body;
 
     if (!order_id) {
@@ -411,10 +362,23 @@ export const createPaymentRouter = ({
     }
 
     try {
-      const payment = await getPaymentByOrderId(order_id);
+      let payment = await getPaymentByOrderId(order_id);
 
       if (!payment) {
         return res.json({ verified: false, status: "unpaid", payment: null });
+      }
+
+      // If initiated but not yet paid in DB, double check with Stripe session status
+      if (payment.status === "initiated" && payment.stripe_payment_id) {
+        const session = await stripe.checkout.sessions.retrieve(payment.stripe_payment_id);
+        if (session.payment_status === "paid") {
+          payment = await upsertPayment(order_id, {
+            status: "paid",
+            paid_at: new Date(),
+            stripe_status: session.payment_status,
+          });
+          await Order.updateOne({ _id: order_id }, { status: "paid" });
+        }
       }
 
       const isPaid = payment.status === "paid";
@@ -425,8 +389,8 @@ export const createPaymentRouter = ({
         payment,
       });
     } catch (err) {
-      console.error("Verify PayFast payment failed:", err.message);
-      res.status(500).json({ error: "Failed to verify PayFast payment" });
+      console.error("Verify Stripe payment failed:", err.message);
+      res.status(500).json({ error: "Failed to verify Stripe payment" });
     }
   });
 
