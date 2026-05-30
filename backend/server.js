@@ -4,7 +4,6 @@ import crypto from "crypto";
 import dns from "dns";
 import dotenv from "dotenv";
 import express from "express";
-import fs from "fs/promises";
 import mongoose from "mongoose";
 import multer from "multer";
 import nodemailer from "nodemailer";
@@ -18,10 +17,10 @@ import {
   ChatMessage,
   Complaint,
   Order,
+  Payment,
   Profile,
   Service,
   TailorReview,
-  Payment,
 } from "./models/index.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createAppointmentRouter } from "./routes/appointments.js";
@@ -49,7 +48,13 @@ const PAYMENT_STORE_PATH = path.join(__dirname, "payments-store.json");
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "tailorx";
-
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    service: 'TailorX Backend',
+    time: new Date().toISOString()
+  });
+});
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
