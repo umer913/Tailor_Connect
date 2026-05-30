@@ -53,7 +53,7 @@ const TailorDashboard = ({ route, navigation }) => {
     const fetchProfile = async () => {
       try {
         const { data } = await axios.get(
-          "https://tailorx-production.up.railway.app:3001/profiles/get-profile",
+          "https://tailorx-production.up.railway.app/profiles/get-profile",
           { params: { email } }
         );
         if (data.user) {
@@ -78,7 +78,7 @@ const TailorDashboard = ({ route, navigation }) => {
 
     try {
       const { data } = await axios.put(
-        "https://tailorx-production.up.railway.app:3001/profiles/update-profile",
+        "https://tailorx-production.up.railway.app/profiles/update-profile",
         { email, full_name: fullName, cnic, phone_number: phoneNumber, location, password }
       );
       if (data.error) return alert(data.error);

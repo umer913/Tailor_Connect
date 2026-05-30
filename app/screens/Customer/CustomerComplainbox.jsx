@@ -18,7 +18,7 @@ import {
   View,
 } from "react-native";
 
-const SERVER = "https://tailorx-production.up.railway.app:3001";
+const SERVER = "https://tailorx-production.up.railway.app";
 const SPECIAL_ISSUES = ["Payment Issue", "Late Delivery", "Wrong Measurement", "Bad Stitching", "Misbehaviour"];
 const ISSUE_OPTIONS = [
   { label: "General", value: "General" },

@@ -362,7 +362,7 @@ export default function OrderForm({ route, navigation }) {
       }
 
       const response = await axios.post(
-        "https://tailorx-production.up.railway.app:3001/orders/place-order",
+        "https://tailorx-production.up.railway.app/orders/place-order",
         formData,
 
       );
@@ -422,7 +422,7 @@ export default function OrderForm({ route, navigation }) {
       }
 
       const response = await axios.post(
-        "https://tailorx-production.up.railway.app:3001/orders/place-order",
+        "https://tailorx-production.up.railway.app/orders/place-order",
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },

@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 
-const SERVER = "https://tailorx-production.up.railway.app:3001";
+const SERVER = "https://tailorx-production.up.railway.app";
 const SCREEN_W = Dimensions.get("window").width;
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 980 : IS_TABLET ? 840 : SCREEN_W;

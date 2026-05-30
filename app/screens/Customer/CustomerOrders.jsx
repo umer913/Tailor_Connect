@@ -21,7 +21,7 @@ import {
 import { resolveImageUrl } from "../../api.js";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const API_BASE_URL = "https://tailorx-production.up.railway.app:3001";
+const API_BASE_URL = "https://tailorx-production.up.railway.app";
 const { width: SCREEN_W } = Dimensions.get("window");
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 980 : IS_TABLET ? 760 : SCREEN_W;
@@ -106,7 +106,7 @@ export default function CustomerOrders({ route }) {
       if (editedImages[order.id]) {
         formData.append("fabric", { uri: editedImages[order.id].uri, name: "fabric.jpg", type: "image/jpeg" });
       }
-      await axios.put("https://tailorx-production.up.railway.app:3001/orders/update-order", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      await axios.put("https://tailorx-production.up.railway.app/orders/update-order", formData, { headers: { "Content-Type": "multipart/form-data" } });
       Alert.alert("Success", "Order updated successfully");
       setEditingId(null);
       fetchOrders();
@@ -119,7 +119,7 @@ export default function CustomerOrders({ route }) {
       {
         text: "Delete", style: "destructive",
         onPress: async () => {
-          await axios.delete(`https://tailorx-production.up.railway.app:3001/orders/delete-order/${id}`);
+          await axios.delete(`https://tailorx-production.up.railway.app/orders/delete-order/${id}`);
           Alert.alert("Success", "Order deleted");
           setOrders((prev) => prev.filter((o) => o.id !== id));
         },

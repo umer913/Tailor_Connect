@@ -56,7 +56,7 @@ const AddServices = ({ route }) => {
       return;
     }
     try {
-      await axios.post('https://tailorx-production.up.railway.app:3001/services/add-services', {
+      await axios.post('https://tailorx-production.up.railway.app/services/add-services', {
         email,
         services: [newService]
       });
@@ -71,7 +71,7 @@ const AddServices = ({ route }) => {
 
   const fetchServices = async () => {
     try {
-      const res = await axios.get('https://tailorx-production.up.railway.app:3001/services/get-services', {
+      const res = await axios.get('https://tailorx-production.up.railway.app/services/get-services', {
         params: { email }
       });
       setServices(res.data.services || []);
@@ -82,7 +82,7 @@ const AddServices = ({ route }) => {
 
   const updateService = async (service) => {
     try {
-      await axios.put("https://tailorx-production.up.railway.app:3001/services/update-service", {
+      await axios.put("https://tailorx-production.up.railway.app/services/update-service", {
         email,
         id: service.id,
         service_types: service.service_types,
@@ -98,7 +98,7 @@ const AddServices = ({ route }) => {
 
   const deleteService = async (id) => {
     try {
-      await axios.delete(`https://tailorx-production.up.railway.app:3001/services/delete-service/${id}`);
+      await axios.delete(`https://tailorx-production.up.railway.app/services/delete-service/${id}`);
       Alert.alert("Success", "Service Deleted!");
       fetchServices();
     } catch (err) {
