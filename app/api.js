@@ -1,5 +1,5 @@
 // Central API base URL — change this one value to point to your backend
-export const API_BASE_URL = "https://tailorx-production.up.railway.app";
+export const API_BASE_URL = "https://tailorconnect-production.up.railway.app";
 
 export const resolveImageUrl = (url) => {
   if (!url) return null;

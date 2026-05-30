@@ -79,7 +79,7 @@ export default function CustomerDashboard({ route, navigation }) {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const { data } = await axios.get('https://tailorx-production.up.railway.app/profiles/get-profile', { params: { email } });
+        const { data } = await axios.get('https://tailorconnect-production.up.railway.app/profiles/get-profile', { params: { email } });
         if (data.user) {
           setProfile(data.user);
           setFullName(data.user.full_name || '');
@@ -110,7 +110,7 @@ export default function CustomerDashboard({ route, navigation }) {
     if (phoneNumber.length !== 11) return alert('Phone must be 11 digits.');
     if (password && password.length < 7) return alert('Password min 7 chars.');
     try {
-      const { data } = await axios.put('https://tailorx-production.up.railway.app/profiles/update-profile', { email, full_name: fullName, cnic, phone_number: phoneNumber, location, password });
+      const { data } = await axios.put('https://tailorconnect-production.up.railway.app/profiles/update-profile', { email, full_name: fullName, cnic, phone_number: phoneNumber, location, password });
       if (data.error) return alert(data.error);
       setProfile({ ...profile, full_name: fullName, cnic, phone_number: phoneNumber, location });
       setEditMode(false); setPassword('');

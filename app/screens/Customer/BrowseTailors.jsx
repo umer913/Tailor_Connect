@@ -22,7 +22,7 @@ import {
   View,
 } from "react-native";
 
-const API_BASE_URL = "https://tailorx-production.up.railway.app";
+const API_BASE_URL = "https://tailorconnect-production.up.railway.app";
 const DEFAULT_PRICE_CEILING = 100000;
 const FILTER_DRAWER_WIDTH = Math.min(Dimensions.get("window").width * 0.84, 360);
 const SCREEN_W = Dimensions.get("window").width;

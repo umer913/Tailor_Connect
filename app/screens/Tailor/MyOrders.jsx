@@ -77,7 +77,7 @@ export default function MyOrders({ route, navigation }) {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('https://tailorx-production.up.railway.app/orders/tailor-orders', {
+      const res = await axios.get('https://tailorconnect-production.up.railway.app/orders/tailor-orders', {
         params: { email: tailorEmail },
       });
       setOrders(res.data.orders || []);
@@ -108,7 +108,7 @@ export default function MyOrders({ route, navigation }) {
             }
             try {
               setUpdating(orderId);
-              await axios.put('https://tailorx-production.up.railway.app/orders/update-order-status', {
+              await axios.put('https://tailorconnect-production.up.railway.app/orders/update-order-status', {
                 id: orderId,
                 status: newStatus,
                 description: description.trim(),
@@ -138,7 +138,7 @@ export default function MyOrders({ route, navigation }) {
   const handleDelete = async (orderId) => {
     try {
       setUpdating(orderId);
-      await axios.delete(`https://tailorx-production.up.railway.app/orders/delete-order/${orderId}`);
+      await axios.delete(`https://tailorconnect-production.up.railway.app/orders/delete-order/${orderId}`);
       setOrders(prev => prev.filter(o => o.id !== orderId));
       Alert.alert('Success', 'Order deleted');
     } catch (err) {

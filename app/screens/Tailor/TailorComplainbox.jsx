@@ -16,7 +16,7 @@ import {
   View
 } from "react-native";
 
-const SERVER = "https://tailorx-production.up.railway.app";
+const SERVER = "https://tailorconnect-production.up.railway.app";
 const TARGET_REQUIRED_TYPES = [
   "Customer Misbehaviour",
   "Payment Not Received",
