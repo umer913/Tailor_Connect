@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
@@ -53,7 +53,7 @@ const TailorDashboard = ({ route, navigation }) => {
     const fetchProfile = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:3001/profiles/get-profile",
+          "https://tailorx-production.up.railway.app:3001/profiles/get-profile",
           { params: { email } }
         );
         if (data.user) {
@@ -78,7 +78,7 @@ const TailorDashboard = ({ route, navigation }) => {
 
     try {
       const { data } = await axios.put(
-        "http://localhost:3001/profiles/update-profile",
+        "https://tailorx-production.up.railway.app:3001/profiles/update-profile",
         { email, full_name: fullName, cnic, phone_number: phoneNumber, location, password }
       );
       if (data.error) return alert(data.error);

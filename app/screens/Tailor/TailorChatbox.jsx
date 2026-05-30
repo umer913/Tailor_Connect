@@ -23,7 +23,7 @@ const SCREEN_W = Dimensions.get('window').width;
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 1040 : IS_TABLET ? 860 : SCREEN_W;
 
-const API_BASE_URL = "http://localhost:3001";
+const API_BASE_URL = "https://tailorx-production.up.railway.app:3001";
 
 const formatTime = (value) => {
   if (!value) return "";

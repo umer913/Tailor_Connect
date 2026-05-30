@@ -21,7 +21,7 @@ export default function ManageCustomers() {
 
   const fetchCustomers = async () => {
     try {
-      const res = await axios.get("http://localhost:3001/admin/get-customers");
+      const res = await axios.get("https://tailorx-production.up.railway.app:3001/admin/get-customers");
       setCustomers(res.data.customers || []);
     } catch (err) {
       console.log(err);
@@ -36,7 +36,7 @@ export default function ManageCustomers() {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete("http://localhost:3001/admin/remove-customer", {
+            await axios.delete("https://tailorx-production.up.railway.app:3001/admin/remove-customer", {
               data: { email },
             });
             setCustomers((prev) => prev.filter((c) => c.email !== email));

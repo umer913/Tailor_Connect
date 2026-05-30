@@ -58,7 +58,7 @@ export default function BookAppointment({ route, navigation }) {
     setLoading(true);
     const payload = { tailor_email, customer_email, datetime: combinedDateTime.toISOString(), tailor_name };
     try {
-      const response = await axios.post("http://localhost:3001/appointments/book-appointment", payload);
+      const response = await axios.post("https://tailorx-production.up.railway.app:3001/appointments/book-appointment", payload);
       if (response.data.success) {
         Alert.alert("Success", "Appointment booked successfully!");
         navigation.goBack();

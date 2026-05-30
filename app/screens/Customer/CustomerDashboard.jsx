@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import React, { useEffect, useRef, useState } from 'react';
@@ -79,7 +79,7 @@ export default function CustomerDashboard({ route, navigation }) {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const { data } = await axios.get('http://localhost:3001/profiles/get-profile', { params: { email } });
+        const { data } = await axios.get('https://tailorx-production.up.railway.app:3001/profiles/get-profile', { params: { email } });
         if (data.user) {
           setProfile(data.user);
           setFullName(data.user.full_name || '');
@@ -110,7 +110,7 @@ export default function CustomerDashboard({ route, navigation }) {
     if (phoneNumber.length !== 11) return alert('Phone must be 11 digits.');
     if (password && password.length < 7) return alert('Password min 7 chars.');
     try {
-      const { data } = await axios.put('http://localhost:3001/profiles/update-profile', { email, full_name: fullName, cnic, phone_number: phoneNumber, location, password });
+      const { data } = await axios.put('https://tailorx-production.up.railway.app:3001/profiles/update-profile', { email, full_name: fullName, cnic, phone_number: phoneNumber, location, password });
       if (data.error) return alert(data.error);
       setProfile({ ...profile, full_name: fullName, cnic, phone_number: phoneNumber, location });
       setEditMode(false); setPassword('');

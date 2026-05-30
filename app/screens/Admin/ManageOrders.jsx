@@ -23,7 +23,7 @@ export default function ManageOrders() {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("http://localhost:3001/orders/get-orders");
+      const res = await axios.get("https://tailorx-production.up.railway.app:3001/orders/get-orders");
       setOrders(res.data.orders || []);
     } catch (err) {
       console.log(err);
@@ -38,7 +38,7 @@ export default function ManageOrders() {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete(`http://localhost:3001/admin/remove-order/${id}`);
+            await axios.delete(`https://tailorx-production.up.railway.app:3001/admin/remove-order/${id}`);
             setOrders((prev) => prev.filter((o) => o.id !== id));
           } catch (err) {
             console.log(err);

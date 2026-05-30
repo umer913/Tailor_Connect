@@ -1,7 +1,7 @@
 
 import { Ionicons } from '@expo/vector-icons'; //for importing logos,icons from react Expo icon library
-import axios from "axios";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from "axios";
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react'; //Runs function (effects) after render screen(useEffect).
 import {
@@ -69,7 +69,7 @@ const Login = ({ navigation }) => {
 
     try {
       // sending a request to this server running on my Mac at port 3000
-      const response = await axios.post("http://localhost:3001/auth/login", {
+      const response = await axios.post("https://tailorx-production.up.railway.app:3001/auth/login", {
         email,
         password,
       });

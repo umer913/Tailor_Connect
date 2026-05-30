@@ -21,7 +21,7 @@ export default function ManageTailors() {
 
   const fetchTailors = async () => {
     try {
-      const res = await axios.get("http://localhost:3001/admin/get-tailors");
+      const res = await axios.get("https://tailorx-production.up.railway.app:3001/admin/get-tailors");
       setTailors(res.data.tailors || []);
     } catch (err) {
       console.log(err);
@@ -36,7 +36,7 @@ export default function ManageTailors() {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete("http://localhost:3001/admin/remove-tailor", {
+            await axios.delete("https://tailorx-production.up.railway.app:3001/admin/remove-tailor", {
               data: { email },
             });
             setTailors((prev) => prev.filter((t) => t.email !== email));

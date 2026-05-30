@@ -149,7 +149,7 @@ export default function Form({ route, navigation }) {
   const autofillProfile = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("http://localhost:3001/profiles/get-profile2", { params: { email: CustomerEmail } });
+      const { data } = await axios.get("https://tailorx-production.up.railway.app:3001/profiles/get-profile2", { params: { email: CustomerEmail } });
       const p = data.user;
       setFullName(p.full_name || "");
       setAddress(p.location || "");
@@ -162,7 +162,7 @@ export default function Form({ route, navigation }) {
     if (!fullName || !address || !phone) { Alert.alert("Validation Error", "Fill all fields"); return; }
     try {
       setLoading(true);
-      await axios.post("http://localhost:3001/orders/place-order2", { full_name: fullName, address, phone, CustomerEmail, tailorEmail, orderId });
+      await axios.post("https://tailorx-production.up.railway.app:3001/orders/place-order2", { full_name: fullName, address, phone, CustomerEmail, tailorEmail, orderId });
       setLoading(false);
       setStage("loading");
     } catch (error) {

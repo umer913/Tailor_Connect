@@ -20,7 +20,7 @@ import {
 } from "react-native";
 import { resolveImageUrl } from "../../api.js";
 
-const API_BASE_URL = "http://localhost:3001";
+const API_BASE_URL = "https://tailorx-production.up.railway.app:3001";
 const CUSTOMER_ROLE = "customer";
 const SCREEN_W = Dimensions.get("window").width;
 const IS_TABLET = SCREEN_W >= 768;

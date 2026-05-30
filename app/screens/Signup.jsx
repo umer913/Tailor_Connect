@@ -52,7 +52,7 @@ const Signup = ({ navigation }) => {
 
     try {
       await axios.post(
-        "http://localhost:3001/auth/signup",
+        "https://tailorx-production.up.railway.app:3001/auth/signup",
         { full_name, email, password, cnic, role },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -69,7 +69,7 @@ const Signup = ({ navigation }) => {
 
     try {
       await axios.post(
-        "http://localhost:3001/auth/verify-otp",
+        "https://tailorx-production.up.railway.app:3001/auth/verify-otp",
         { email, otp },
         { headers: { "Content-Type": "application/json" } }
       );
