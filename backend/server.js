@@ -38,6 +38,23 @@ import { createTailorRouter } from "./routes/tailors.js";
 dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`[Server] TailorX backend listening on port ${PORT}`);
+
+  // Attempt to connect to MongoDB in the background
+  console.log(`[DB] Connecting to MongoDB Atlas...`);
+  mongoose
+    .connect(MONGODB_URI, { dbName: MONGODB_DB_NAME })
+    .then(() => {
+      console.log(`[DB] Successfully connected to database: ${MONGODB_DB_NAME}`);
+    })
+    .catch((err) => {
+      console.error("[DB] MongoDB connection failed:", err.message);
+      // We don't exit the process here so the server stays alive 
+      // for you to check logs and fix any IP whitelist issues.
+    });
+});
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -323,18 +340,3 @@ app.get("/images/:filename", (req, res) => {
     res.status(404).json({ error: "File not found" });
   });
 });
-
-const PORT = process.env.PORT || 3000;
-
-mongoose
-  .connect(MONGODB_URI, { dbName: MONGODB_DB_NAME })
-  .then(() => {
-    console.log(`[DB] Connected to MongoDB — database: ${MONGODB_DB_NAME}`);
-    app.listen(PORT, () => {
-      console.log(`[Server] TailorX backend running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("[DB] MongoDB connection failed:", err.message);
-    process.exit(1);
-  });
