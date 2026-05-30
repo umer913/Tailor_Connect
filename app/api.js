@@ -1,5 +1,5 @@
 // Central API base URL — change this one value to point to your backend
-export const API_BASE_URL = "http://UF-MacBook-Pro.local:3001";
+export const API_BASE_URL = "http://localhost:3001";
 
 export const resolveImageUrl = (url) => {
   if (!url) return null;

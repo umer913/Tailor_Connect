@@ -2,26 +2,26 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useState } from "react";
-import { resolveImageUrl } from "../../api.js";
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    FlatList,
-    Image,
-    Modal,
-    Platform,
-    Pressable,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
+import { resolveImageUrl } from "../../api.js";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const API_BASE_URL = "http://UF-MacBook-Pro.local:3001";
+const API_BASE_URL = "http://localhost:3001";
 const { width: SCREEN_W } = Dimensions.get("window");
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 980 : IS_TABLET ? 760 : SCREEN_W;
@@ -73,7 +73,7 @@ export default function CustomerOrders({ route }) {
         } else { setPaymentStatusMap({}); }
       } catch { setPaymentStatusMap({}); }
       try {
-          const reviewRes = await axios.get(`${API_BASE_URL}/reviews/customer-reviews`, { params: { customer_id: CustomerEmail } });
+        const reviewRes = await axios.get(`${API_BASE_URL}/reviews/customer-reviews`, { params: { customer_id: CustomerEmail } });
         const reviewList = reviewRes?.data?.reviews || [];
         const reviewMap = reviewList.reduce((acc, review) => {
           if (!review?.tailor_id) {
@@ -106,7 +106,7 @@ export default function CustomerOrders({ route }) {
       if (editedImages[order.id]) {
         formData.append("fabric", { uri: editedImages[order.id].uri, name: "fabric.jpg", type: "image/jpeg" });
       }
-      await axios.put("http://UF-MacBook-Pro.local:3001/orders/update-order", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      await axios.put("http://localhost:3001/orders/update-order", formData, { headers: { "Content-Type": "multipart/form-data" } });
       Alert.alert("Success", "Order updated successfully");
       setEditingId(null);
       fetchOrders();
@@ -119,7 +119,7 @@ export default function CustomerOrders({ route }) {
       {
         text: "Delete", style: "destructive",
         onPress: async () => {
-          await axios.delete(`http://UF-MacBook-Pro.local:3001/orders/delete-order/${id}`);
+          await axios.delete(`http://localhost:3001/orders/delete-order/${id}`);
           Alert.alert("Success", "Order deleted");
           setOrders((prev) => prev.filter((o) => o.id !== id));
         },

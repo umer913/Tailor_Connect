@@ -3,15 +3,15 @@ import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 const serviceOptions = [
@@ -56,7 +56,7 @@ const AddServices = ({ route }) => {
       return;
     }
     try {
-      await axios.post('http://UF-MacBook-Pro.local:3001/services/add-services', {
+      await axios.post('http://localhost:3001/services/add-services', {
         email,
         services: [newService]
       });
@@ -71,7 +71,7 @@ const AddServices = ({ route }) => {
 
   const fetchServices = async () => {
     try {
-      const res = await axios.get('http://UF-MacBook-Pro.local:3001/services/get-services', {
+      const res = await axios.get('http://localhost:3001/services/get-services', {
         params: { email }
       });
       setServices(res.data.services || []);
@@ -82,7 +82,7 @@ const AddServices = ({ route }) => {
 
   const updateService = async (service) => {
     try {
-      await axios.put("http://UF-MacBook-Pro.local:3001/services/update-service", {
+      await axios.put("http://localhost:3001/services/update-service", {
         email,
         id: service.id,
         service_types: service.service_types,
@@ -98,7 +98,7 @@ const AddServices = ({ route }) => {
 
   const deleteService = async (id) => {
     try {
-      await axios.delete(`http://UF-MacBook-Pro.local:3001/services/delete-service/${id}`);
+      await axios.delete(`http://localhost:3001/services/delete-service/${id}`);
       Alert.alert("Success", "Service Deleted!");
       fetchServices();
     } catch (err) {

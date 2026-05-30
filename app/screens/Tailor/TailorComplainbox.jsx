@@ -5,18 +5,18 @@ import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 
-const SERVER = "http://UF-MacBook-Pro.local:3001";
+const SERVER = "http://localhost:3001";
 const TARGET_REQUIRED_TYPES = [
   "Customer Misbehaviour",
   "Payment Not Received",

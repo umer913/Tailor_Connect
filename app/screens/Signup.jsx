@@ -4,15 +4,15 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -52,7 +52,7 @@ const Signup = ({ navigation }) => {
 
     try {
       await axios.post(
-        "http://UF-MacBook-Pro.local:3001/auth/signup",
+        "http://localhost:3001/auth/signup",
         { full_name, email, password, cnic, role },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -69,7 +69,7 @@ const Signup = ({ navigation }) => {
 
     try {
       await axios.post(
-        "http://UF-MacBook-Pro.local:3001/auth/verify-otp",
+        "http://localhost:3001/auth/verify-otp",
         { email, otp },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -174,8 +174,13 @@ const Signup = ({ navigation }) => {
                       placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
                       style={styles.input}
                       placeholder="CNIC"
+                      keyboardType="numeric"
+                      maxLength={13}
                       value={cnic}
-                      onChangeText={setCnic}
+                      onChangeText={(text) => {
+                        const numericText = text.replace(/[^0-9]/g, '');
+                        setCnic(numericText);
+                      }}
                     />
                   )}
                   {error ? <Text style={styles.errorText}>{error}</Text> : null}

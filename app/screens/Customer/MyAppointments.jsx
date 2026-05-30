@@ -3,26 +3,26 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    FlatList,
-    Platform,
-    Pressable,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList,
+  Platform,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const STATUS_CONFIG = {
-  accepted:  { colors: ["#065f46","#10b981"], icon: "checkmark-circle",  label: "ACCEPTED"  },
-  confirmed: { colors: ["#065f46","#10b981"], icon: "checkmark-circle",  label: "CONFIRMED" },
-  pending:   { colors: ["#78350f","#f59e0b"], icon: "time",              label: "PENDING"   },
-  rejected:  { colors: ["#7f1d1d","#ef4444"], icon: "close-circle",      label: "REJECTED"  },
-  cancelled: { colors: ["#7f1d1d","#ef4444"], icon: "close-circle",      label: "CANCELLED" },
+  accepted: { colors: ["#065f46", "#10b981"], icon: "checkmark-circle", label: "ACCEPTED" },
+  confirmed: { colors: ["#065f46", "#10b981"], icon: "checkmark-circle", label: "CONFIRMED" },
+  pending: { colors: ["#78350f", "#f59e0b"], icon: "time", label: "PENDING" },
+  rejected: { colors: ["#7f1d1d", "#ef4444"], icon: "close-circle", label: "REJECTED" },
+  cancelled: { colors: ["#7f1d1d", "#ef4444"], icon: "close-circle", label: "CANCELLED" },
 };
 
 const getStatus = (s) => STATUS_CONFIG[(s || "").toLowerCase()] || STATUS_CONFIG.pending;
@@ -45,13 +45,13 @@ const formatDateTime = (datetime) => {
 
 function AppointmentCard({ item, onDelete, index }) {
   const slideAnim = React.useRef(new Animated.Value(60)).current;
-  const fadeAnim  = React.useRef(new Animated.Value(0)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const statusCfg = getStatus(item.status);
   const { date, time } = formatDateTime(item.datetime);
 
   React.useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim,  { toValue: 1, duration: 400, delay: index * 80, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, delay: index * 80, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 400, delay: index * 80, useNativeDriver: true }),
     ]).start();
   }, []);
@@ -127,7 +127,7 @@ export default function MyAppointment({ route, navigation }) {
   const fetchAppointments = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://UF-MacBook-Pro.local:3001/appointments/my-appointments", { params: { email: customerEmail } });
+      const res = await axios.get("http://localhost:3001/appointments/my-appointments", { params: { email: customerEmail } });
       setAppointments(res.data.appointments || []);
     } catch (err) {
       console.log("Appointment fetch error", err);
@@ -141,7 +141,7 @@ export default function MyAppointment({ route, navigation }) {
         text: "Delete", style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete(`http://UF-MacBook-Pro.local:3001/appointments/delete-appointment/${id}`);
+            await axios.delete(`http://localhost:3001/appointments/delete-appointment/${id}`);
             setAppointments((prev) => prev.filter((item) => item.id !== id));
           } catch (err) { console.log("Delete appointment error", err); }
         },
@@ -174,7 +174,7 @@ export default function MyAppointment({ route, navigation }) {
         </View>
       ) : appointments.length === 0 ? (
         <View style={styles.emptyWrap}>
-          <LinearGradient colors={["rgba(157,42,75,0.25)","rgba(214,64,106,0.1)"]} style={styles.emptyIconWrap}>
+          <LinearGradient colors={["rgba(157,42,75,0.25)", "rgba(214,64,106,0.1)"]} style={styles.emptyIconWrap}>
             <Ionicons name="calendar-outline" size={40} color="#E6B0B0" />
           </LinearGradient>
           <Text style={styles.emptyTitle}>No appointments yet</Text>

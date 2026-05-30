@@ -4,22 +4,22 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-    Alert,
-    Dimensions,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const timeSlots = [
-  "10:00 AM","11:00 AM","12:00 PM",
-  "1:00 PM","2:00 PM","3:00 PM",
-  "4:00 PM","5:00 PM","6:00 PM",
-  "7:00 PM","8:00 PM","9:00 PM","10:00 PM"
+  "10:00 AM", "11:00 AM", "12:00 PM",
+  "1:00 PM", "2:00 PM", "3:00 PM",
+  "4:00 PM", "5:00 PM", "6:00 PM",
+  "7:00 PM", "8:00 PM", "9:00 PM", "10:00 PM"
 ];
 
 const SCREEN_W = Dimensions.get("window").width;
@@ -28,7 +28,7 @@ const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 760 : IS_TABLET ? 680 : SCREEN_W;
 const PAGE_GUTTER = IS_TABLET ? 28 : 20;
 
 export default function BookAppointment({ route, navigation }) {
-  const {email, CustomerEmail, tailor_name } = route.params;
+  const { email, CustomerEmail, tailor_name } = route.params;
   const tailor_email = email;
   const customer_email = CustomerEmail;
   const [date, setDate] = useState(new Date());
@@ -58,7 +58,7 @@ export default function BookAppointment({ route, navigation }) {
     setLoading(true);
     const payload = { tailor_email, customer_email, datetime: combinedDateTime.toISOString(), tailor_name };
     try {
-      const response = await axios.post("http://UF-MacBook-Pro.local:3001/appointments/book-appointment", payload);
+      const response = await axios.post("http://localhost:3001/appointments/book-appointment", payload);
       if (response.data.success) {
         Alert.alert("Success", "Appointment booked successfully!");
         navigation.goBack();

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useRef } from "react";
 import {
   Animated,
@@ -53,7 +54,14 @@ const AdminDashboard = ({ navigation }) => {
         <Card title="Complain-Box" icon="alert-circle-outline" screen="ManageComplain" />
 
         <TouchableOpacity
-          onPress={() => navigation.navigate("Login")}
+          onPress={async () => {
+            try {
+              await AsyncStorage.removeItem('userToken');
+            } catch (e) {
+              console.error('Logout error:', e);
+            }
+            navigation.navigate("Login");
+          }}
           style={styles.logout}
         >
           <Ionicons name="log-out-outline" size={22} color="#fff" />

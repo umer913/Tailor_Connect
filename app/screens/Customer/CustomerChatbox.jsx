@@ -3,24 +3,24 @@ import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useState } from "react";
-import { resolveImageUrl } from "../../api.js";
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { resolveImageUrl } from "../../api.js";
 
-const API_BASE_URL = "http://UF-MacBook-Pro.local:3001";
+const API_BASE_URL = "http://localhost:3001";
 const CUSTOMER_ROLE = "customer";
 const SCREEN_W = Dimensions.get("window").width;
 const IS_TABLET = SCREEN_W >= 768;
@@ -217,7 +217,7 @@ const CustomerChatbox = ({ route }) => {
             </View>
           ) : conversations.length === 0 ? (
             <View style={styles.centerContent}>
-              <LinearGradient colors={["rgba(157,42,75,0.25)","rgba(214,64,106,0.1)"]} style={styles.emptyIconWrap}>
+              <LinearGradient colors={["rgba(157,42,75,0.25)", "rgba(214,64,106,0.1)"]} style={styles.emptyIconWrap}>
                 <Ionicons name="chatbubble-outline" size={38} color="#E6B0B0" />
               </LinearGradient>
               <Text style={styles.emptyTitle}>No conversations yet</Text>

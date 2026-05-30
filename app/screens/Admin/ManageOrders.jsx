@@ -2,16 +2,16 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
-import { resolveImageUrl } from "../../api.js";
 import {
-    Alert,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { resolveImageUrl } from "../../api.js";
 
 export default function ManageOrders() {
   const [orders, setOrders] = useState([]);
@@ -23,7 +23,7 @@ export default function ManageOrders() {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("http://UF-MacBook-Pro.local:3001/orders/get-orders");
+      const res = await axios.get("http://localhost:3001/orders/get-orders");
       setOrders(res.data.orders || []);
     } catch (err) {
       console.log(err);
@@ -38,7 +38,7 @@ export default function ManageOrders() {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete(`http://UF-MacBook-Pro.local:3001/admin/remove-order/${id}`);
+            await axios.delete(`http://localhost:3001/admin/remove-order/${id}`);
             setOrders((prev) => prev.filter((o) => o.id !== id));
           } catch (err) {
             console.log(err);
@@ -81,7 +81,7 @@ export default function ManageOrders() {
             <Info label="Status" value={item.status} />
             <Info label="Customer Email" value={item.customer_email} />
             <Info label="Tailor Email" value={item.tailor_email} />
-           
+
             <Info label="Created At" value={new Date(item.created_at).toLocaleString()} />
 
             {item.measurements && (

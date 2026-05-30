@@ -4,14 +4,14 @@ import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
-    Dimensions,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const TYPE_CONFIG = {
@@ -48,10 +48,10 @@ const NotificationScreen = ({ route, navigation }) => {
     if (!email) return;
     setLoading(true);
     try {
-      const orderRes = await axios.get("http://UF-MacBook-Pro.local:3001/notifications/get-notifications", { params: { email } });
+      const orderRes = await axios.get("http://localhost:3001/notifications/get-notifications", { params: { email } });
       const orderNotifs = (orderRes.data.notifications || []).map(n => ({ ...n, type: 'order' }));
 
-      const apptRes = await axios.get("http://UF-MacBook-Pro.local:3001/notifications/get-appointment-notifications", { params: { email } });
+      const apptRes = await axios.get("http://localhost:3001/notifications/get-appointment-notifications", { params: { email } });
       const apptNotifs = (apptRes.data.notifications || []).map(n => ({ ...n, type: 'appointment' }));
 
       const all = [...orderNotifs, ...apptNotifs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -63,7 +63,7 @@ const NotificationScreen = ({ route, navigation }) => {
 
   const clearAllNotifications = async () => {
     try {
-      await axios.put("http://UF-MacBook-Pro.local:3001/notifications/clear-all-notifications", { email });
+      await axios.put("http://localhost:3001/notifications/clear-all-notifications", { email });
       setNotifications([]);
     } catch (err) { console.error("Error clearing notifications:", err.message); }
   };
@@ -71,9 +71,9 @@ const NotificationScreen = ({ route, navigation }) => {
   const dismissNotification = async (item) => {
     try {
       if (item.type === 'appointment') {
-        await axios.put("http://UF-MacBook-Pro.local:3001/notifications/dismiss-appointment-notification", { appointment_id: item.id });
+        await axios.put("http://localhost:3001/notifications/dismiss-appointment-notification", { appointment_id: item.id });
       } else {
-        await axios.put("http://UF-MacBook-Pro.local:3001/notifications/dismiss-notification", { order_id: item.id });
+        await axios.put("http://localhost:3001/notifications/dismiss-notification", { order_id: item.id });
       }
       setNotifications(notifications.filter(n => n.id !== item.id));
     } catch (err) { console.error("Error dismissing notification:", err.message); }

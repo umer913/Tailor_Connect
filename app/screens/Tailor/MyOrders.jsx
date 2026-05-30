@@ -3,20 +3,20 @@ import axios from 'axios';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
-import { resolveImageUrl } from '../../api.js';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    Image,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import { resolveImageUrl } from '../../api.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const IS_WEB = Platform.OS === 'web';
@@ -77,7 +77,7 @@ export default function MyOrders({ route, navigation }) {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://UF-MacBook-Pro.local:3001/orders/tailor-orders', {
+      const res = await axios.get('http://localhost:3001/orders/tailor-orders', {
         params: { email: tailorEmail },
       });
       setOrders(res.data.orders || []);
@@ -108,7 +108,7 @@ export default function MyOrders({ route, navigation }) {
             }
             try {
               setUpdating(orderId);
-              await axios.put('http://UF-MacBook-Pro.local:3001/orders/update-order-status', {
+              await axios.put('http://localhost:3001/orders/update-order-status', {
                 id: orderId,
                 status: newStatus,
                 description: description.trim(),
@@ -138,7 +138,7 @@ export default function MyOrders({ route, navigation }) {
   const handleDelete = async (orderId) => {
     try {
       setUpdating(orderId);
-      await axios.delete(`http://UF-MacBook-Pro.local:3001/orders/delete-order/${orderId}`);
+      await axios.delete(`http://localhost:3001/orders/delete-order/${orderId}`);
       setOrders(prev => prev.filter(o => o.id !== orderId));
       Alert.alert('Success', 'Order deleted');
     } catch (err) {
@@ -318,9 +318,9 @@ export default function MyOrders({ route, navigation }) {
                         <TouchableOpacity
                           style={styles.copyIdBtn}
                           onPress={async () => {
-                              await Clipboard.setStringAsync(String(order.id));
-                              Alert.alert('Copied!', `Order ID ${order.id} copied to clipboard.`);
-                            }}
+                            await Clipboard.setStringAsync(String(order.id));
+                            Alert.alert('Copied!', `Order ID ${order.id} copied to clipboard.`);
+                          }}
                           activeOpacity={0.75}
                         >
                           <Ionicons name="copy-outline" size={14} color="#fff" />

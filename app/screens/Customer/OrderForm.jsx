@@ -362,7 +362,7 @@ export default function OrderForm({ route, navigation }) {
       }
 
       const response = await axios.post(
-        "http://UF-MacBook-Pro.local:3001/orders/place-order",
+        "http://localhost:3001/orders/place-order",
         formData,
 
       );
@@ -422,7 +422,7 @@ export default function OrderForm({ route, navigation }) {
       }
 
       const response = await axios.post(
-        "http://UF-MacBook-Pro.local:3001/orders/place-order",
+        "http://localhost:3001/orders/place-order",
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },

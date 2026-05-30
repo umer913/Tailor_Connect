@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
@@ -52,7 +53,7 @@ const TailorDashboard = ({ route, navigation }) => {
     const fetchProfile = async () => {
       try {
         const { data } = await axios.get(
-          "http://UF-MacBook-Pro.local:3001/profiles/get-profile",
+          "http://localhost:3001/profiles/get-profile",
           { params: { email } }
         );
         if (data.user) {
@@ -77,7 +78,7 @@ const TailorDashboard = ({ route, navigation }) => {
 
     try {
       const { data } = await axios.put(
-        "http://UF-MacBook-Pro.local:3001/profiles/update-profile",
+        "http://localhost:3001/profiles/update-profile",
         { email, full_name: fullName, cnic, phone_number: phoneNumber, location, password }
       );
       if (data.error) return alert(data.error);
@@ -191,7 +192,14 @@ const TailorDashboard = ({ route, navigation }) => {
         {/* Logout */}
         <TouchableOpacity
           style={styles.logoutBtn}
-          onPress={() => navigation.navigate("Login")}
+          onPress={async () => {
+            try {
+              await AsyncStorage.removeItem('userToken');
+            } catch (e) {
+              console.error('Logout error:', e);
+            }
+            navigation.navigate("Login");
+          }}
           activeOpacity={0.85}
         >
           <Ionicons name="log-out-outline" size={20} color="#ffffffff" />

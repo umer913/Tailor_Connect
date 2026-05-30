@@ -3,27 +3,27 @@ import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useState } from "react";
-import { resolveImageUrl } from "../../api.js";
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { resolveImageUrl } from "../../api.js";
 
 const SCREEN_W = Dimensions.get('window').width;
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 1040 : IS_TABLET ? 860 : SCREEN_W;
 
-const API_BASE_URL = "http://UF-MacBook-Pro.local:3001";
+const API_BASE_URL = "http://localhost:3001";
 
 const formatTime = (value) => {
   if (!value) return "";

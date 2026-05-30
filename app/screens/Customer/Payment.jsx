@@ -4,19 +4,19 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-const API_BASE_URL = "http://UF-MacBook-Pro.local:3001";
+const API_BASE_URL = "http://localhost:3001";
 const { width: SCREEN_W } = Dimensions.get("window");
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 920 : IS_TABLET ? 760 : SCREEN_W;
@@ -181,7 +181,7 @@ export default function Payment({ route, navigation }) {
 
                 {/* ============ STRIPE CHECKOUT ============ */}
                 <View style={styles.paymentMethodSection}>
-                
+
 
                   <TouchableOpacity
                     onPress={handleCheckout}

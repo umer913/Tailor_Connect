@@ -31,6 +31,27 @@ import MyOrders from '../screens/Tailor/MyOrders';
 import TailorChatbox from '../screens/Tailor/TailorChatbox';
 import TailorComplainbox from '../screens/Tailor/TailorComplainbox';
 import TailorDashboard from '../screens/Tailor/TailorDashboard';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Global request interceptor to attach JWT token
+axios.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (e) {
+      console.error("Failed to load user token:", e);
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 const Tab = createBottomTabNavigator();
 
 const customerTabColors = {

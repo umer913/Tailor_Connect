@@ -3,14 +3,14 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -24,7 +24,7 @@ export default function Appointment({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
   const tailorEmail = route?.params?.email || "tailor@example.com";
-console.log(tailorEmail);
+  console.log(tailorEmail);
   useEffect(() => {
     fetchAppointments();
   }, []);
@@ -32,7 +32,7 @@ console.log(tailorEmail);
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://UF-MacBook-Pro.local:3001/appointments/tailor-appointments`, {
+      const response = await axios.get(`http://localhost:3001/appointments/tailor-appointments`, {
         params: { email: tailorEmail }
       });
       setAppointments(response.data.appointments || []);
@@ -49,14 +49,14 @@ console.log(tailorEmail);
       setUpdating(appointmentId);
       const appointment = appointments.find(apt => apt.id === appointmentId);
       if (String(newStatus).toLowerCase() === "rejected") {
-        await axios.delete(`http://UF-MacBook-Pro.local:3001/appointments/delete-appointment/${appointmentId}`);
+        await axios.delete(`http://localhost:3001/appointments/delete-appointment/${appointmentId}`);
         Alert.alert("Success", "Appointment rejected and deleted");
         setAppointments(prev => prev.filter(apt => apt.id !== appointmentId));
       } else {
         await axios.put(
-          `http://UF-MacBook-Pro.local:3001/appointments/update-appointment-status`,
-          { 
-            id: appointmentId, 
+          `http://localhost:3001/appointments/update-appointment-status`,
+          {
+            id: appointmentId,
             status: newStatus,
             tailor_name: appointment?.tailor_name,
             customer_email: appointment?.customer_email
@@ -78,7 +78,7 @@ console.log(tailorEmail);
   const handleDelete = async (appointmentId) => {
     try {
       setUpdating(appointmentId);
-      await axios.delete(`http://UF-MacBook-Pro.local:3001/appointments/delete-appointment/${appointmentId}`);
+      await axios.delete(`http://localhost:3001/appointments/delete-appointment/${appointmentId}`);
       Alert.alert("Success", "Appointment deleted successfully");
       setAppointments(prev => prev.filter(apt => apt.id !== appointmentId));
     } catch (error) {

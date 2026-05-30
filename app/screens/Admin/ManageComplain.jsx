@@ -3,19 +3,19 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-const SERVER = "http://UF-MacBook-Pro.local:3001";
+const SERVER = "http://localhost:3001";
 const SCREEN_W = Dimensions.get("window").width;
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 980 : IS_TABLET ? 840 : SCREEN_W;
@@ -107,80 +107,80 @@ export default function ManageComplain() {
     const isResolved = Boolean(item.resolved_at);
 
     return (
-      <Animated.View style={[styles.card, { transform: [{ scale }] }]}> 
-      <View style={styles.headerRow}>
-        <Ionicons name="alert-circle-outline" size={22} color="#fff" />
-        <Text style={styles.subject}>{item.subject}</Text>
-      </View>
+      <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+        <View style={styles.headerRow}>
+          <Ionicons name="alert-circle-outline" size={22} color="#fff" />
+          <Text style={styles.subject}>{item.subject}</Text>
+        </View>
 
-      <Text style={styles.text}>
-        Filed By: {item.filed_by_email} ({item.filed_by_role})
-      </Text>
-      <Text style={styles.text}>
-        Against: {item.against_email} ({item.against_name})
-      </Text>
-      <Text style={styles.text}>Order ID: {item.order_id || "N/A"}</Text>
-
-      <Text
-        style={[
-          styles.status,
-          { color: getStatusColor(item.resolved_at) },
-        ]}
-      >
-        {getStatusLabel(item.resolved_at)}
-      </Text>
-
-      <Text style={styles.desc}>{item.description}</Text>
-
-      {item.attachment_url && (
-        <Image source={{ uri: item.attachment_url }} style={styles.image} />
-      )}
-
-      {!isResolved && (
-        <>
-          {/* Admin Response Input always visible */}
-          <TextInput
-            placeholder="Type your message or response..."
-            placeholderTextColor="#ccc"
-            value={responses[item.id] || ""}
-            onChangeText={(text) => setResponseText(item.id, text)}
-            style={styles.input}
-          />
-
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.sendBtn]}
-              onPress={() => sendMessage(item)}
-            >
-              <Ionicons
-                name="chatbubble-ellipses-outline"
-                size={18}
-                color="#fff"
-              />
-              <Text style={styles.actionText}>Send Message</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.resolveBtn]}
-              onPress={() => resolveComplaint(item.id)}
-            >
-              <Ionicons
-                name="checkmark-done-outline"
-                size={18}
-                color="#fff"
-              />
-              <Text style={styles.actionText}>Resolve & Send</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
-
-      {item.admin_response && (
-        <Text style={styles.adminResponse}>
-          Admin: {item.admin_response}
+        <Text style={styles.text}>
+          Filed By: {item.filed_by_email} ({item.filed_by_role})
         </Text>
-      )}
-    </Animated.View>
+        <Text style={styles.text}>
+          Against: {item.against_email} ({item.against_name})
+        </Text>
+        <Text style={styles.text}>Order ID: {item.order_id || "N/A"}</Text>
+
+        <Text
+          style={[
+            styles.status,
+            { color: getStatusColor(item.resolved_at) },
+          ]}
+        >
+          {getStatusLabel(item.resolved_at)}
+        </Text>
+
+        <Text style={styles.desc}>{item.description}</Text>
+
+        {item.attachment_url && (
+          <Image source={{ uri: item.attachment_url }} style={styles.image} />
+        )}
+
+        {!isResolved && (
+          <>
+            {/* Admin Response Input always visible */}
+            <TextInput
+              placeholder="Type your message or response..."
+              placeholderTextColor="#ccc"
+              value={responses[item.id] || ""}
+              onChangeText={(text) => setResponseText(item.id, text)}
+              style={styles.input}
+            />
+
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.sendBtn]}
+                onPress={() => sendMessage(item)}
+              >
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={18}
+                  color="#fff"
+                />
+                <Text style={styles.actionText}>Send Message</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.resolveBtn]}
+                onPress={() => resolveComplaint(item.id)}
+              >
+                <Ionicons
+                  name="checkmark-done-outline"
+                  size={18}
+                  color="#fff"
+                />
+                <Text style={styles.actionText}>Resolve & Send</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {item.admin_response && (
+          <Text style={styles.adminResponse}>
+            Admin: {item.admin_response}
+          </Text>
+        )}
+      </Animated.View>
     );
   };
 
@@ -189,23 +189,23 @@ export default function ManageComplain() {
       colors={["#0f2027", "#203a43", "#2c5364"]}
       style={{ flex: 1 }}
     >
-     <View style={styles.container}>
-  <Text style={styles.title}>Complaint Box</Text>
-  <Text style={styles.sub}>TailorX Admin Management</Text>
+      <View style={styles.container}>
+        <Text style={styles.title}>Complaint Box</Text>
+        <Text style={styles.sub}>TailorX Admin Management</Text>
 
-  {complaints.length === 0 ? (
-    <Text style={styles.emptyText}>
-      No complaints to show
-    </Text>
-  ) : (
-    <FlatList
-      data={complaints}
-      keyExtractor={(item) => item.id.toString()}
-      renderItem={renderItem}
-      contentContainerStyle={styles.listContent}
-    />
-  )}
-</View>
+        {complaints.length === 0 ? (
+          <Text style={styles.emptyText}>
+            No complaints to show
+          </Text>
+        ) : (
+          <FlatList
+            data={complaints}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+          />
+        )}
+      </View>
     </LinearGradient>
   );
 }

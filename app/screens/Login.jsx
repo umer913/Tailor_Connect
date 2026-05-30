@@ -1,19 +1,20 @@
 
 import { Ionicons } from '@expo/vector-icons'; //for importing logos,icons from react Expo icon library
 import axios from "axios";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react'; //Runs function (effects) after render screen(useEffect).
 import {
-    Animated,
-    Easing,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Animated,
+  Easing,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 const Login = ({ navigation }) => {
@@ -68,13 +69,17 @@ const Login = ({ navigation }) => {
 
     try {
       // sending a request to this server running on my Mac at port 3000
-      const response = await axios.post("http://UF-MacBook-Pro.local:3001/auth/login", {
+      const response = await axios.post("http://localhost:3001/auth/login", {
         email,
         password,
       });
 
       const data = response.data;
       console.log("Response:", data);
+
+      if (data.token) {
+        await AsyncStorage.setItem("userToken", data.token);
+      }
 
       // Role-based navigation
       if (data.user.role === "customer") {

@@ -23,7 +23,7 @@ const Forgot = ({ navigation }) => {
   const handleSendOTP = async () => {
     if (!email) return Alert.alert("Error", "Please enter your email");
     try {
-      const res = await axios.post("http://UF-MacBook-Pro.local:3001/auth/forgot-password", { email });
+      const res = await axios.post("http://localhost:3001/auth/forgot-password", { email });
       Alert.alert("Success", res.data.message || "OTP sent to your email");
       setStep(3);
     } catch (err) {
@@ -37,7 +37,7 @@ const Forgot = ({ navigation }) => {
       return Alert.alert("Error", "Please enter all fields");
 
     try {
-      const res = await axios.post("http://UF-MacBook-Pro.local:3001/auth/reset-password", {
+      const res = await axios.post("http://localhost:3001/auth/reset-password", {
         email,
         otp,
         newPassword,
@@ -50,70 +50,70 @@ const Forgot = ({ navigation }) => {
   };
 
   return (
-      <LinearGradient colors={['#0f0f13', '#1a0610', '#2a0a18']} style={{ flex: 1 }}>
-    <SafeAreaView style={{ flex: 1}}>
-      <KeyboardAvoidingView
-        style={{ flex: 1, justifyContent: "center", paddingHorizontal: 20 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View style={styles.card}>
-          <Text style={styles.title}>
-            {step === 1 ? "Forgot Password" : "Reset Password"}
-          </Text>
+    <LinearGradient colors={['#0f0f13', '#1a0610', '#2a0a18']} style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1, justifyContent: "center", paddingHorizontal: 20 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.card}>
+            <Text style={styles.title}>
+              {step === 1 ? "Forgot Password" : "Reset Password"}
+            </Text>
 
-          {step === 1 ? (
-            <>
-              <Text style={styles.subtitle}>
-                Enter your registered email to receive an OTP
-              </Text>
-              <TextInput
-                placeholder="Enter your email"
-                placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
-              <TouchableOpacity
-                style={styles.button}
-                onPress={handleSendOTP}
-              >
-                <Text style={styles.buttonText}>Send OTP</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={styles.subtitle}>
-                Enter the OTP and set a new password
-              </Text>
-              <TextInput
-                placeholder="Enter OTP"
-                placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
-                style={styles.input}
-                value={otp}
-                onChangeText={setOtp}
-                keyboardType="numeric"
-              />
-              <TextInput
-                placeholder="Enter New Password"
-                placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
-                style={styles.input}
-                value={newPassword}
-                onChangeText={setNewPassword}
-                secureTextEntry
-              />
-              <TouchableOpacity
-                style={styles.button}
-                onPress={handleResetPassword}
-              >
-                <Text style={styles.buttonText}>Reset Password</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            {step === 1 ? (
+              <>
+                <Text style={styles.subtitle}>
+                  Enter your registered email to receive an OTP
+                </Text>
+                <TextInput
+                  placeholder="Enter your email"
+                  placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleSendOTP}
+                >
+                  <Text style={styles.buttonText}>Send OTP</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.subtitle}>
+                  Enter the OTP and set a new password
+                </Text>
+                <TextInput
+                  placeholder="Enter OTP"
+                  placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
+                  style={styles.input}
+                  value={otp}
+                  onChangeText={setOtp}
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  placeholder="Enter New Password"
+                  placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
+                  style={styles.input}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry
+                />
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleResetPassword}
+                >
+                  <Text style={styles.buttonText}>Reset Password</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </LinearGradient>
   );
 };
