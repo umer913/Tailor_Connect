@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef } from 'react';
 import {
@@ -7,9 +6,7 @@ import {
   Image,
   SafeAreaView,
   StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -159,6 +156,10 @@ const Start = ({ navigation }) => {
 
     return { transform: [{ translateY }], opacity };
   };
+  // Auto-navigate to Login after 3 seconds
+  const timer = setTimeout(() => {
+    navigation.navigate('Login');
+  }, 3000);
 
   return (
     <LinearGradient
@@ -216,94 +217,7 @@ const Start = ({ navigation }) => {
             >
               The Art of Bespoke Tailoring
             </Animated.Text>
-
-            {/* Description */}
-            <Animated.Text
-              style={[
-                styles.description,
-                { opacity: descFade, transform: [{ translateY: descSlide }] },
-              ]}
-            >
-              Welcome to the ultimate platform bridging the gap between fashion enthusiasts and expert tailors. Say goodbye to ill-fitting clothes and hello to custom-crafted wardrobes designed precisely for you.
-            </Animated.Text>
-
-            {/* Hero image — last to appear */}
-            <Animated.View
-              style={[
-                styles.heroImageContainer,
-                { opacity: heroFade, transform: [{ translateY: heroSlide }] },
-              ]}
-            >
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?q=80&w=800&auto=format&fit=crop' }}
-                style={styles.heroImage}
-              />
-              <LinearGradient
-                colors={['transparent', 'rgba(26, 6, 16, 1)']}
-                style={styles.heroImageOverlay}
-              />
-            </Animated.View>
-
           </View>
-
-          {/* SECTION 2: WHO WE SERVE */}
-          <Animated.View style={[styles.section, getSectionAnimStyle(1)]}>
-            <Text style={styles.sectionHeader}>Who We Serve</Text>
-            <View style={styles.separator} />
-
-            <View style={styles.card}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1598554747436-c9293d6a588f?q=80&w=800&auto=format&fit=crop' }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Ionicons name="person" size={24} color="#E6B0B0" />
-                <Text style={styles.cardTitle}>For Customers</Text>
-                <Text style={styles.cardText}>
-                  Discover talented tailors nearby, book appointments, share your precise measurements, and get bespoke outfits tailored perfectly to your body—all from your smartphone.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.card}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=800&auto=format&fit=crop' }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Ionicons name="cut" size={24} color="#E6B0B0" />
-                <Text style={styles.cardTitle}>For Tailors</Text>
-                <Text style={styles.cardText}>
-                  Showcase your craftsmanship to a broader audience. Manage orders efficiently, communicate with customers, and grow your bespoke tailoring business like never before.
-                </Text>
-              </View>
-            </View>
-          </Animated.View>
-
-          {/* GET STARTED CTA */}
-          <Animated.View style={[styles.ctaContainer, getSectionAnimStyle(2)]}>
-            <LinearGradient
-              colors={['rgba(230, 176, 176, 0.1)', 'transparent']}
-              style={styles.ctaBackgroundGlow}
-            />
-            <Text style={styles.ctaText}>Ready to upgrade your wardrobe?</Text>
-            <TouchableOpacity
-              style={styles.button}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('Login')}
-            >
-              <LinearGradient
-                colors={['#9D2A4B', '#D6406A']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.buttonGradient}
-              >
-                <Text style={styles.buttonText}>Get Started Now</Text>
-                <Ionicons name="arrow-forward" size={20} color="#fff" style={styles.buttonIcon} />
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
-
         </Animated.ScrollView>
       </SafeAreaView>
     </LinearGradient>

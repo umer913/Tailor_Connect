@@ -361,17 +361,23 @@ export default function OrderForm({ route, navigation }) {
         });
       }
 
-      const response = await axios.post(
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(
         "https://tailorconnect-production.up.railway.app/orders/place-order",
-        formData,
-
+        {
+          method: "POST",
+          body: formData,
+          headers: {
+            "Authorization": token ? `Bearer ${token}` : "",
+          },
+        }
       );
 
-      if (response.data.error) {
-        throw new Error(response.data.error);
+      const resData = await response.json();
+
+      if (!response.ok || resData.error) {
+        throw new Error(resData.error || `Request failed with status ${response.status}`);
       }
-
-
 
       // If ordering from cart, remove item from cart
       if (activeCartItem) {
@@ -390,7 +396,7 @@ export default function OrderForm({ route, navigation }) {
         CustomerEmail: CustomerEmail,
         tailorEmail: activeCartItem ? activeCartItem.tailorEmail : tailorEmail,
         name: activeCartItem ? activeCartItem.tailorName : name,
-        orderId: response.data.order_id,
+        orderId: resData.order_id,
       })
       // Navigate after successful submission
     } catch (error) {
@@ -421,16 +427,22 @@ export default function OrderForm({ route, navigation }) {
         });
       }
 
-      const response = await axios.post(
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(
         "https://tailorconnect-production.up.railway.app/orders/place-order",
-        formData,
         {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          method: "POST",
+          body: formData,
+          headers: {
+            "Authorization": token ? `Bearer ${token}` : "",
+          },
         }
       );
 
-      if (response.data.error) {
-        throw new Error(response.data.error);
+      const resData = await response.json();
+
+      if (!response.ok || resData.error) {
+        throw new Error(resData.error || `Request failed with status ${response.status}`);
       }
 
       Alert.alert(
@@ -444,7 +456,7 @@ export default function OrderForm({ route, navigation }) {
                 CustomerEmail: CustomerEmail,
                 tailorEmail: tailorEmail,
                 name: name,
-                orderId: response.data.order_id,
+                orderId: resData.order_id,
               });
             }
           }

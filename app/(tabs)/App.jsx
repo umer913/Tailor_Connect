@@ -9,6 +9,8 @@ import ManageCustomers from '../screens/Admin/ManageCustomers';
 import ManageOrders from '../screens/Admin/ManageOrders';
 import ManageTailors from '../screens/Admin/ManageTailors';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import BookAppointment from '../screens/Customer/BookAppointment';
 import BrowseTailors from '../screens/Customer/BrowseTailors';
 import CustomerChatbox from '../screens/Customer/CustomerChatbox';
@@ -31,8 +33,6 @@ import MyOrders from '../screens/Tailor/MyOrders';
 import TailorChatbox from '../screens/Tailor/TailorChatbox';
 import TailorComplainbox from '../screens/Tailor/TailorComplainbox';
 import TailorDashboard from '../screens/Tailor/TailorDashboard';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Global request interceptor to attach JWT token
 axios.interceptors.request.use(

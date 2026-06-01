@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   locationText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
   // Tailor Spotlight
-  tailorBox: { borderRadius: 24, paddingVertical: 22, paddingHorizontal: 22, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(157,42,75,0.25)', overflow: 'hidden', shadowColor: '#9D2A4B', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  tailorBox: { backgroundColor: 'transparent', borderRadius: 24, paddingVertical: 22, paddingHorizontal: 22, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(157,42,75,0.25)', overflow: 'hidden', shadowColor: '#9D2A4B', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   tailorAccent: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: '#9D2A4B' },
   tailorContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   tailorLabel: { fontSize: 10, color: '#E6B0B0', fontWeight: '800', letterSpacing: 2, marginBottom: 6 },
