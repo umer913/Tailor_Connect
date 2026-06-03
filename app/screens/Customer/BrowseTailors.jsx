@@ -664,8 +664,14 @@ const BrowseTailors = ({ navigation, route }) => {
 
                 {/* Avatar + name */}
                 <LinearGradient colors={["rgba(157,42,75,0.2)", "rgba(214,64,106,0.1)"]} style={styles.imageWrap}>
-                  {tailor.profile_image_url ? (
-                    <Image source={{ uri: tailor.profile_image_url }} style={styles.image} resizeMode="contain" />
+                  {tailor.profilepic ? (
+                    <Image
+                      source={{ uri: tailor.profilepic.startsWith('http') ? tailor.profilepic : `${API_BASE_URL}${tailor.profilepic}` }}
+                      style={styles.image}
+                      resizeMode="cover"
+                    />
+                  ) : tailor.profile_image_url ? (
+                    <Image source={{ uri: tailor.profile_image_url }} style={styles.image} resizeMode="cover" />
                   ) : (
                     <Ionicons name="person" size={44} color="#E6B0B0" />
                   )}

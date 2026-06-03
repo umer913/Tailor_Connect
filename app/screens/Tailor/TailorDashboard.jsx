@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
 import {
@@ -27,6 +28,7 @@ const TailorDashboard = ({ route, navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [location, setLocation] = useState("");
   const [password, setPassword] = useState("");
+  const [profilepicUri, setProfilepicUri] = useState(null);
 
   const [showProfile, setShowProfile] = useState(false);
   const [profileVisible, setProfileVisible] = useState(false);
@@ -63,6 +65,11 @@ const TailorDashboard = ({ route, navigation }) => {
           setPhoneNumber(data.user.phone_number || "");
           setLocation(data.user.location || "");
           setPassword("");
+          if (data.user.profilepic) {
+            setProfilepicUri(data.user.profilepic.startsWith('http') ? data.user.profilepic : `https://tailorconnect-production.up.railway.app${data.user.profilepic}`);
+          } else {
+            setProfilepicUri(null);
+          }
         }
       } catch (err) {
         console.log("Fetch Error:", err);
@@ -71,23 +78,96 @@ const TailorDashboard = ({ route, navigation }) => {
     fetchProfile();
   }, []);
 
+  const pickProfileImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Permission to access library is required to upload a profile picture.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      setProfilepicUri(result.assets[0].uri);
+    }
+  };
+
   const saveProfile = async () => {
     if (cnic.length !== 13) return alert("CNIC must be 13 digits.");
     if (phoneNumber.length !== 11) return alert("Phone must be 11 digits.");
     if (password && password.length < 7) return alert("Password must be at least 7 characters.");
 
     try {
-      const { data } = await axios.put(
-        "https://tailorconnect-production.up.railway.app/profiles/update-profile",
-        { email, full_name: fullName, cnic, phone_number: phoneNumber, location, password }
-      );
-      if (data.error) return alert(data.error);
-      setProfile({ ...profile, full_name: fullName, cnic, phone_number: phoneNumber, location });
+      const isLocalImage = profilepicUri && !profilepicUri.startsWith("http") && !profilepicUri.startsWith("/images/");
+      let responseData;
+
+      if (isLocalImage) {
+        const formData = new FormData();
+        formData.append("email", email);
+        formData.append("full_name", fullName);
+        formData.append("cnic", cnic);
+        formData.append("phone_number", phoneNumber);
+        formData.append("location", location);
+        if (password) {
+          formData.append("password", password);
+        }
+
+        const fileName = profilepicUri.split("/").pop() || `profile_${Date.now()}.jpg`;
+        const ext = fileName.split(".").pop() || "jpg";
+        const mimeType = ext === "png" ? "image/png" : "image/jpeg";
+        formData.append("profilepic", {
+          uri: profilepicUri,
+          name: fileName,
+          type: mimeType,
+        });
+
+        const { data } = await axios.put(
+          "https://tailorconnect-production.up.railway.app/profiles/update-profile",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        responseData = data;
+      } else {
+        const { data } = await axios.put(
+          "https://tailorconnect-production.up.railway.app/profiles/update-profile",
+          {
+            email,
+            full_name: fullName,
+            cnic,
+            phone_number: phoneNumber,
+            location,
+            password,
+            profilepic: profilepicUri ? profilepicUri.replace("https://tailorconnect-production.up.railway.app", "") : null
+          }
+        );
+        responseData = data;
+      }
+
+      if (responseData.error) return alert(responseData.error);
+      
+      const savedPic = responseData.profilepic || profile.profilepic;
+      setProfile({ ...profile, full_name: fullName, cnic, phone_number: phoneNumber, location, profilepic: savedPic });
+      
+      if (savedPic) {
+        setProfilepicUri(savedPic.startsWith('http') ? savedPic : `https://tailorconnect-production.up.railway.app${savedPic}`);
+      }
+      
       setEditMode(false);
       setShowProfile(false);
       setPassword("");
     } catch (err) {
       console.log("Update Error:", err);
+      const errMsg = err.response?.data?.error || err.message || "Error updating profile details.";
+      alert(`Update Error: ${errMsg}`);
     }
   };
 
@@ -115,11 +195,19 @@ const TailorDashboard = ({ route, navigation }) => {
             activeOpacity={0.85}
           >
             <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.avatarGradient}>
-              <Image
-                source={require('../../../assets/images/imTailor.png')}
-                style={{ height: 36, width: 40, borderRadius: 20 }}
-                resizeMode="contain"
-              />
+              {profile.profilepic ? (
+                <Image
+                  source={{ uri: profile.profilepic.startsWith('http') ? profile.profilepic : `https://tailorconnect-production.up.railway.app${profile.profilepic}` }}
+                  style={{ height: 52, width: 52, borderRadius: 26 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Image
+                  source={require('../../../assets/images/imTailor.png')}
+                  style={{ height: 36, width: 40, borderRadius: 20 }}
+                  resizeMode="contain"
+                />
+              )}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -220,6 +308,21 @@ const TailorDashboard = ({ route, navigation }) => {
                     <Text style={styles.title}>My Profile</Text>
                   </View>
 
+                  <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                    <View style={styles.profileImageContainer}>
+                      {profile.profilepic ? (
+                        <Image
+                          source={{ uri: profile.profilepic.startsWith('http') ? profile.profilepic : `https://tailorconnect-production.up.railway.app${profile.profilepic}` }}
+                          style={styles.profileImage}
+                        />
+                      ) : (
+                        <View style={styles.defaultAvatarContainer}>
+                          <Ionicons name="person" size={50} color="#E6B0B0" />
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
                   {[
                     { label: "Full Name", value: profile.full_name, icon: "person-outline" },
                     { label: "CNIC", value: profile.cnic, icon: "card-outline" },
@@ -244,6 +347,26 @@ const TailorDashboard = ({ route, navigation }) => {
                 <>
                   <View style={styles.cardHeaderRow}>
                     <Text style={styles.title}>Edit Profile</Text>
+                  </View>
+
+                  <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                    <TouchableOpacity onPress={pickProfileImage} activeOpacity={0.8}>
+                      <View style={[styles.profileImageContainer, { borderColor: '#10B981' }]}>
+                        {profilepicUri ? (
+                          <Image
+                            source={{ uri: profilepicUri }}
+                            style={styles.profileImage}
+                          />
+                        ) : (
+                          <View style={styles.defaultAvatarContainer}>
+                            <Ionicons name="camera" size={40} color="#E6B0B0" />
+                          </View>
+                        )}
+                        <View style={styles.cameraIconBadge}>
+                          <Ionicons name="camera" size={14} color="#fff" />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
                   </View>
 
                   <Text style={styles.fieldLabel}>Full Name</Text>
@@ -615,6 +738,41 @@ const styles = StyleSheet.create({
   cancelBtnStyle: { backgroundColor: '#475569', borderWidth: 1, borderColor: 'rgba(150,150,150,0.2)' },
 
   btnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+
+  profileImageContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    position: 'relative',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 50,
+  },
+  defaultAvatarContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraIconBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    backgroundColor: '#10B981',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#0b1220',
+  },
 });
 
 export default TailorDashboard;

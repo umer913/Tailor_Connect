@@ -13,14 +13,14 @@ import { fileURLToPath } from "url";
 
 
 import {
-  Appointment,
-  ChatMessage,
-  Complaint,
-  Order,
-  Payment,
-  Profile,
-  Service,
-  TailorReview,
+    Appointment,
+    ChatMessage,
+    Complaint,
+    Order,
+    Payment,
+    Profile,
+    Service,
+    TailorReview,
 } from "./models/index.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createAppointmentRouter } from "./routes/appointments.js";
@@ -263,7 +263,7 @@ const authRouter = createAuthRouter({
   hashPassword,
   generateOTP,
 });
-const profileRouter = createProfileRouter({ Profile, hashPassword });
+const profileRouter = createProfileRouter({ Profile, hashPassword, upload, uploadBufferToCloudinary });
 const serviceRouter = createServiceRouter({ Service });
 const tailorRouter = createTailorRouter({ Profile, Service });
 const reviewRouter = createReviewRouter({ TailorReview, Order, toSafeRating });
