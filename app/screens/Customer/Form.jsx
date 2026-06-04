@@ -53,6 +53,7 @@ export default function Form({ route, navigation }) {
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
 
   useEffect(() => {
@@ -161,13 +162,16 @@ export default function Form({ route, navigation }) {
   const submitPersonalDetails = async () => {
     if (!fullName || !address || !phone) { Alert.alert("Validation Error", "Fill all fields"); return; }
     try {
-      setLoading(true);
-      await axios.post("https://tailorconnect-production.up.railway.app/orders/place-order2", { full_name: fullName, address, phone, CustomerEmail, tailorEmail, orderId });
-      setLoading(false);
+      setSubmitting(true);
+      const response = await axios.post("https://tailorconnect-production.up.railway.app/orders/place-order2", { full_name: fullName, address, phone, CustomerEmail, tailorEmail, orderId });
+      if (response?.data?.email_warnings?.length) {
+        console.warn("Order saved, but some notification emails failed:", response.data.email_warnings);
+      }
+      setSubmitting(false);
       setStage("loading");
     } catch (error) {
-      setLoading(false);
-      Alert.alert("Error", "Failed to place order");
+      setSubmitting(false);
+      Alert.alert("Error", error?.response?.data?.error || error?.message || "Failed to place order");
     }
   };
 
@@ -205,7 +209,7 @@ export default function Form({ route, navigation }) {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
         {/* Autofill */}
-        <TouchableOpacity style={styles.autofillBtn} onPress={autofillProfile} disabled={loading} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.autofillBtn} onPress={autofillProfile} disabled={loading || submitting} activeOpacity={0.8}>
           <LinearGradient colors={["rgba(157,42,75,0.15)", "rgba(214,64,106,0.1)"]} style={styles.autofillGrad}>
             {loading ? (
               <ActivityIndicator color="#E6B0B0" size="small" />
@@ -273,9 +277,11 @@ export default function Form({ route, navigation }) {
 
           {/* Submit button area */}
           <View style={{ height: 64, marginTop: 24 }}>
-            <TouchableOpacity onPress={submitPersonalDetails} disabled={stage !== "idle"} activeOpacity={0.85}>
-              <LinearGradient colors={stage === "idle" ? ["#9D2A4B", "#D6406A"] : ["#374151", "#4b5563"]} style={styles.btn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                {stage === "idle" ? (
+            <TouchableOpacity onPress={submitPersonalDetails} disabled={stage !== "idle" || submitting} activeOpacity={0.85}>
+              <LinearGradient colors={(stage !== "idle" || submitting) ? ["#374151", "#4b5563"] : ["#9D2A4B", "#D6406A"]} style={styles.btn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                {submitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : stage === "idle" ? (
                   <>
                     <Ionicons name="bag-check-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
                     <Text style={styles.btnText}>Place Order</Text>
@@ -290,7 +296,7 @@ export default function Form({ route, navigation }) {
 
         {/* Info note */}
         <View style={styles.noteCard}>
-          <Ionicons name="information-circle-outline" size={16} color="#818cf8" style={{ marginRight: 8, marginTop: 1 }} />
+          <Ionicons name="information-circle-outline" size={16} color="#E6B0B0" style={{ marginRight: 8, marginTop: 1 }} />
           <Text style={styles.noteText}>Your delivery details will be shared with the tailor to process your order.</Text>
         </View>
       </ScrollView>

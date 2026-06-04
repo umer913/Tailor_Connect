@@ -3,7 +3,12 @@ import jwt from "jsonwebtoken";
 // Middleware to authenticate JWT token
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  let token = authHeader && authHeader.split(' ')[1];
+
+  // Allow token to be supplied via query param for certain client flows (e.g., opening PDF links)
+  if (!token) {
+    token = req.query?.access_token || req.query?.token || null;
+  }
 
   if (!token) {
     return res.status(401).json({ error: "Access token is missing" });

@@ -166,7 +166,7 @@ const NotificationScreen = ({ route, navigation }) => {
                       </View>
 
                       {item.type === 'appointment' && item.datetime && (
-                        <Text style={styles.timeText}>{formatTime(item.datetime)}</Text>
+                        <Text style={styles.timeText}>Appointment time:{formatTime(item.datetime)}</Text>
                       )}
                       {item.type === 'order' && item.quantity != null && (
                         <Text style={styles.timeText}>Qty: {item.quantity}</Text>
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   cardTailorSub: { color: '#E6B0B0', fontSize: 12, fontWeight: '600', marginTop: 1 },
   dismissBtn: {
     width: 32, height: 32, borderRadius: 10,
-    backgroundColor: 'rgba(239, 68, 68, 1)',
+    backgroundColor: 'rgba(239,68,68,0.1)',
     alignItems: 'center', justifyContent: 'center',
   },
   detailsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 10 },

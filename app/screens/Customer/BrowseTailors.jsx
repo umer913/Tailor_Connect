@@ -101,6 +101,8 @@ const BrowseTailors = ({ navigation, route }) => {
   const [selectedMinPrice, setSelectedMinPrice] = useState(0);
   const [selectedMaxPrice, setSelectedMaxPrice] = useState(0);
   const [isPriceFilterActive, setIsPriceFilterActive] = useState(false);
+  const [selectedMinStars, setSelectedMinStars] = useState(0);
+  const [isStarFilterActive, setIsStarFilterActive] = useState(false);
   const [selectedServiceTypes, setSelectedServiceTypes] = useState([]);
   const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
@@ -261,6 +263,13 @@ const BrowseTailors = ({ navigation, route }) => {
     });
   };
 
+  const matchesMinStars = (tailor) => {
+    if (!isStarFilterActive) return true;
+
+    const avg = Number(reviewSummary[tailor.email]?.avg) || 0;
+    return avg >= Number(selectedMinStars || 0);
+  };
+
   const locationMatchesTextually = (tailorLocation) => {
     if (!currentLocation) {
       return true;
@@ -377,7 +386,8 @@ const BrowseTailors = ({ navigation, route }) => {
       const matchesName = normalizeText(tailor.full_name).includes(normalizedSearchText);
       const priceMatched = matchesPriceRange(tailor);
       const servicesMatched = matchesSelectedServices(tailor);
-      return tailor.matchesLocation && matchesName && priceMatched && servicesMatched;
+      const starsMatched = matchesMinStars(tailor);
+      return tailor.matchesLocation && matchesName && priceMatched && servicesMatched && starsMatched;
     })
     .sort((firstTailor, secondTailor) => {
       if (!nearbyOnly) {
@@ -659,19 +669,13 @@ const BrowseTailors = ({ navigation, route }) => {
                   style={styles.messageCardButton}
                   activeOpacity={0.85}
                   onPress={(event) => { event.stopPropagation(); openChatbox(tailor); }}>
-                  <Ionicons name="chatbubble-ellipses-outline" size={22} color="#e0e7ff" />
+                  <Ionicons name="chatbubble-ellipses-outline" size={22} color="#E6B0B0" />
                 </TouchableOpacity>
 
                 {/* Avatar + name */}
                 <LinearGradient colors={["rgba(157,42,75,0.2)", "rgba(214,64,106,0.1)"]} style={styles.imageWrap}>
-                  {tailor.profilepic ? (
-                    <Image
-                      source={{ uri: tailor.profilepic.startsWith('http') ? tailor.profilepic : `${API_BASE_URL}${tailor.profilepic}` }}
-                      style={styles.image}
-                      resizeMode="cover"
-                    />
-                  ) : tailor.profile_image_url ? (
-                    <Image source={{ uri: tailor.profile_image_url }} style={styles.image} resizeMode="cover" />
+                  {tailor.profile_image_url ? (
+                    <Image source={{ uri: tailor.profile_image_url }} style={styles.image} resizeMode="contain" />
                   ) : (
                     <Ionicons name="person" size={44} color="#E6B0B0" />
                   )}
@@ -890,6 +894,64 @@ const BrowseTailors = ({ navigation, route }) => {
                 <View style={styles.filterDivider} />
 
                 <View style={styles.filterSection}>
+                  <View style={styles.priceHeader}>
+                    <View style={styles.priceHeaderLeft}>
+                      <View style={styles.priceHeaderIcon}>
+                        <Ionicons name="star" size={18} color="#E6B0B0" />
+                      </View>
+                      <View>
+                        <Text style={styles.priceTitle}>Rating Filter</Text>
+                    
+                      </View>
+                    </View>
+
+                    {isStarFilterActive ? (
+                      <TouchableOpacity
+                        style={styles.clearPriceButton}
+                        onPress={() => {
+                          setSelectedMinStars(0);
+                          setIsStarFilterActive(false);
+                        }}
+                        activeOpacity={0.85}>
+                        <Ionicons name="close-circle-outline" size={15} color="#E6B0B0" style={styles.buttonIcon} />
+                        <Text style={styles.clearPriceText}>Clear</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+
+                  <View style={styles.starFilterRow}>
+                    {[1, 2, 3, 4, 5].map((starValue) => {
+                      const isActive = selectedMinStars >= starValue;
+
+                      return (
+                        <TouchableOpacity
+                          key={starValue}
+                          style={[styles.starFilterButton, isActive && styles.starFilterButtonActive]}
+                          onPress={() => {
+                            setSelectedMinStars(starValue);
+                            setIsStarFilterActive(true);
+                          }}
+                          activeOpacity={0.85}>
+                          <Ionicons
+                            name={isActive ? "star" : "star-outline"}
+                            size={20}
+                            color={isActive ? "#f59e0b" : "#E6B0B0"}
+                          />
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  <View style={styles.starFilterSummaryRow}>
+                    <Text style={styles.starFilterSummaryText}>
+                      {selectedMinStars ? `` : "Tap a star to filter"}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.filterDivider} />
+
+                <View style={styles.filterSection}>
                   <View style={styles.locationHeaderBar}>
                     <View style={styles.locationHeaderLeft}>
                       <View style={styles.locationHeaderIcon}>
@@ -1100,6 +1162,23 @@ const styles = StyleSheet.create({
   sliderRow: { flexDirection: 'row', alignItems: 'center' },
   sliderLabel: { width: 34, color: '#E6B0B0', fontSize: 12, fontWeight: '700', marginRight: 8 },
   slider: { flex: 1, height: 36 },
+  starFilterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 4 },
+  starFilterButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(26,6,16,0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(157,42,75,0.18)',
+  },
+  starFilterButtonActive: {
+    backgroundColor: 'rgba(157,42,75,0.22)',
+    borderColor: 'rgba(245,158,11,0.35)',
+  },
+  starFilterSummaryRow: { marginTop: 10, alignItems: 'center' },
+  starFilterSummaryText: { color: '#E6B0B0', fontSize: 12, fontWeight: '700' },
   noPriceHint: { color: '#E6B0B0', fontSize: 12, fontWeight: '600' },
   locationHeaderBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   locationHeaderLeft: { flex: 1, flexDirection: 'row', alignItems: 'center' },

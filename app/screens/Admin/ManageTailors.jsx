@@ -100,7 +100,9 @@ export default function ManageTailors() {
         />
 
         {tailors.length === 0 && (
-          <Text style={styles.empty}>No Tailors Found</Text>
+          <View style={{ justifyContent: "center", alignItems: "center", flex: 1 }}>
+            <Text style={styles.empty}>No Tailors Found</Text>
+          </View>
         )}
 
       </View>

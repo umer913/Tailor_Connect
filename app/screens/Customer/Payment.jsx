@@ -1,8 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useRef, useState } from "react";
+
+const getAuthHeaders = async () => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+};
+
 import {
   ActivityIndicator,
   Alert,
@@ -46,7 +57,9 @@ export default function Payment({ route, navigation }) {
     }
     try {
       setLoading(true);
+      const headers = await getAuthHeaders();
       const orderResponse = await axios.get(`${API_BASE_URL}/payments/order/${orderId}`, {
+        headers,
         params: { customer_email: customerEmail || undefined },
       });
       setOrder(orderResponse?.data?.order || null);
@@ -93,7 +106,8 @@ export default function Payment({ route, navigation }) {
   const handleCheckout = async () => {
     try {
       setProcessing(true);
-      const response = await axios.post(`${API_BASE_URL}/payments/stripe-checkout`, { order_id: orderId, customer_email: customerEmail });
+      const headers = await getAuthHeaders();
+      const response = await axios.post(`${API_BASE_URL}/payments/stripe-checkout`, { order_id: orderId, customer_email: customerEmail }, { headers });
       const paymentUrl = response?.data?.payment_url;
       if (!paymentUrl) throw new Error("Stripe checkout URL not received.");
 
@@ -105,7 +119,12 @@ export default function Payment({ route, navigation }) {
 
   const handleInvoice = async () => {
     try {
-      const invoiceUrl = `${API_BASE_URL}/payments/invoice/${orderId}?customer_email=${encodeURIComponent(customerEmail || "")}`;
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        Alert.alert("Session expired", "Please log in again to view your invoice.");
+        return;
+      }
+      const invoiceUrl = `${API_BASE_URL}/payments/invoice/${orderId}?customer_email=${encodeURIComponent(customerEmail || "")}&access_token=${encodeURIComponent(token)}`;
       await WebBrowser.openBrowserAsync(invoiceUrl);
     } catch (error) {
       Alert.alert("Invoice failed", error?.message || "Unable to open invoice.");

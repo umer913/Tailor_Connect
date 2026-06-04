@@ -201,23 +201,38 @@ export default function MyOrders({ route, navigation }) {
             {orders.map(order => {
               const pricing = getOrderPricing(order);
               const statusLower = String(order.status || '').toLowerCase();
-              const isLocked = statusLower === 'paid' || statusLower === 'completed';
+              const canRemoveOrder = statusLower === 'paid';
 
               return (
                 <TouchableOpacity key={order.id} activeOpacity={0.9} onPress={() => setExpandedOrderId(order.id)}>
                   <LinearGradient colors={['rgba(15, 23, 42, 0.65)', 'rgba(11, 18, 32, 0.85)']} style={styles.card}>
                     {/* Delete Button */}
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => handleDelete(order.id)}
-                      disabled={updating === order.id}
-                    >
-                      {updating === order.id ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                      ) : (
-                        <Ionicons name="close-circle" size={24} color="#EF4444" />
-                      )}
-                    </TouchableOpacity>
+                    {canRemoveOrder && (
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => {
+                          Alert.alert(
+                            'Remove Order',
+                            'Are you sure you want to remove this order?',
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Remove',
+                                style: 'destructive',
+                                onPress: () => handleDelete(order.id),
+                              },
+                            ]
+                          );
+                        }}
+                        disabled={updating === order.id}
+                      >
+                        {updating === order.id ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Ionicons name="close-circle" size={24} color="#EF4444" />
+                        )}
+                      </TouchableOpacity>
+                    )}
 
                     {/* Fabric Image */}
                     <View style={styles.fabricContainer}>

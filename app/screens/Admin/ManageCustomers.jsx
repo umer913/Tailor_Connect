@@ -99,7 +99,9 @@ export default function ManageCustomers() {
         />
 
         {customers.length === 0 && (
-          <Text style={styles.empty}>No Customers Found</Text>
+          <View style={{ justifyContent: "center", alignItems: "center", flex: 1 }}>
+            <Text style={styles.empty}>No Customers Found</Text>
+          </View>
         )}
 
       </View>
@@ -193,7 +195,6 @@ const styles = StyleSheet.create({
   empty: {
     color: "#aaa",
     textAlign: "center",
-    marginTop: 120,
     fontSize: 18,
   },
 });

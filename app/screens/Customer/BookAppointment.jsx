@@ -110,6 +110,7 @@ export default function BookAppointment({ route, navigation }) {
           </TouchableOpacity>
           {showPicker && (
             <DateTimePicker
+            style={{ backgroundColor: "#D6406A", borderRadius: 12, marginTop: 12 }}
               value={date}
               mode="date"
               minimumDate={new Date()}

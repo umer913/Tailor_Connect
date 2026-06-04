@@ -122,7 +122,9 @@ export default function ManageOrders() {
         />
 
         {orders.length === 0 && (
-          <Text style={styles.empty}>No Orders Found</Text>
+          <View style={{ justifyContent: "center", alignItems: "center", flex: 1 }}>
+            <Text style={styles.empty}>No Orders Found</Text>
+          </View>
         )}
 
       </View>
@@ -241,7 +243,6 @@ const styles = StyleSheet.create({
   empty: {
     color: "#aaa",
     textAlign: "center",
-    marginTop: 120,
     fontSize: 18,
   },
 });

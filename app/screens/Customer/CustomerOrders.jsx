@@ -436,7 +436,7 @@ export default function CustomerOrders({ route }) {
                 onPress={submitReview}
                 disabled={isSubmittingReview}
               >
-                <LinearGradient colors={["#9D2A4B", "#D6406A"]} style={styles.modalSubmitGrad}>
+                <LinearGradient colors={["#4CAF50", "#4CAF50"]} style={styles.modalSubmitGrad}>
                   <Text style={styles.modalSubmitText}>{isSubmittingReview ? "Submitting..." : "Submit"}</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   quantityDisplay: { fontSize: 20, fontWeight: "800", color: "#fff", marginBottom: 14 },
   quantityEditRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 12, marginBottom: 14 },
   qtyDecBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: "rgba(239, 68, 68, 1)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(239,68,68,0.4)" },
-  qtyIncBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: "rgba(16,185,129,0.2)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(16,185,129,0.4)" },
+  qtyIncBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: "#4CAF50", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(16,185,129,0.4)" },
   qtyBtnText: { fontSize: 20, fontWeight: "800", color: "#fff" },
   qtyDisplayEdit: { minWidth: 64, height: 42, borderRadius: 12, backgroundColor: "rgba(26, 6, 16, 0.6)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(157,42,75,0.3)" },
   qtyDisplayText: { fontSize: 18, fontWeight: "800", color: "#fff" },
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   measureInput: { backgroundColor: "rgba(26, 6, 16, 0.5)", borderRadius: 10, padding: 10, borderWidth: 1, borderColor: "rgba(157,42,75,0.3)", color: "#fff", fontSize: 14 },
   measureInputReadonly: { borderColor: "rgba(157,42,75,0.15)", color: "#E6B0B0" },
   editBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(157,42,75,0.15)", padding: 12, borderRadius: 12, marginTop: 10, borderWidth: 1, borderColor: "rgba(157,42,75,0.3)" },
-  saveBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#9D2A4B", padding: 12, borderRadius: 12 },
+  saveBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#4CAF50", padding: 12, borderRadius: 12 },
   cancelBtn: { flex: 1, backgroundColor: "rgba(239, 68, 68, 1)", padding: 12, borderRadius: 12, alignItems: "center", borderWidth: 1, borderColor: "rgba(239,68,68,0.3)" },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 10 },
   btnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
@@ -532,8 +532,8 @@ const styles = StyleSheet.create({
   starButton: { padding: 6 },
   reviewInput: { minHeight: 90, borderRadius: 12, borderWidth: 1, borderColor: "rgba(157,42,75,0.25)", backgroundColor: "rgba(26, 6, 16, 0.5)", color: "#fff", padding: 12, textAlignVertical: "top" },
   modalActions: { flexDirection: "row", gap: 10, marginTop: 14 },
-  modalCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(239,68,68,0.3)", backgroundColor: "rgba(239,68,68,0.2)", alignItems: "center" },
-  modalCancelText: { color: "#f87171", fontWeight: "700" },
+  modalCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(239, 68, 68, 1)", backgroundColor: "rgba(239,68,68,0.2)", alignItems: "center" },
+  modalCancelText: { color: "#ffffff", fontWeight: "700" },
   modalSubmitBtn: { flex: 1, borderRadius: 12, overflow: "hidden" },
   modalSubmitGrad: { paddingVertical: 12, alignItems: "center" },
   modalSubmitText: { color: "#fff", fontWeight: "700" },
