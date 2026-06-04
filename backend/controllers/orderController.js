@@ -98,25 +98,30 @@ export const createOrderController = ({
           { full_name, address, phone }
         );
         if (!updated || updated.matchedCount === 0) {
-          throw new Error("Order not found");
+          return res.status(404).json({ error: "Order not found" });
         }
-        await transporter.sendMail({
+
+        // Respond immediately — don't wait on emails
+        res.status(200).json({ message: "Order placed successfully!" });
+
+        // Fire emails in background (non-blocking)
+        transporter.sendMail({
           from: `"TailorX" <${process.env.EMAIL_USER}>`,
           to: CustomerEmail,
           subject: "Order Confirmation - TailorX",
           text: `Hello ${full_name},\n\nYour order has been successfully placed.\nThank you for choosing TailorX!`,
-        });
+        }).catch((err) => console.error("[EMAIL] Customer notification failed:", err.message));
 
-        await transporter.sendMail({
+        transporter.sendMail({
           from: `"TailorX" <${process.env.EMAIL_USER}>`,
           to: tailorEmail,
           subject: "New Order Received - TailorX",
-          text: "Hello,\n\nYou have received a new order",
-        });
+          text: "Hello,\n\nYou have received a new order.",
+        }).catch((err) => console.error("[EMAIL] Tailor notification failed:", err.message));
 
-        res.json({ message: "Order placed successfully!" });
       } catch (err) {
-        res.status(500).json({ error: "Failed to place order" });
+        console.error("[PLACE ORDER2 ERROR]", err);
+        res.status(500).json({ error: err.message || "Failed to place order" });
       }
     },
 
