@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from "cloudinary";
+
 import cors from "cors";
 import crypto from "crypto";
 import dns from "dns";
@@ -13,14 +13,14 @@ import { fileURLToPath } from "url";
 
 
 import {
-    Appointment,
-    ChatMessage,
-    Complaint,
-    Order,
-    Payment,
-    Profile,
-    Service,
-    TailorReview,
+  Appointment,
+  ChatMessage,
+  Complaint,
+  Order,
+  Payment,
+  Profile,
+  Service,
+  TailorReview,
 } from "./models/index.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createAppointmentRouter } from "./routes/appointments.js";
@@ -72,11 +72,7 @@ app.get('/', (req, res) => {
     time: new Date().toISOString()
   });
 });
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+
 
 const PAYMENT_SUCCESS_URL =
   process.env.PAYMENT_SUCCESS_URL || "tailorx://payment-success";
@@ -183,33 +179,7 @@ const saveToGridFS = (buffer, req) => {
 };
 
 const uploadBufferToCloudinary = (buffer, options = {}, req = null) => {
-  const hasCloudinaryConfig =
-    process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET;
-
-  if (!hasCloudinaryConfig) {
-    console.warn("[Cloudinary] Credentials missing. Falling back to MongoDB GridFS.");
-    return saveToGridFS(buffer, req);
-  }
-
-  return new Promise((resolve, reject) => {
-    const upload = cloudinary.uploader.upload_stream(
-      options,
-      (error, result) => {
-        if (error) {
-          console.warn("[Cloudinary] Upload failed, falling back to MongoDB GridFS:", error.message || error);
-          saveToGridFS(buffer, req)
-            .then(resolve)
-            .catch(reject);
-          return;
-        }
-        return resolve(result);
-      }
-    );
-
-    upload.end(buffer);
-  });
+  return saveToGridFS(buffer, req);
 };
 
 
@@ -263,7 +233,7 @@ const authRouter = createAuthRouter({
   hashPassword,
   generateOTP,
 });
-const profileRouter = createProfileRouter({ Profile, hashPassword, upload, uploadBufferToCloudinary });
+const profileRouter = createProfileRouter({ Profile, hashPassword });
 const serviceRouter = createServiceRouter({ Service });
 const tailorRouter = createTailorRouter({ Profile, Service });
 const reviewRouter = createReviewRouter({ TailorReview, Order, toSafeRating });
