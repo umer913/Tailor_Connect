@@ -160,7 +160,7 @@ export default function Earnings({ route, navigation }) {
           <Ionicons name="arrow-back" size={20} color="#fff" />
         </TouchableOpacity>
         <View style={{ marginLeft: 14 }}>
-          <Text style={styles.headerSub}>Overview & Trends</Text>
+        
           <Text style={styles.headerTitle}>Earnings Dashboard</Text>
         </View>
       </View>

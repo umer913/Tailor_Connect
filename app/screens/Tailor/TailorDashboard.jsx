@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
 import {
-  Animated,
+  ActivityIndicator, Animated,
   Image,
   StyleSheet,
   Text,
@@ -30,6 +31,7 @@ const TailorDashboard = ({ route, navigation }) => {
 
   const [showProfile, setShowProfile] = useState(false);
   const [profileVisible, setProfileVisible] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(40));
@@ -91,6 +93,52 @@ const TailorDashboard = ({ route, navigation }) => {
     }
   };
 
+  const pickAndUploadImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Please allow access to your photo library.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      setUploadingImage(true);
+
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('profile_image', {
+        uri: asset.uri,
+        name: 'profile.jpg',
+        type: 'image/jpeg',
+      });
+
+      const { data } = await axios.post(
+        'https://tailorconnect-production.up.railway.app/profiles/upload-profile-image',
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+
+      if (data.profile_image) {
+        setProfile((prev) => ({ ...prev, profile_image: data.profile_image }));
+        Alert.alert('Success', 'Profile photo updated.');
+      }
+    } catch (err) {
+      console.log('Image upload error:', err);
+      Alert.alert('Error', 'Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -115,11 +163,19 @@ const TailorDashboard = ({ route, navigation }) => {
             activeOpacity={0.85}
           >
             <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.avatarGradient}>
-              <Image
-                source={require('../../../assets/images/imTailor.png')}
-                style={{ height: 36, width: 40, borderRadius: 20 }}
-                resizeMode="contain"
-              />
+              {profile.profile_image ? (
+                <Image
+                  source={{ uri: resolveImageUrl(profile.profile_image) }}
+                  style={{ height: 52, width: 52, borderRadius: 26 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Image
+                  source={require('../../../assets/images/imTailor.png')}
+                  style={{ height: 36, width: 40, borderRadius: 20 }}
+                  resizeMode="contain"
+                />
+              )}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -221,6 +277,35 @@ const TailorDashboard = ({ route, navigation }) => {
                   <View style={styles.cardHeaderRow}>
                     <Text style={styles.title}>My Profile</Text>
                   </View>
+
+                  {/* Profile Image */}
+                  <TouchableOpacity
+                    style={styles.profileImageWrap}
+                    onPress={pickAndUploadImage}
+                    disabled={uploadingImage}
+                    activeOpacity={0.85}
+                  >
+                    {uploadingImage ? (
+                      <View style={styles.profileImagePlaceholder}>
+                        <ActivityIndicator color="#F59E0B" size="large" />
+                      </View>
+                    ) : profile.profile_image ? (
+                      <Image
+                        source={{ uri: resolveImageUrl(profile.profile_image) }}
+                        style={styles.profileImageLarge}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.profileImagePlaceholder}>
+                        <Ionicons name="person" size={40} color="#94a3b8" />
+                      </View>
+                    )}
+                    {/* Camera badge */}
+                    <View style={styles.cameraBadge}>
+                      <Ionicons name="camera" size={14} color="#fff" />
+                    </View>
+                  </TouchableOpacity>
+                  <Text style={styles.uploadHint}>Tap photo to change</Text>
 
                   {[
                     { label: "Full Name", value: profile.full_name, icon: "person-outline" },
@@ -545,6 +630,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+  },
+
+  // Profile image
+  profileImageWrap: {
+    alignSelf: 'center',
+    marginBottom: 6,
+    position: 'relative',
+  },
+  profileImageLarge: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
+    borderColor: '#F59E0B',
+  },
+  profileImagePlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderWidth: 2,
+    borderColor: 'rgba(59, 130, 246, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#F59E0B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#0b1220',
+  },
+  uploadHint: {
+    textAlign: 'center',
+    color: 'rgba(148, 163, 184, 0.6)',
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 16,
   },
 
   title: {

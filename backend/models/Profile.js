@@ -13,6 +13,7 @@ const profileSchema = new mongoose.Schema(
     verified: { type: Boolean, default: false },
     phone_number: { type: String },
     location: { type: String },
+    profile_image: { type: String },
   },
   baseSchemaOptions
 );

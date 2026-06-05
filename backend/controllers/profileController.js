@@ -4,7 +4,7 @@ export const createProfileController = ({ Profile, hashPassword }) => {
       const { email } = req.query;
       try {
         const user = await Profile.findOne({ email })
-          .select("full_name cnic phone_number location")
+          .select("full_name cnic phone_number location profile_image")
           .exec();
         if (!user) {
           return res.status(400).json({ error: "User not found" });
@@ -37,11 +37,39 @@ export const createProfileController = ({ Profile, hashPassword }) => {
       }
     },
 
+    uploadProfileImage: async (req, res) => {
+      const { email } = req.body;
+      try {
+        if (!req.file) {
+          return res.status(400).json({ error: "No image file provided." });
+        }
+        if (!email) {
+          return res.status(400).json({ error: "Email is required." });
+        }
+
+        // Use the same GridFS upload helper that orders/chat use
+        const { uploadBufferToCloudinary } = req;
+        if (!uploadBufferToCloudinary) {
+          return res.status(500).json({ error: "Upload helper not available." });
+        }
+
+        const result = await uploadBufferToCloudinary(req.file.buffer, {}, req);
+        const imageUrl = result.secure_url;
+
+        await Profile.updateOne({ email }, { profile_image: imageUrl });
+
+        res.json({ message: "Profile image updated.", profile_image: imageUrl });
+      } catch (err) {
+        console.error("Upload profile image error:", err);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
+    },
+
     getProfile2: async (req, res) => {
       const { email } = req.query;
       try {
         const user = await Profile.findOne({ email })
-          .select("full_name location phone_number")
+          .select("full_name location phone_number profile_image")
           .exec();
         if (!user) {
           return res.status(400).json({ error: "User not found" });

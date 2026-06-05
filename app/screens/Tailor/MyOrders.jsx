@@ -175,7 +175,7 @@ export default function MyOrders({ route, navigation }) {
         <View style={styles.headerContainer}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.headerSubtitle}>Your Tasks</Text>
+              
               <Text style={styles.headerTitle}>My Orders</Text>
             </View>
             <View style={styles.badge}>
