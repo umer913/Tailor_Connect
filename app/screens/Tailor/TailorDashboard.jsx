@@ -178,7 +178,9 @@ const TailorDashboard = ({ route, navigation }) => {
             </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.quickCard} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.quickCard}
+            onPress={() => navigation.navigate("Earnings", { email })}
+            activeOpacity={0.85}>
             <LinearGradient colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.05)']} style={styles.quickCardGradient}>
               <View style={styles.quickIconWrap}>
                 <Ionicons name="cash" size={26} color="#F59E0B" />

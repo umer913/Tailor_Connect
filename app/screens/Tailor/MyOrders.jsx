@@ -343,7 +343,7 @@ export default function MyOrders({ route, navigation }) {
                         </TouchableOpacity>
                       </View>
                       {/* Action Buttons */}
-                      {!isLocked && (
+                      {!['paid', 'completed', 'cancelled', 'rejected'].includes(statusLower) && (
                         <View style={styles.actionsContainer}>
                           <View style={styles.actionsRow}>
                             <TouchableOpacity

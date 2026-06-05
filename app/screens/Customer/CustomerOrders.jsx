@@ -49,7 +49,7 @@ export default function CustomerOrders({ route }) {
   const [editedImages, setEditedImages] = useState({});
   const [paymentStatusMap, setPaymentStatusMap] = useState({});
   const [fadeAnim] = useState(new Animated.Value(0));
-  const [reviewedTailors, setReviewedTailors] = useState({});
+  const [reviewedOrders, setReviewedOrders] = useState({});
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [reviewOrder, setReviewOrder] = useState(null);
   const [reviewRating, setReviewRating] = useState(0);
@@ -76,15 +76,15 @@ export default function CustomerOrders({ route }) {
         const reviewRes = await axios.get(`${API_BASE_URL}/reviews/customer-reviews`, { params: { customer_id: CustomerEmail } });
         const reviewList = reviewRes?.data?.reviews || [];
         const reviewMap = reviewList.reduce((acc, review) => {
-          if (!review?.tailor_id) {
+          if (!review?.order_id) {
             return acc;
           }
-          acc[review.tailor_id] = { rating: review.rating, order_id: review.order_id };
+          acc[review.order_id] = { rating: review.rating, order_id: review.order_id, tailor_id: review.tailor_id };
           return acc;
         }, {});
-        setReviewedTailors(reviewMap);
+        setReviewedOrders(reviewMap);
       } catch {
-        setReviewedTailors({});
+        setReviewedOrders({});
       }
       Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     } catch (err) { console.log(err); }
@@ -153,9 +153,9 @@ export default function CustomerOrders({ route }) {
         description: reviewDescription,
         order_id: reviewOrder.id,
       });
-      setReviewedTailors((prev) => ({
+      setReviewedOrders((prev) => ({
         ...prev,
-        [reviewOrder.tailor_email]: { rating: reviewRating, order_id: reviewOrder.id },
+        [reviewOrder.id]: { rating: reviewRating, order_id: reviewOrder.id, tailor_id: reviewOrder.tailor_email },
       }));
       setReviewModalVisible(false);
       Alert.alert("Thank you!", "Your review has been submitted.");
@@ -208,7 +208,7 @@ export default function CustomerOrders({ route }) {
             const isEditing = editingId === item.id && canEdit;
             const displayStatus = isCompleted && isOrderPaid ? "paid" : item.status;
             const statusCfg = getStatusCfg(displayStatus);
-            const existingReview = reviewedTailors[item.tailor_email];
+            const existingReview = reviewedOrders[item.id];
             const canReview = isOrderPaid && !existingReview;
 
             return (

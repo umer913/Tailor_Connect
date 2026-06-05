@@ -1,16 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import axios from 'axios';
 import React from 'react';
 import AdminDashboard from '../screens/Admin/AdminDashboard';
 import ManageComplain from '../screens/Admin/ManageComplain';
 import ManageCustomers from '../screens/Admin/ManageCustomers';
 import ManageOrders from '../screens/Admin/ManageOrders';
 import ManageTailors from '../screens/Admin/ManageTailors';
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 import BookAppointment from '../screens/Customer/BookAppointment';
 import BrowseTailors from '../screens/Customer/BrowseTailors';
 import CustomerChatbox from '../screens/Customer/CustomerChatbox';
@@ -29,6 +28,7 @@ import Signup from '../screens/Signup';
 import Start from '../screens/Start';
 import AddServices from '../screens/Tailor/AddServices';
 import Appointment from '../screens/Tailor/Appointment';
+import Earnings from '../screens/Tailor/Earnings';
 import MyOrders from '../screens/Tailor/MyOrders';
 import TailorChatbox from '../screens/Tailor/TailorChatbox';
 import TailorComplainbox from '../screens/Tailor/TailorComplainbox';
@@ -313,6 +313,7 @@ const App = () => {
         <Stack.Screen name="ManageCustomers" component={ManageCustomers} />
         <Stack.Screen name="ManageOrders" component={ManageOrders} />
         <Stack.Screen name="ManageComplain" component={ManageComplain} />
+        <Stack.Screen options={{ headerShown: false }} name="Earnings" component={Earnings} />
         <Stack.Screen options={{ headerShown: false }} name="TailorServices" component={TailorServices} />
         <Stack.Screen options={{ headerShown: false }} name="MyOrders" component={MyOrders} />
         <Stack.Screen options={{ headerShown: false }} name="Form" component={Form} />
