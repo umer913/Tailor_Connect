@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
@@ -57,6 +58,14 @@ const Forgot = ({ navigation }) => {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="arrow-back" size={20} color="#fff" />
+            </TouchableOpacity>
+
             <Text style={styles.title}>
               {step === 1 ? "Forgot Password" : "Reset Password"}
             </Text>
@@ -121,6 +130,18 @@ const Forgot = ({ navigation }) => {
 export default Forgot;
 
 const styles = StyleSheet.create({
+  backBtn: {
+    alignSelf: 'flex-start',
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(230,176,176,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 20,
