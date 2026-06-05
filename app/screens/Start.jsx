@@ -1,12 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef } from 'react';
 import {
-  Animated,
-  Dimensions,
-  Image,
-  SafeAreaView,
-  StyleSheet,
-  View
+    Animated,
+    Dimensions,
+    Image,
+    SafeAreaView,
+    StyleSheet,
+    View
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');

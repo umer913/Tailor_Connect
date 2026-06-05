@@ -3,7 +3,7 @@ export const createTailorController = ({ Profile, Service }) => {
     getTailors: async (_req, res) => {
       try {
         const data = await Profile.find({ role: "tailor" })
-          .select("_id full_name location phone_number email")
+          .select("_id full_name location phone_number email profile_image")
           .exec();
         res.json({ tailors: data });
       } catch (err) {
@@ -14,7 +14,7 @@ export const createTailorController = ({ Profile, Service }) => {
     getTailorsWithServices: async (_req, res) => {
       try {
         const tailors = await Profile.find({ role: "tailor" })
-          .select("_id full_name location phone_number email")
+          .select("_id full_name location phone_number email profile_image")
           .lean()
           .exec();
 

@@ -674,8 +674,12 @@ const BrowseTailors = ({ navigation, route }) => {
 
                 {/* Avatar + name */}
                 <LinearGradient colors={["rgba(157,42,75,0.2)", "rgba(214,64,106,0.1)"]} style={styles.imageWrap}>
-                  {tailor.profile_image_url ? (
-                    <Image source={{ uri: tailor.profile_image_url }} style={styles.image} resizeMode="contain" />
+                  {tailor.profile_image ? (
+                    <Image
+                      source={{ uri: resolveImageUrl(tailor.profile_image) }}
+                      style={styles.image}
+                      resizeMode="cover"
+                    />
                   ) : (
                     <Ionicons name="person" size={44} color="#E6B0B0" />
                   )}
@@ -1207,8 +1211,8 @@ const styles = StyleSheet.create({
   cardList: { gap: 18, width: '100%' },
   card: { backgroundColor: 'rgba(26,6,16,0.7)', borderRadius: 24, padding: 18, borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', shadowColor: '#9D2A4B', shadowOpacity: 0.15, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8, alignItems: 'center', width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   messageCardButton: { position: 'absolute', top: 12, right: 12, width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(157,42,75,0.2)', borderWidth: 1, borderColor: 'rgba(157,42,75,0.35)', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
-  imageWrap: { padding: 14, borderRadius: 20, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', alignItems: 'center', justifyContent: 'center' },
-  image: { width: 130, height: 80 },
+  imageWrap: { width: 90, height: 90, borderRadius: 45, marginBottom: 12, borderWidth: 2, borderColor: 'rgba(157,42,75,0.5)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  image: { width: 90, height: 90, borderRadius: 45 },
   name: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 12 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', marginBottom: 8, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12, backgroundColor: 'rgba(26,6,16,0.6)', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)' },
   ratingStars: { flexDirection: 'row', gap: 2, marginRight: 8 },
