@@ -17,13 +17,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { resolveImageUrl } from "../../api.js";
+import { API_BASE_URL, resolveImageUrl } from "../../api.js";
 
 const SCREEN_W = Dimensions.get('window').width;
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 1040 : IS_TABLET ? 860 : SCREEN_W;
-
-const API_BASE_URL = `${API_BASE_URL}`;
 
 const formatTime = (value) => {
   if (!value) return "";

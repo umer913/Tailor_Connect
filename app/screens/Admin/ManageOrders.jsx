@@ -3,15 +3,15 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { resolveImageUrl } from "../../api.js";
+import { API_BASE_URL, resolveImageUrl } from "../../api.js";
 
 export default function ManageOrders() {
   const [orders, setOrders] = useState([]);

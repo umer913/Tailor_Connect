@@ -6,16 +6,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Animated,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+    ActivityIndicator, Alert, Animated,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from 'react-native';
-import { resolveImageUrl } from '../../api.js';
+import { API_BASE_URL, resolveImageUrl } from '../../api.js';
 
 const TailorDashboard = ({ route, navigation }) => {
   const { email } = route.params;

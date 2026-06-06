@@ -3,17 +3,18 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Dimensions,
-  Image,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import { API_BASE_URL } from "../../api.js";
 
 const defaultImage = require("../../../assets/images/2Peice.png");
 const SCREEN_W = Dimensions.get("window").width;
@@ -265,9 +266,9 @@ const styles = StyleSheet.create({
   loaderText: { color: "#E6B0B0", marginTop: 12, fontSize: 15, fontWeight: "600" },
   list: { paddingHorizontal: PAGE_GUTTER, paddingBottom: 40, paddingTop: 16, width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
   card: {
-    backgroundColor: "rgba(26, 6, 16, 0.45)", borderRadius: 20, padding: 14,
-    marginBottom: 14, borderWidth: 1, borderColor: "rgba(157,42,75,0.2)",
-    shadowColor: "#9D2A4B", shadowOpacity: 0.12, shadowRadius: 10,
+    backgroundColor: "#1a0610", borderRadius: 20, padding: 14,
+    marginBottom: 14, borderWidth: 1, borderColor: "rgba(157,42,75,0.25)",
+    shadowColor: "#9D2A4B", shadowOpacity: 0.18, shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 }, elevation: 5,
     width: "100%",
     maxWidth: CONTENT_MAX_WIDTH,
@@ -277,9 +278,9 @@ const styles = StyleSheet.create({
   imageWrap: {
     width: 80, height: 90, borderRadius: 16,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(26, 6, 16, 0.45)",
+    backgroundColor: "#130509",
     marginRight: 14, overflow: "hidden",
-    borderWidth: 1, borderColor: "rgba(157,42,75,0.2)",
+    borderWidth: 1, borderColor: "rgba(157,42,75,0.25)",
   },
   image: { height: 95, width: 105, resizeMode: "contain" },
   cardInfo: { flex: 1 },

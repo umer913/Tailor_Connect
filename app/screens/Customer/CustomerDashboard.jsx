@@ -5,10 +5,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Animated, Dimensions, Easing, Platform, ScrollView,
-  StatusBar, StyleSheet, Text, TextInput,
-  TouchableOpacity, TouchableWithoutFeedback, View,
+    Animated, Dimensions, Easing, Platform, ScrollView,
+    StatusBar, StyleSheet, Text, TextInput,
+    TouchableOpacity, TouchableWithoutFeedback, View,
 } from 'react-native';
+import { API_BASE_URL } from '../../api.js';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const IS_TABLET = SCREEN_W >= 768;
@@ -162,29 +163,41 @@ export default function CustomerDashboard({ route, navigation }) {
           </TouchableOpacity>
 
           {/* ── Spotlight Banner ── */}
-          <TouchableOpacity style={styles.tailorBox} onPress={() => navigation.navigate('BrowseTailors', { CustomerEmail: email })} activeOpacity={0.9}>
-            <LinearGradient colors={['rgba(157,42,75,0.25)', 'rgba(214,64,106,0.1)']} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
-            <View style={styles.tailorAccent} />
-            <View style={styles.tailorContent}>
-              <View style={{ flex: 1, paddingRight: 10 }}>
-                <Text style={styles.tailorLabel}>EXPLORE</Text>
-                <Text style={styles.tailorText}>Find Your{'\n'}Perfect Tailor</Text>
-                <View style={styles.tailorArrowRow}>
-                  <Text style={styles.tailorCta}>Browse now</Text>
-                  <Ionicons name="arrow-forward" size={14} color="#E6B0B0" style={{ marginLeft: 6 }} />
-                </View>
-              </View>
-              <Animated.Image
-                source={tailorImages[currentTailorImageIndex]}
-                style={[styles.tailorImage, { opacity: fadeTailor }]}
-                resizeMode="contain"
+          <TouchableOpacity onPress={() => navigation.navigate('BrowseTailors', { CustomerEmail: email })} activeOpacity={0.9} style={styles.tailorBoxOuter}>
+            <LinearGradient
+              colors={['#2a0d1a', '#1f0a15', '#180812']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.tailorBox}
+            >
+              <LinearGradient
+                colors={['rgba(157,42,75,0.35)', 'rgba(214,64,106,0.15)']}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
               />
-            </View>
-            <View style={styles.dotsRow}>
-              {tailorImages.map((_, i) => (
-                <View key={i} style={[styles.dot, i === currentTailorImageIndex && styles.dotActive]} />
-              ))}
-            </View>
+              <View style={styles.tailorAccent} />
+              <View style={styles.tailorContent}>
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <Text style={styles.tailorLabel}>EXPLORE</Text>
+                  <Text style={styles.tailorText}>Find Your{'\n'}Perfect Tailor</Text>
+                  <View style={styles.tailorArrowRow}>
+                    <Text style={styles.tailorCta}>Browse now</Text>
+                    <Ionicons name="arrow-forward" size={14} color="#E6B0B0" style={{ marginLeft: 6 }} />
+                  </View>
+                </View>
+                <Animated.Image
+                  source={tailorImages[currentTailorImageIndex]}
+                  style={[styles.tailorImage, { opacity: fadeTailor }]}
+                  resizeMode="contain"
+                />
+              </View>
+              <View style={styles.dotsRow}>
+                {tailorImages.map((_, i) => (
+                  <View key={i} style={[styles.dot, i === currentTailorImageIndex && styles.dotActive]} />
+                ))}
+              </View>
+            </LinearGradient>
           </TouchableOpacity>
 
           {/* ── Action Cards ── */}
@@ -342,7 +355,8 @@ const styles = StyleSheet.create({
   locationText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
   // Tailor Spotlight
-  tailorBox: { backgroundColor: 'transparent', borderRadius: 24, paddingVertical: 22, paddingHorizontal: 22, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(157,42,75,0.25)', overflow: 'hidden', shadowColor: '#9D2A4B', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  tailorBoxOuter: { borderRadius: 24, marginBottom: 24, shadowColor: '#9D2A4B', shadowOpacity: 0.3, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  tailorBox: { borderRadius: 24, paddingVertical: 22, paddingHorizontal: 22, borderWidth: 1, borderColor: 'rgba(157,42,75,0.3)', overflow: 'hidden' },
   tailorAccent: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: '#9D2A4B' },
   tailorContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   tailorLabel: { fontSize: 10, color: '#E6B0B0', fontWeight: '800', letterSpacing: 2, marginBottom: 6 },

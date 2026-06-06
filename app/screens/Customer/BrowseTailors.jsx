@@ -5,25 +5,24 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Dimensions,
-  Easing,
-  Image,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Dimensions,
+    Easing,
+    Image,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { resolveImageUrl } from "../../api.js";
+import { API_BASE_URL, resolveImageUrl } from "../../api.js";
 
-const API_BASE_URL = `${API_BASE_URL}`;
 const DEFAULT_PRICE_CEILING = 100000;
 const FILTER_DRAWER_WIDTH = Math.min(Dimensions.get("window").width * 0.84, 360);
 const SCREEN_W = Dimensions.get("window").width;
@@ -1132,7 +1131,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 12, color: '#E6B0B0', fontWeight: '600', marginTop: 2 },
   // ── Search ──
-  searchBox: { backgroundColor: 'rgba(26,6,16,0.7)', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 14, borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', marginBottom: 18, flexDirection: 'row', alignItems: 'center' },
+  searchBox: { backgroundColor: '#1a0610', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 14, borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', marginBottom: 18, flexDirection: 'row', alignItems: 'center' },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, color: '#fff', fontSize: 14, fontWeight: '600', paddingVertical: 0 },
   // ── Filters Panel (inline) ──
@@ -1210,12 +1209,12 @@ const styles = StyleSheet.create({
   resolvingText: { color: '#E6B0B0', fontSize: 12, fontWeight: '600', marginLeft: 8 },
   // ── Cards ──
   cardList: { gap: 18, width: '100%' },
-  card: { backgroundColor: 'rgba(26,6,16,0.7)', borderRadius: 24, padding: 18, borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', shadowColor: '#9D2A4B', shadowOpacity: 0.15, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8, alignItems: 'center', width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  card: { backgroundColor: '#1a0610', borderRadius: 24, padding: 18, borderWidth: 1, borderColor: 'rgba(157,42,75,0.25)', shadowColor: '#9D2A4B', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8, alignItems: 'center', width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   messageCardButton: { position: 'absolute', top: 12, right: 12, width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(157,42,75,0.2)', borderWidth: 1, borderColor: 'rgba(157,42,75,0.35)', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
   imageWrap: { width: 90, height: 90, borderRadius: 45, marginBottom: 12, borderWidth: 2, borderColor: 'rgba(157,42,75,0.5)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   image: { width: 90, height: 90, borderRadius: 45 },
   name: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 12 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', marginBottom: 8, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12, backgroundColor: 'rgba(26,6,16,0.6)', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)' },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', marginBottom: 8, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12, backgroundColor: '#130509', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)' },
   ratingStars: { flexDirection: 'row', gap: 2, marginRight: 8 },
   ratingText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, alignSelf: 'stretch' },
@@ -1231,7 +1230,7 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   secondaryButtonText: { color: '#ffffffff', fontSize: 12, fontWeight: '700' },
   // ── Empty ──
-  emptyCard: { borderRadius: 24, paddingVertical: 50, paddingHorizontal: 24, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', backgroundColor: 'rgba(26,6,16,0.5)', width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  emptyCard: { borderRadius: 24, paddingVertical: 50, paddingHorizontal: 24, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(157,42,75,0.2)', backgroundColor: '#1a0610', width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
   emptyIconWrap: { width: 90, height: 90, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderWidth: 1, borderColor: 'rgba(157,42,75,0.3)' },
   emptyTitle: { color: '#fff', fontSize: 20, fontWeight: '800', marginTop: 4 },
   emptyText: { color: '#E6B0B0', fontSize: 14, fontWeight: '600', marginTop: 8, textAlign: 'center', lineHeight: 21 },

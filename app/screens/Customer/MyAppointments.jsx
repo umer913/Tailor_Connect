@@ -3,19 +3,20 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Dimensions,
-  FlatList,
-  Platform,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Dimensions,
+    FlatList,
+    Platform,
+    Pressable,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import { API_BASE_URL } from "../../api.js";
 
 const STATUS_CONFIG = {
   accepted: { colors: ["#065f46", "#10b981"], icon: "checkmark-circle", label: "ACCEPTED" },
@@ -224,12 +225,12 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 22,
     marginBottom: 16,
-    backgroundColor: "rgba(26, 6, 16, 0.45)",
+    backgroundColor: "#1a0610",
     borderWidth: 1,
-    borderColor: "rgba(157,42,75,0.2)",
+    borderColor: "rgba(157,42,75,0.25)",
     overflow: "hidden",
     shadowColor: "#9D2A4B",
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,

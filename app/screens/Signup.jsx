@@ -1,20 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { API_BASE_URL } from "../api.js";
 
 const Signup = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -159,15 +159,22 @@ const Signup = ({ navigation }) => {
                   </View>
 
                   <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={role}
-                      onValueChange={(itemValue) => setRole(itemValue)}
-                      style={styles.picker}
-                      itemStyle={{ color: '#fff' }}
+                    <TouchableOpacity
+                      style={[styles.roleButton, role === "customer" && styles.roleButtonActive]}
+                      onPress={() => setRole("customer")}
                     >
-                      <Picker.Item label="Customer" value="customer" color='#fff' />
-                      <Picker.Item label="Tailor" value="tailor" color='#fff' />
-                    </Picker>
+                      <Text style={[styles.roleButtonText, role === "customer" && styles.roleButtonTextActive]}>
+                        Customer
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.roleButton, role === "tailor" && styles.roleButtonActive]}
+                      onPress={() => setRole("tailor")}
+                    >
+                      <Text style={[styles.roleButtonText, role === "tailor" && styles.roleButtonTextActive]}>
+                        Tailor
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                   {role === "tailor" && (
                     <TextInput
@@ -269,18 +276,29 @@ const styles = StyleSheet.create({
 
   pickerContainer: {
     width: "100%",
+    flexDirection: "row",
     borderWidth: 1,
     borderColor: 'rgba(230, 176, 176, 0.2)',
     borderRadius: 10,
     marginBottom: 15,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    height: 140,
-    justifyContent: "center",
     overflow: "hidden",
   },
-
-  picker: {
-    width: "100%",
+  roleButton: {
+    flex: 1,
+    paddingVertical: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roleButtonActive: {
+    backgroundColor: '#9D2A4B',
+  },
+  roleButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: 'rgba(255, 255, 255, 0.5)',
+  },
+  roleButtonTextActive: {
     color: '#fff',
   },
   button: {

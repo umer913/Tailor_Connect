@@ -4,15 +4,16 @@ import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
-  Dimensions,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { API_BASE_URL } from '../../api.js';
 
 const TYPE_CONFIG = {
   appointment: { icon: 'calendar', gradient: ['#9D2A4B', '#5c1428'], label: 'Appointment' },
