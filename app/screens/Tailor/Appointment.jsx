@@ -32,7 +32,7 @@ export default function Appointment({ route, navigation }) {
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`https://tailorconnect-production.up.railway.app/appointments/tailor-appointments`, {
+      const response = await axios.get(`${API_BASE_URL}/appointments/tailor-appointments`, {
         params: { email: tailorEmail }
       });
       setAppointments(response.data.appointments || []);
@@ -49,12 +49,12 @@ export default function Appointment({ route, navigation }) {
       setUpdating(appointmentId);
       const appointment = appointments.find(apt => apt.id === appointmentId);
       if (String(newStatus).toLowerCase() === "rejected") {
-        await axios.delete(`https://tailorconnect-production.up.railway.app/appointments/delete-appointment/${appointmentId}`);
+        await axios.delete(`${API_BASE_URL}/appointments/delete-appointment/${appointmentId}`);
         Alert.alert("Success", "Appointment rejected and deleted");
         setAppointments(prev => prev.filter(apt => apt.id !== appointmentId));
       } else {
         await axios.put(
-          `https://tailorconnect-production.up.railway.app/appointments/update-appointment-status`,
+          `${API_BASE_URL}/appointments/update-appointment-status`,
           {
             id: appointmentId,
             status: newStatus,
@@ -78,7 +78,7 @@ export default function Appointment({ route, navigation }) {
   const handleDelete = async (appointmentId) => {
     try {
       setUpdating(appointmentId);
-      await axios.delete(`https://tailorconnect-production.up.railway.app/appointments/delete-appointment/${appointmentId}`);
+      await axios.delete(`${API_BASE_URL}/appointments/delete-appointment/${appointmentId}`);
       Alert.alert("Success", "Appointment deleted successfully");
       setAppointments(prev => prev.filter(apt => apt.id !== appointmentId));
     } catch (error) {

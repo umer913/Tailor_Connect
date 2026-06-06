@@ -17,16 +17,16 @@ import {
   View,
 } from "react-native";
 
-const SERVER = "https://tailorconnect-production.up.railway.app";
+const SERVER = `${API_BASE_URL}`;
 
 const SPECIAL_ISSUES = ["Customer Misbehaviour", "Payment Not Received", "Order Cancellation"];
 
 const ISSUE_OPTIONS = [
-  { label: "General Platform Issue", value: "General",               icon: "help-circle-outline" },
-  { label: "Customer Misbehaviour",  value: "Customer Misbehaviour", icon: "people-outline" },
-  { label: "Payment Not Received",   value: "Payment Not Received",  icon: "card-outline" },
-  { label: "Order Cancellation",     value: "Order Cancellation",    icon: "close-circle-outline" },
-  { label: "Other",                  value: "Other",                 icon: "ellipsis-horizontal-outline" },
+  { label: "General Platform Issue", value: "General", icon: "help-circle-outline" },
+  { label: "Customer Misbehaviour", value: "Customer Misbehaviour", icon: "people-outline" },
+  { label: "Payment Not Received", value: "Payment Not Received", icon: "card-outline" },
+  { label: "Order Cancellation", value: "Order Cancellation", icon: "close-circle-outline" },
+  { label: "Other", value: "Other", icon: "ellipsis-horizontal-outline" },
 ];
 
 const getIssueIcon = (type) => {
@@ -88,10 +88,10 @@ const parseDescriptionToMessages = (descriptionText, adminResponse, resolvedAt, 
   return messages;
 };
 
-const SCREEN_W        = Dimensions.get("window").width;
-const IS_TABLET       = SCREEN_W >= 768;
-const CONTENT_MAX_W   = SCREEN_W >= 1024 ? 920 : IS_TABLET ? 760 : SCREEN_W;
-const PAGE_GUTTER     = IS_TABLET ? 28 : 20;
+const SCREEN_W = Dimensions.get("window").width;
+const IS_TABLET = SCREEN_W >= 768;
+const CONTENT_MAX_W = SCREEN_W >= 1024 ? 920 : IS_TABLET ? 760 : SCREEN_W;
+const PAGE_GUTTER = IS_TABLET ? 28 : 20;
 
 // ── Styled input sub-component ─────────────────────────────────────────────
 const StyledInput = ({ placeholder, value, onChangeText, multiline, icon }) => {
@@ -129,17 +129,17 @@ const StyledInput = ({ placeholder, value, onChangeText, multiline, icon }) => {
 export default function TailorComplainBox({ route, navigation }) {
   const email = route.params?.email;
 
-  const [selectedIssue,    setSelectedIssue]    = useState("");
-  const [againstEmail,     setAgainstEmail]      = useState("");
-  const [orderId,          setOrderId]           = useState("");
-  const [subject,          setSubject]           = useState("");
-  const [description,      setDescription]       = useState("");
-  const [image,            setImage]             = useState(null);
-  const [complaints,       setComplaints]        = useState([]);
-  const [followUps,        setFollowUps]         = useState({});
-  const [activeTab,        setActiveTab]         = useState("new");
-  const [expandedId,       setExpandedId]        = useState(null);
-  const [showPickerModal,  setShowPickerModal]   = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState("");
+  const [againstEmail, setAgainstEmail] = useState("");
+  const [orderId, setOrderId] = useState("");
+  const [subject, setSubject] = useState("");
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState(null);
+  const [complaints, setComplaints] = useState([]);
+  const [followUps, setFollowUps] = useState({});
+  const [activeTab, setActiveTab] = useState("new");
+  const [expandedId, setExpandedId] = useState(null);
+  const [showPickerModal, setShowPickerModal] = useState(false);
 
   const shouldShowFields = SPECIAL_ISSUES.includes(selectedIssue);
 
@@ -148,9 +148,9 @@ export default function TailorComplainBox({ route, navigation }) {
     setSubject(""); setDescription(""); setImage(null);
   };
 
-  const setFollowUpText  = (id, text) => setFollowUps((p) => ({ ...p, [id]: text }));
-  const clearFollowUpText = (id)      => setFollowUps((p) => ({ ...p, [id]: "" }));
-  const toggleExpand     = (id)       => setExpandedId((p) => (p === id ? null : id));
+  const setFollowUpText = (id, text) => setFollowUps((p) => ({ ...p, [id]: text }));
+  const clearFollowUpText = (id) => setFollowUps((p) => ({ ...p, [id]: "" }));
+  const toggleExpand = (id) => setExpandedId((p) => (p === id ? null : id));
 
   const fetchComplaints = async () => {
     try {
@@ -185,9 +185,9 @@ export default function TailorComplainBox({ route, navigation }) {
     try {
       await axios.post(`${SERVER}/complaints/file-complaint`, {
         filed_by_email: email,
-        filed_by_role:  "tailor",
-        against_email:  againstEmail || null,
-        order_id:       orderId      || null,
+        filed_by_role: "tailor",
+        against_email: againstEmail || null,
+        order_id: orderId || null,
         complaint_type: selectedIssue,
         subject,
         description,
@@ -228,7 +228,7 @@ export default function TailorComplainBox({ route, navigation }) {
         style={styles.header}
       >
         <View style={styles.headerInner}>
-          
+
           <View style={styles.headerIconWrap}>
             <Ionicons name="megaphone-outline" size={22} color="#F59E0B" />
           </View>
@@ -310,12 +310,12 @@ export default function TailorComplainBox({ route, navigation }) {
             {shouldShowFields && (
               <>
                 <StyledInput placeholder="Customer Email *" value={againstEmail} onChangeText={setAgainstEmail} icon="mail-outline" />
-                <StyledInput placeholder="Order ID *"       value={orderId}      onChangeText={setOrderId}      icon="receipt-outline" />
+                <StyledInput placeholder="Order ID *" value={orderId} onChangeText={setOrderId} icon="receipt-outline" />
               </>
             )}
 
-            <StyledInput placeholder="Subject *"     value={subject}      onChangeText={setSubject}      icon="document-text-outline" />
-            <StyledInput placeholder="Description *" value={description}  onChangeText={setDescription}  multiline icon="create-outline" />
+            <StyledInput placeholder="Subject *" value={subject} onChangeText={setSubject} icon="document-text-outline" />
+            <StyledInput placeholder="Description *" value={description} onChangeText={setDescription} multiline icon="create-outline" />
 
             {/* Image upload — no expo-image-picker used, just placeholder button */}
             <TouchableOpacity style={styles.imageButton} activeOpacity={0.8}>
@@ -359,7 +359,7 @@ export default function TailorComplainBox({ route, navigation }) {
                   onPress={() => setActiveTab("new")}
                   activeOpacity={0.8}
                 >
-                  <LinearGradient colors={["#F59E0B","#D97706"]} style={styles.emptyButtonGrad}>
+                  <LinearGradient colors={["#F59E0B", "#D97706"]} style={styles.emptyButtonGrad}>
                     <Text style={styles.emptyButtonText}>File Your First Complaint</Text>
                   </LinearGradient>
                 </TouchableOpacity>
@@ -404,7 +404,7 @@ export default function TailorComplainBox({ route, navigation }) {
                       <View style={{ flexDirection: "row", alignItems: "center" }}>
                         <View style={[styles.statusBadge, {
                           backgroundColor: item.resolved_at ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)",
-                          borderColor:     item.resolved_at ? "rgba(16,185,129,0.3)"  : "rgba(245,158,11,0.3)",
+                          borderColor: item.resolved_at ? "rgba(16,185,129,0.3)" : "rgba(245,158,11,0.3)",
                         }]}>
                           <View style={[styles.statusDot, { backgroundColor: item.resolved_at ? "#10b981" : "#F59E0B" }]} />
                           <Text style={[styles.statusText, { color: item.resolved_at ? "#10b981" : "#F59E0B" }]}>
@@ -589,11 +589,11 @@ export default function TailorComplainBox({ route, navigation }) {
 const styles = StyleSheet.create({
   // Header
   header: {
-    paddingTop:       Platform.OS === "ios" ? 56 : 42,
-    paddingBottom:    24,
+    paddingTop: Platform.OS === "ios" ? 56 : 42,
+    paddingBottom: 24,
     paddingHorizontal: PAGE_GUTTER,
   },
-  headerInner:    { flexDirection: "row", alignItems: "center", gap: 0 },
+  headerInner: { flexDirection: "row", alignItems: "center", gap: 0 },
   backBtn: {
     width: 38, height: 38, borderRadius: 11,
     backgroundColor: "rgba(255,255,255,0.06)",
@@ -607,8 +607,8 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(245,158,11,0.25)",
     alignItems: "center", justifyContent: "center",
   },
-  headerTitle:    { color: "#fff",     fontSize: 21, fontWeight: "800" },
-  headerSubtitle: { color: "#94a3b8",  fontSize: 13, fontWeight: "600", marginTop: 2 },
+  headerTitle: { color: "#fff", fontSize: 21, fontWeight: "800" },
+  headerSubtitle: { color: "#94a3b8", fontSize: 13, fontWeight: "600", marginTop: 2 },
 
   // Tab bar
   tabBar: {
@@ -633,8 +633,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(245,158,11,0.15)",
     borderWidth: 1, borderColor: "rgba(245,158,11,0.35)",
   },
-  tabButtonText:       { color: "#64748b", fontSize: 14, fontWeight: "600" },
-  tabButtonTextActive: { color: "#fff",    fontSize: 14, fontWeight: "800" },
+  tabButtonText: { color: "#64748b", fontSize: 14, fontWeight: "600" },
+  tabButtonTextActive: { color: "#fff", fontSize: 14, fontWeight: "800" },
   badge: {
     backgroundColor: "#F59E0B", borderRadius: 10,
     paddingHorizontal: 7, paddingVertical: 2, marginLeft: 6,
@@ -655,8 +655,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionHeader: { flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 10 },
-  sectionDot:    { width: 4, height: 18, borderRadius: 2 },
-  sectionTitle:  { fontSize: 18, fontWeight: "800", color: "#fff" },
+  sectionDot: { width: 4, height: 18, borderRadius: 2 },
+  sectionTitle: { fontSize: 18, fontWeight: "800", color: "#fff" },
 
   // Custom picker button
   customPicker: {
@@ -668,8 +668,8 @@ const styles = StyleSheet.create({
   pickerText: { color: "#fff", fontSize: 14, fontWeight: "500" },
 
   // Inputs
-  inputWrap:    { position: "relative", marginBottom: 12 },
-  inputIcon:    { position: "absolute", left: 12, top: 14, zIndex: 1 },
+  inputWrap: { position: "relative", marginBottom: 12 },
+  inputIcon: { position: "absolute", left: 12, top: 14, zIndex: 1 },
   input: {
     backgroundColor: "rgba(15,23,42,0.5)",
     borderWidth: 1, borderColor: "rgba(59,130,246,0.18)",
@@ -689,9 +689,9 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(245,158,11,0.2)", borderStyle: "dashed",
   },
   imageButtonText: { color: "#F59E0B", fontWeight: "700", fontSize: 14 },
-  previewWrap:     { position: "relative", marginVertical: 12 },
-  previewImage:    { width: "100%", height: 180, borderRadius: 14 },
-  removeImgBtn:    { position: "absolute", top: 8, right: 8, backgroundColor: "#fff", borderRadius: 12 },
+  previewWrap: { position: "relative", marginVertical: 12 },
+  previewImage: { width: "100%", height: 180, borderRadius: 14 },
+  removeImgBtn: { position: "absolute", top: 8, right: 8, backgroundColor: "#fff", borderRadius: 12 },
 
   // Submit
   submitButton: {
@@ -704,10 +704,10 @@ const styles = StyleSheet.create({
   listSection: { width: "100%", maxWidth: CONTENT_MAX_W, alignSelf: "center" },
 
   // Empty state
-  emptyWrap:       { alignItems: "center", paddingVertical: 60 },
-  emptyIconBox:    { width: 80, height: 80, borderRadius: 24, backgroundColor: "rgba(245,158,11,0.08)", alignItems: "center", justifyContent: "center", marginBottom: 16 },
-  emptyText:       { color: "#94a3b8", fontSize: 15, fontWeight: "700", marginBottom: 20 },
-  emptyButton:     { borderRadius: 14, overflow: "hidden" },
+  emptyWrap: { alignItems: "center", paddingVertical: 60 },
+  emptyIconBox: { width: 80, height: 80, borderRadius: 24, backgroundColor: "rgba(245,158,11,0.08)", alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  emptyText: { color: "#94a3b8", fontSize: 15, fontWeight: "700", marginBottom: 20 },
+  emptyButton: { borderRadius: 14, overflow: "hidden" },
   emptyButtonGrad: { paddingVertical: 13, paddingHorizontal: 28 },
   emptyButtonText: { color: "#fff", fontWeight: "800", fontSize: 14 },
 
@@ -728,25 +728,25 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(245,158,11,0.2)",
     alignItems: "center", justifyContent: "center", marginRight: 12,
   },
-  cardTitle:        { color: "#fff",     fontSize: 14, fontWeight: "800" },
-  cardCategoryText: { color: "#F59E0B",  fontSize: 11, fontWeight: "700" },
-  cardTimeText:     { color: "#475569",  fontSize: 11, fontWeight: "600" },
-  dotSeparator:     { width: 3, height: 3, borderRadius: 2, backgroundColor: "#475569", marginHorizontal: 6 },
+  cardTitle: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  cardCategoryText: { color: "#F59E0B", fontSize: 11, fontWeight: "700" },
+  cardTimeText: { color: "#475569", fontSize: 11, fontWeight: "600" },
+  dotSeparator: { width: 3, height: 3, borderRadius: 2, backgroundColor: "#475569", marginHorizontal: 6 },
 
   statusBadge: {
     flexDirection: "row", alignItems: "center",
     paddingHorizontal: 8, paddingVertical: 4,
     borderRadius: 20, borderWidth: 1, gap: 4,
   },
-  statusDot:   { width: 6, height: 6, borderRadius: 3 },
-  statusText:  { fontSize: 11, fontWeight: "800" },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusText: { fontSize: 11, fontWeight: "800" },
 
   // Expanded body
-  cardDetails:  { paddingHorizontal: 16, paddingBottom: 16 },
-  cardDivider:  { height: 1, backgroundColor: "rgba(59,130,246,0.12)", marginBottom: 14 },
+  cardDetails: { paddingHorizontal: 16, paddingBottom: 16 },
+  cardDivider: { height: 1, backgroundColor: "rgba(59,130,246,0.12)", marginBottom: 14 },
   detailsLabel: { color: "#64748b", fontSize: 10, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
 
-  metaRow:       { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
+  metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
   metaBadge: {
     flexDirection: "row", alignItems: "center",
     backgroundColor: "rgba(245,158,11,0.1)",
@@ -758,10 +758,10 @@ const styles = StyleSheet.create({
   cardImage: { width: "100%", height: 150, borderRadius: 14, marginBottom: 12 },
 
   // Chat
-  chatSection:    { marginBottom: 14 },
-  chatContainer:  { gap: 10 },
+  chatSection: { marginBottom: 14 },
+  chatContainer: { gap: 10 },
   chatMessageRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
-  chatMessageRowUser:  { justifyContent: "flex-end" },
+  chatMessageRowUser: { justifyContent: "flex-end" },
   chatMessageRowAdmin: { justifyContent: "flex-start" },
 
   chatAvatarUser: {
@@ -792,7 +792,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4,
   },
   chatMessageText: { color: "#e2e8f0", fontSize: 13, lineHeight: 18 },
-  chatBubbleTime:  { color: "#475569", fontSize: 10, fontWeight: "600", marginTop: 4 },
+  chatBubbleTime: { color: "#475569", fontSize: 10, fontWeight: "600", marginTop: 4 },
 
   // Follow-up input
   chatInputWrapper: {
@@ -837,16 +837,16 @@ const styles = StyleSheet.create({
     alignItems: "center", marginBottom: 14, paddingBottom: 12,
     borderBottomWidth: 1, borderBottomColor: "rgba(59,130,246,0.12)",
   },
-  modalTitle:   { color: "#fff", fontSize: 17, fontWeight: "800" },
+  modalTitle: { color: "#fff", fontSize: 17, fontWeight: "800" },
   modalOption: {
     flexDirection: "row", alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 12, paddingHorizontal: 10,
     borderRadius: 12, marginVertical: 3,
   },
-  modalOptionSelected:       { backgroundColor: "rgba(245,158,11,0.12)" },
-  modalOptionText:            { color: "#94a3b8", fontSize: 14, fontWeight: "600" },
-  modalOptionTextSelected:    { color: "#fff",    fontWeight: "800" },
+  modalOptionSelected: { backgroundColor: "rgba(245,158,11,0.12)" },
+  modalOptionText: { color: "#94a3b8", fontSize: 14, fontWeight: "600" },
+  modalOptionTextSelected: { color: "#fff", fontWeight: "800" },
   modalOptionIconWrap: {
     width: 32, height: 32, borderRadius: 9,
     backgroundColor: "rgba(245,158,11,0.08)",

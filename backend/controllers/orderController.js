@@ -128,7 +128,7 @@ export const createOrderController = ({
     getOrders: async (req, res) => {
       const { email } = req.query;
       try {
-        const filter = email ? { customer_email: email } : {};
+        const filter = email ? { customer_email: email, is_deleted: { $ne: true } } : { is_deleted: { $ne: true } };
         const data = await Order.find(filter).sort({ created_at: -1 }).exec();
         res.json({ orders: data });
       } catch (error) {
@@ -137,11 +137,12 @@ export const createOrderController = ({
       }
     },
 
+
     deleteOrder: async (req, res) => {
       const { id } = req.params;
 
       try {
-        console.log(`\n[DELETE ORDER] Deleting order ${id}`);
+        console.log(`\n[DELETE ORDER] Soft-deleting order ${id}`);
 
         const order = await Order.findById(id).exec();
 
@@ -154,8 +155,9 @@ export const createOrderController = ({
         const serviceType = order.service_type || "Order";
         console.log(`[DELETE ORDER] Found order for customer: ${customerEmail}`);
 
-        await Order.deleteOne({ _id: id });
-        console.log("[DELETE ORDER] Order deleted from DB");
+        // Soft delete — mark as deleted so earnings history is preserved
+        await Order.updateOne({ _id: id }, { is_deleted: true });
+        console.log("[DELETE ORDER] Order soft-deleted in DB");
 
         try {
           await transporter.sendMail({
@@ -182,13 +184,29 @@ export const createOrderController = ({
       const { email } = req.query;
 
       try {
-        const data = await Order.find({ tailor_email: email })
+        const data = await Order.find({ tailor_email: email, is_deleted: { $ne: true } })
           .sort({ created_at: -1 })
           .exec();
 
         res.json({ orders: data || [] });
       } catch (err) {
         console.error("Error fetching tailor orders:", err);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
+    },
+
+    // Earnings endpoint — includes soft-deleted orders so earnings are never lost
+    tailorEarnings: async (req, res) => {
+      const { email } = req.query;
+
+      try {
+        const data = await Order.find({ tailor_email: email })
+          .sort({ created_at: -1 })
+          .exec();
+
+        res.json({ orders: data || [] });
+      } catch (err) {
+        console.error("Error fetching tailor earnings:", err);
         res.status(500).json({ error: "Internal Server Error" });
       }
     },
@@ -307,12 +325,22 @@ export const createOrderController = ({
       try {
         const { orderId, measurements, quantity } = req.body;
 
-        if (!orderId || !measurements) {
-          return res.status(400).json({ error: "Missing data" });
+        if (!orderId) {
+          return res.status(400).json({ error: "Missing orderId" });
+        }
+
+        // Safely parse measurements — guard against undefined/null/"undefined" strings
+        let parsedMeasurements = {};
+        if (measurements && measurements !== "undefined" && measurements !== "null") {
+          try {
+            parsedMeasurements = JSON.parse(measurements);
+          } catch {
+            parsedMeasurements = {};
+          }
         }
 
         const updateData = {
-          measurements: JSON.parse(measurements),
+          measurements: parsedMeasurements,
           updated_at: new Date().toISOString(),
         };
 

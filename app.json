@@ -3,6 +3,12 @@
     "name": "fypApp",
     "slug": "fypApp",
     "version": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/307f727f-acb1-4dbe-afd7-8ad789388109"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "fypapp",

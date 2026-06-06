@@ -130,8 +130,14 @@ export const createReviewController = ({ TailorReview, Order, toSafeRating }) =>
           updated_at: new Date(),
         };
 
+        // Match on order_id (when provided) so each paid order gets its own review.
+        // Fallback to customer+tailor pair for reviews without an order_id.
+        const filter = order_id
+          ? { order_id }
+          : { customer_id, tailor_id };
+
         const data = await TailorReview.findOneAndUpdate(
-          { customer_id, tailor_id },
+          filter,
           payload,
           { upsert: true, new: true, setDefaultsOnInsert: true }
         ).exec();

@@ -18,7 +18,7 @@ import {
   View,
 } from "react-native";
 
-const SERVER = "https://tailorconnect-production.up.railway.app";
+const SERVER = `${API_BASE_URL}`;
 const SPECIAL_ISSUES = ["Payment Issue", "Late Delivery", "Wrong Measurement", "Bad Stitching", "Misbehaviour"];
 const ISSUE_OPTIONS = [
   { label: "General", value: "General", icon: "help-circle-outline" },
@@ -68,7 +68,7 @@ const parseDescriptionToMessages = (descriptionText, adminResponse, resolvedAt, 
   const followUpRegex = /\[Follow-up ([^\]]+)\]/g;
   let match;
   const positions = [];
-  
+
   while ((match = followUpRegex.exec(descriptionText)) !== null) {
     positions.push({
       index: match.index,
@@ -100,7 +100,7 @@ const parseDescriptionToMessages = (descriptionText, adminResponse, resolvedAt, 
       const startOfText = current.index + current.length;
       const endOfText = (i + 1 < positions.length) ? positions[i + 1].index : descriptionText.length;
       const msgText = descriptionText.substring(startOfText, endOfText).trim();
-      
+
       messages.push({
         sender: "user",
         text: msgText,
@@ -388,7 +388,7 @@ export default function CustomerComplainBox({ route }) {
                           </View>
                         </View>
                       </View>
-                      
+
                       <View style={{ flexDirection: "row", alignItems: "center" }}>
                         <View style={[styles.statusBadge, {
                           backgroundColor: item.resolved_at ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)",
@@ -411,7 +411,7 @@ export default function CustomerComplainBox({ route }) {
                     {isExpanded && (
                       <View style={styles.cardDetails}>
                         <View style={styles.cardDivider} />
-                        
+
                         {/* Meta Fields Badge Row */}
                         {(item.against_email || item.order_id) && (
                           <View style={styles.metaRow}>
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
   headerTitle: { color: "#fff", fontSize: 22, fontWeight: "800" },
   headerSubtitle: { color: "#E6B0B0", marginTop: 2, fontSize: 13, fontWeight: "600" },
   scrollContent: { paddingHorizontal: PAGE_GUTTER, paddingBottom: 50, paddingTop: 12, width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
-  
+
   // Segmented Tabs
   tabBar: {
     flexDirection: "row",
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
   inputWrap: { position: "relative", marginVertical: 6 },
   inputIcon: { position: "absolute", left: 12, top: 14, zIndex: 1 },
   pickerIcon: { position: "absolute", left: 12, top: 14, zIndex: 1 },
-  
+
   // Custom Picker (Dropdown Button)
   customPicker: {
     flexDirection: "row",

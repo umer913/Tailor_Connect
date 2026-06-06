@@ -135,7 +135,7 @@ export default function TailorServices({ route, navigation }) {
 
   const fetchServices = async () => {
     try {
-      const res = await axios.get(`https://tailorconnect-production.up.railway.app/services/get-tailor-services`, { params: { email } });
+      const res = await axios.get(`${API_BASE_URL}/services/get-tailor-services`, { params: { email } });
       setServices(res.data.services || []);
     } catch (error) { console.log(error); }
     setLoading(false);

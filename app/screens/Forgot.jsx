@@ -24,7 +24,7 @@ const Forgot = ({ navigation }) => {
   const handleSendOTP = async () => {
     if (!email) return Alert.alert("Error", "Please enter your email");
     try {
-      const res = await axios.post("https://tailorconnect-production.up.railway.app/auth/forgot-password", { email });
+      const res = await axios.post(`${API_BASE_URL}/auth/forgot-password`, { email });
       Alert.alert("Success", res.data.message || "OTP sent to your email");
       setStep(3);
     } catch (err) {
@@ -38,7 +38,7 @@ const Forgot = ({ navigation }) => {
       return Alert.alert("Error", "Please enter all fields");
 
     try {
-      const res = await axios.post("https://tailorconnect-production.up.railway.app/auth/reset-password", {
+      const res = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
         email,
         otp,
         newPassword,

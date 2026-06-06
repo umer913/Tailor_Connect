@@ -4,15 +4,15 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -52,7 +52,7 @@ const Signup = ({ navigation }) => {
 
     try {
       await axios.post(
-        "https://tailorconnect-production.up.railway.app/auth/signup",
+        `${API_BASE_URL}/auth/signup`,
         { full_name, email, password, cnic, role },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -69,7 +69,7 @@ const Signup = ({ navigation }) => {
 
     try {
       await axios.post(
-        "https://tailorconnect-production.up.railway.app/auth/verify-otp",
+        `${API_BASE_URL}/auth/verify-otp`,
         { email, otp },
         { headers: { "Content-Type": "application/json" } }
       );

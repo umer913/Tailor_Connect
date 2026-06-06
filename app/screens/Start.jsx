@@ -157,9 +157,14 @@ const Start = ({ navigation }) => {
     return { transform: [{ translateY }], opacity };
   };
   // Auto-navigate to Login after 3 seconds
-  const timer = setTimeout(() => {
-    navigation.navigate('Login');
-  }, 3000);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (navigation && typeof navigation.navigate === 'function') {
+        navigation.navigate('Login');
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [navigation]);
 
   return (
     <LinearGradient

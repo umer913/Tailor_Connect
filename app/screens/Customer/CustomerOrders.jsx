@@ -21,7 +21,7 @@ import {
 import { resolveImageUrl } from "../../api.js";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const API_BASE_URL = "https://tailorconnect-production.up.railway.app";
+const API_BASE_URL = `${API_BASE_URL}`;
 const { width: SCREEN_W } = Dimensions.get("window");
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 980 : IS_TABLET ? 760 : SCREEN_W;
@@ -101,12 +101,15 @@ export default function CustomerOrders({ route }) {
     try {
       const formData = new FormData();
       formData.append("orderId", order.id);
-      formData.append("measurements", JSON.stringify(editedMeasurements[order.id] || order.measurements));
+      // Always fall back to {} — order.measurements may be undefined for services like Pico
+      const measurementsToSave = editedMeasurements[order.id] || order.measurements || {};
+      formData.append("measurements", JSON.stringify(measurementsToSave));
+
       formData.append("quantity", editedQuantity[order.id] || order.quantity);
       if (editedImages[order.id]) {
         formData.append("fabric", { uri: editedImages[order.id].uri, name: "fabric.jpg", type: "image/jpeg" });
       }
-      await axios.put("https://tailorconnect-production.up.railway.app/orders/update-order", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      await axios.put(`${API_BASE_URL}/orders/update-order`, formData, { headers: { "Content-Type": "multipart/form-data" } });
       Alert.alert("Success", "Order updated successfully");
       setEditingId(null);
       fetchOrders();
@@ -118,10 +121,17 @@ export default function CustomerOrders({ route }) {
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete", style: "destructive",
-        onPress: async () => {
-          await axios.delete(`https://tailorconnect-production.up.railway.app/orders/delete-order/${id}`);
-          Alert.alert("Success", "Order deleted");
+        onPress: () => {
+          // Optimistic update — remove instantly and show success without waiting
           setOrders((prev) => prev.filter((o) => o.id !== id));
+          Alert.alert("Success", "Order deleted");
+          // Fire API call in background
+          axios.delete(`${API_BASE_URL}/orders/delete-order/${id}`)
+            .catch((err) => {
+              console.log("Delete failed", err);
+              // Rollback: re-fetch orders if the API call failed
+              fetchOrders();
+            });
         },
       },
     ]);

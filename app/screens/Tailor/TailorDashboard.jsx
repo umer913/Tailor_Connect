@@ -56,7 +56,7 @@ const TailorDashboard = ({ route, navigation }) => {
     const fetchProfile = async () => {
       try {
         const { data } = await axios.get(
-          "https://tailorconnect-production.up.railway.app/profiles/get-profile",
+          `${API_BASE_URL}/profiles/get-profile`,
           { params: { email } }
         );
         if (data.user) {
@@ -81,7 +81,7 @@ const TailorDashboard = ({ route, navigation }) => {
 
     try {
       const { data } = await axios.put(
-        "https://tailorconnect-production.up.railway.app/profiles/update-profile",
+        `${API_BASE_URL}/profiles/update-profile`,
         { email, full_name: fullName, cnic, phone_number: phoneNumber, location, password }
       );
       if (data.error) return alert(data.error);
@@ -95,53 +95,53 @@ const TailorDashboard = ({ route, navigation }) => {
   };
 
   const pickAndUploadImage = async () => {
-  try {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission denied', 'Allow gallery access to upload image.');
-      return;
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission denied', 'Allow gallery access to upload image.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.7,
+        allowsEditing: true,
+      });
+
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+
+      setUploadingImage(true);
+
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('profile_image', {
+        uri: asset.uri,
+        name: 'profile.jpg',
+        type: 'image/jpeg',
+      });
+
+      const { data } = await axios.post(
+        `${API_BASE_URL}/profiles/upload-profile-image`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+
+      if (data.profile_image) {
+        setProfile(prev => ({ ...prev, profile_image: data.profile_image }));
+        Alert.alert('Success', 'Profile photo updated.');
+      } else {
+        Alert.alert('Error', data.error || 'Upload failed.');
+      }
+
+    } catch (err) {
+      console.log('Image upload error:', err);
+      Alert.alert('Error', 'Failed to upload image.');
+    } finally {
+      setUploadingImage(false);
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.7,
-      allowsEditing: true,
-    });
-
-    if (result.canceled) return;
-
-    const asset = result.assets[0];
-
-    setUploadingImage(true);
-
-    const formData = new FormData();
-    formData.append('email', email);
-    formData.append('profile_image', {
-      uri: asset.uri,
-      name: 'profile.jpg',
-      type: 'image/jpeg',
-    });
-
-    const { data } = await axios.post(
-      'https://tailorconnect-production.up.railway.app/profiles/upload-profile-image',
-      formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
-    );
-
-    if (data.profile_image) {
-      setProfile(prev => ({ ...prev, profile_image: data.profile_image }));
-      Alert.alert('Success', 'Profile photo updated.');
-    } else {
-      Alert.alert('Error', data.error || 'Upload failed.');
-    }
-
-  } catch (err) {
-    console.log('Image upload error:', err);
-    Alert.alert('Error', 'Failed to upload image.');
-  } finally {
-    setUploadingImage(false);
-  }
-};
+  };
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient

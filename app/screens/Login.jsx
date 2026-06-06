@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from "axios";
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react'; //Runs function (effects) after render screen(useEffect).
+import { API_BASE_URL } from '../api';
 import {
   Animated,
   Easing,
@@ -69,7 +70,7 @@ const Login = ({ navigation }) => {
 
     try {
       // sending a request to this server running on my Mac at port 3000
-      const response = await axios.post("https://tailorconnect-production.up.railway.app/auth/login", {
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
         email,
         password,
       });

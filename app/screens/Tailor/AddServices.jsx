@@ -126,9 +126,9 @@ const SERVICE_CATALOGUE = [
 const AddServices = ({ route, navigation }) => {
   const { email } = route.params;
 
-  const [services, setServices]       = useState([]);
-  const [activeTab, setActiveTab]     = useState('my');   // 'my' | 'add'
-  const [editingId, setEditingId]     = useState(null);
+  const [services, setServices] = useState([]);
+  const [activeTab, setActiveTab] = useState('my');   // 'my' | 'add'
+  const [editingId, setEditingId] = useState(null);
   const [editingData, setEditingData] = useState({});
 
   const [newService, setNewService] = useState({
@@ -143,7 +143,7 @@ const AddServices = ({ route, navigation }) => {
   const fetchServices = async () => {
     try {
       const res = await axios.get(
-        'https://tailorconnect-production.up.railway.app/services/get-services',
+        `${API_BASE_URL}/services/get-services`,
         { params: { email } }
       );
       setServices(res.data.services || []);
@@ -169,7 +169,7 @@ const AddServices = ({ route, navigation }) => {
     }
     try {
       await axios.post(
-        'https://tailorconnect-production.up.railway.app/services/add-services',
+        `${API_BASE_URL}/services/add-services`,
         { email, services: [newService] }
       );
       Alert.alert('Success', 'Service added!');
@@ -184,7 +184,7 @@ const AddServices = ({ route, navigation }) => {
   const deleteService = async (id) => {
     try {
       await axios.delete(
-        `https://tailorconnect-production.up.railway.app/services/delete-service/${id}`
+        `${API_BASE_URL}/services/delete-service/${id}`
       );
       fetchServices();
     } catch {
@@ -195,7 +195,7 @@ const AddServices = ({ route, navigation }) => {
   const saveEdit = async () => {
     try {
       await axios.put(
-        'https://tailorconnect-production.up.railway.app/services/update-service',
+        `${API_BASE_URL}/services/update-service`,
         {
           email,
           id: editingId,
@@ -355,7 +355,7 @@ const AddServices = ({ route, navigation }) => {
                             <Text style={styles.cardDesc} numberOfLines={7}>{s.description}</Text>
                           ) : null}
                           <View style={styles.priceRow}>
-                       
+
                             <Text style={styles.priceText}>
                               {s.price_range} Rs
                             </Text>
@@ -399,13 +399,13 @@ const AddServices = ({ route, navigation }) => {
               <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.sectionAccent} />
               <Text style={styles.sectionTitle}>Choose Service Types</Text>
             </View>
-            
+
 
             {/* Service type grid */}
             <View style={styles.catalogueGrid}>
               {SERVICE_CATALOGUE.map(cat => {
-                const selected  = newService.service_types.includes(cat.type);
-                const disabled  = addedTypes.has(cat.type);
+                const selected = newService.service_types.includes(cat.type);
+                const disabled = addedTypes.has(cat.type);
                 return (
                   <TouchableOpacity
                     key={cat.type}
@@ -539,9 +539,9 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center', justifyContent: 'center',
   },
-  headerSub:   { fontSize: 11, color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  headerSub: { fontSize: 11, color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   headerTitle: { fontSize: 22, color: '#fff', fontWeight: '800', marginTop: 2 },
-  countBadge:  { backgroundColor: 'rgba(59,130,246,0.2)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  countBadge: { backgroundColor: 'rgba(59,130,246,0.2)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   countBadgeText: { color: '#60A5FA', fontWeight: '800', fontSize: 13 },
 
   // Tabs
@@ -560,8 +560,8 @@ const styles = StyleSheet.create({
     paddingVertical: 11, borderRadius: 12, overflow: 'hidden',
   },
   tabBtnActive: {},
-  tabText:       { color: '#64748b', fontSize: 13, fontWeight: '700' },
-  tabTextActive: { color: '#fff',    fontSize: 13, fontWeight: '800' },
+  tabText: { color: '#64748b', fontSize: 13, fontWeight: '700' },
+  tabTextActive: { color: '#fff', fontSize: 13, fontWeight: '800' },
 
   // Scroll
   scroll: {
@@ -573,13 +573,13 @@ const styles = StyleSheet.create({
   },
 
   // Empty state
-  emptyWrap:      { alignItems: 'center', paddingVertical: 60 },
-  emptyIconBox:   { width: 90, height: 90, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  emptyTitle:     { color: '#e2e8f0', fontSize: 18, fontWeight: '800', marginBottom: 6 },
-  emptyDesc:      { color: '#64748b', fontSize: 13, fontWeight: '600', marginBottom: 24, textAlign: 'center' },
-  emptyAddBtn:    { borderRadius: 16, overflow: 'hidden' },
-  emptyAddBtnGrad:{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 24, gap: 8 },
-  emptyAddBtnText:{ color: '#fff', fontSize: 14, fontWeight: '800' },
+  emptyWrap: { alignItems: 'center', paddingVertical: 60 },
+  emptyIconBox: { width: 90, height: 90, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  emptyTitle: { color: '#e2e8f0', fontSize: 18, fontWeight: '800', marginBottom: 6 },
+  emptyDesc: { color: '#64748b', fontSize: 13, fontWeight: '600', marginBottom: 24, textAlign: 'center' },
+  emptyAddBtn: { borderRadius: 16, overflow: 'hidden' },
+  emptyAddBtnGrad: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 24, gap: 8 },
+  emptyAddBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' },
 
   // My Services cards
   serviceCard: {
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 8,
   },
-  accentDot:    { width: 8, height: 8, borderRadius: 4 },
+  accentDot: { width: 8, height: 8, borderRadius: 4 },
   cardHeroType: { color: '#fff', fontSize: 18, fontWeight: '900', flex: 1 },
   genderPill: {
     position: 'absolute',
@@ -626,26 +626,26 @@ const styles = StyleSheet.create({
   },
   genderPillText: { fontSize: 11, fontWeight: '800' },
 
-  cardBody:    { padding: 16 },
-  cardDesc:    { color: '#94a3b8', fontSize: 13, fontWeight: '500', marginBottom: 10, lineHeight: 18 },
-  priceRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 },
-  priceText:   { fontSize: 14, fontWeight: '800', color: '#F59E0B' },
+  cardBody: { padding: 16 },
+  cardDesc: { color: '#94a3b8', fontSize: 13, fontWeight: '500', marginBottom: 10, lineHeight: 18 },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 },
+  priceText: { fontSize: 14, fontWeight: '800', color: '#F59E0B' },
 
   cardActions: { flexDirection: 'row', gap: 10 },
-  actionBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 11, borderRadius: 12, gap: 6 },
-  editBtn:     { backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.25)' },
-  deleteBtn:   { backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' },
-  saveBtn:     { backgroundColor: '#10B981' },
-  cancelBtn:   { backgroundColor: '#475569' },
-  editBtnText:   { color: '#3B82F6', fontWeight: '700', fontSize: 13 },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 11, borderRadius: 12, gap: 6 },
+  editBtn: { backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.25)' },
+  deleteBtn: { backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' },
+  saveBtn: { backgroundColor: '#10B981' },
+  cancelBtn: { backgroundColor: '#475569' },
+  editBtnText: { color: '#3B82F6', fontWeight: '700', fontSize: 13 },
   deleteBtnText: { color: '#EF4444', fontWeight: '700', fontSize: 13 },
-  actionBtnText: { color: '#fff',    fontWeight: '700', fontSize: 13 },
+  actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
   // Add Service — section labels
-  sectionRow:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, marginTop: 20 },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, marginTop: 20 },
   sectionAccent: { width: 4, height: 18, borderRadius: 2 },
-  sectionTitle:  { color: '#fff', fontSize: 15, fontWeight: '800' },
-  sectionHint:   { color: '#475569', fontSize: 12, fontWeight: '600', marginBottom: 16, marginTop: -6 },
+  sectionTitle: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  sectionHint: { color: '#475569', fontSize: 12, fontWeight: '600', marginBottom: 16, marginTop: -6 },
 
   // Catalogue grid
   catalogueGrid: {
@@ -702,8 +702,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
-  catalogAccentDot:  { width: 6, height: 6, borderRadius: 3, flexShrink: 0 },
-  catalogLabelText:  { color: '#94a3b8', fontSize: 11, fontWeight: '700', flex: 1 },
+  catalogAccentDot: { width: 6, height: 6, borderRadius: 3, flexShrink: 0 },
+  catalogLabelText: { color: '#94a3b8', fontSize: 11, fontWeight: '700', flex: 1 },
 
   // Gender
   genderRow: { flexDirection: 'row', gap: 10, marginBottom: 4 },
@@ -714,8 +714,8 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(59,130,246,0.15)',
   },
   genderBtnActive: { borderColor: '#2563EB' },
-  genderBtnText:       { color: '#64748b', fontSize: 13, fontWeight: '700' },
-  genderBtnTextActive: { color: '#fff',    fontSize: 13, fontWeight: '800' },
+  genderBtnText: { color: '#64748b', fontSize: 13, fontWeight: '700' },
+  genderBtnTextActive: { color: '#fff', fontSize: 13, fontWeight: '800' },
 
   // Inputs
   input: {
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
   },
 
   // Submit
-  submitBtn:     { borderRadius: 18, overflow: 'hidden', marginTop: 8 },
+  submitBtn: { borderRadius: 18, overflow: 'hidden', marginTop: 8 },
   submitBtnGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 8 },
   submitBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
 });

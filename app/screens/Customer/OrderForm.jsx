@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from "axios";
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from "react";
@@ -363,7 +362,7 @@ export default function OrderForm({ route, navigation }) {
 
       const token = await AsyncStorage.getItem('userToken');
       const response = await fetch(
-        "https://tailorconnect-production.up.railway.app/orders/place-order",
+        `${API_BASE_URL}/orders/place-order`,
         {
           method: "POST",
           body: formData,
@@ -429,7 +428,7 @@ export default function OrderForm({ route, navigation }) {
 
       const token = await AsyncStorage.getItem('userToken');
       const response = await fetch(
-        "https://tailorconnect-production.up.railway.app/orders/place-order",
+        `${API_BASE_URL}/orders/place-order`,
         {
           method: "POST",
           body: formData,

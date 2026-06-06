@@ -27,7 +27,7 @@ import {
   View,
 } from "react-native";
 
-const API_BASE_URL = "https://tailorconnect-production.up.railway.app";
+const API_BASE_URL = `${API_BASE_URL}`;
 const { width: SCREEN_W } = Dimensions.get("window");
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 920 : IS_TABLET ? 760 : SCREEN_W;

@@ -31,6 +31,7 @@ export const createOrderRouter = ({
   router.get("/get-orders", controller.getOrders);
   router.delete("/delete-order/:id", controller.deleteOrder);
   router.get("/tailor-orders", controller.tailorOrders);
+  router.get("/tailor-earnings", controller.tailorEarnings);
   router.put("/update-order-status", controller.updateOrderStatus);
   router.put("/update-order", upload.single("fabric"), controller.updateOrder);
 

@@ -5,25 +5,25 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    Easing,
-    Image,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { resolveImageUrl } from "../../api.js";
 
-const API_BASE_URL = "https://tailorconnect-production.up.railway.app";
+const API_BASE_URL = `${API_BASE_URL}`;
 const DEFAULT_PRICE_CEILING = 100000;
 const FILTER_DRAWER_WIDTH = Math.min(Dimensions.get("window").width * 0.84, 360);
 const SCREEN_W = Dimensions.get("window").width;
@@ -906,7 +906,7 @@ const BrowseTailors = ({ navigation, route }) => {
                       </View>
                       <View>
                         <Text style={styles.priceTitle}>Rating Filter</Text>
-                    
+
                       </View>
                     </View>
 

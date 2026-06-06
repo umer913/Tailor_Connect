@@ -127,7 +127,7 @@ export default function MyAppointment({ route, navigation }) {
   const fetchAppointments = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("https://tailorconnect-production.up.railway.app/appointments/my-appointments", { params: { email: customerEmail } });
+      const res = await axios.get(`${API_BASE_URL}/appointments/my-appointments`, { params: { email: customerEmail } });
       setAppointments(res.data.appointments || []);
     } catch (err) {
       console.log("Appointment fetch error", err);
@@ -141,7 +141,7 @@ export default function MyAppointment({ route, navigation }) {
         text: "Delete", style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete(`https://tailorconnect-production.up.railway.app/appointments/delete-appointment/${id}`);
+            await axios.delete(`${API_BASE_URL}/appointments/delete-appointment/${id}`);
             setAppointments((prev) => prev.filter((item) => item.id !== id));
           } catch (err) { console.log("Delete appointment error", err); }
         },
