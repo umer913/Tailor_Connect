@@ -3,25 +3,24 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useState } from "react";
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  FlatList,
-  Image,
-  Modal,
-  Platform,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Animated,
+    Dimensions,
+    FlatList,
+    Image,
+    Modal,
+    Platform,
+    Pressable,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
-import { resolveImageUrl } from "../../api.js";
+import { API_BASE_URL, resolveImageUrl } from "../../api.js";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const API_BASE_URL = "https://tailorconnect-production.up.railway.app";
 const { width: SCREEN_W } = Dimensions.get("window");
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 980 : IS_TABLET ? 760 : SCREEN_W;
@@ -101,12 +100,15 @@ export default function CustomerOrders({ route }) {
     try {
       const formData = new FormData();
       formData.append("orderId", order.id);
-      formData.append("measurements", JSON.stringify(editedMeasurements[order.id] || order.measurements));
+      // Always fall back to {} — order.measurements may be undefined for services like Pico
+      const measurementsToSave = editedMeasurements[order.id] || order.measurements || {};
+      formData.append("measurements", JSON.stringify(measurementsToSave));
+
       formData.append("quantity", editedQuantity[order.id] || order.quantity);
       if (editedImages[order.id]) {
         formData.append("fabric", { uri: editedImages[order.id].uri, name: "fabric.jpg", type: "image/jpeg" });
       }
-      await axios.put("https://tailorconnect-production.up.railway.app/orders/update-order", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      await axios.put(`${API_BASE_URL}/orders/update-order`, formData, { headers: { "Content-Type": "multipart/form-data" } });
       Alert.alert("Success", "Order updated successfully");
       setEditingId(null);
       fetchOrders();
@@ -118,10 +120,17 @@ export default function CustomerOrders({ route }) {
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete", style: "destructive",
-        onPress: async () => {
-          await axios.delete(`https://tailorconnect-production.up.railway.app/orders/delete-order/${id}`);
-          Alert.alert("Success", "Order deleted");
+        onPress: () => {
+          // Optimistic update — remove instantly and show success without waiting
           setOrders((prev) => prev.filter((o) => o.id !== id));
+          Alert.alert("Success", "Order deleted");
+          // Fire API call in background
+          axios.delete(`${API_BASE_URL}/orders/delete-order/${id}`)
+            .catch((err) => {
+              console.log("Delete failed", err);
+              // Rollback: re-fetch orders if the API call failed
+              fetchOrders();
+            });
         },
       },
     ]);
@@ -470,7 +479,7 @@ const styles = StyleSheet.create({
   emptyTitle: { color: "#fff", fontSize: 20, fontWeight: "800", marginBottom: 8 },
   emptyText: { color: "#E6B0B0", fontSize: 15 },
   listContent: { paddingHorizontal: PAGE_GUTTER, paddingBottom: 40, paddingTop: 16, width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
-  card: { borderRadius: 22, marginBottom: 16, backgroundColor: "rgba(26, 6, 16, 0.45)", borderWidth: 1, borderColor: "rgba(157,42,75,0.2)", overflow: "hidden", shadowColor: "#9D2A4B", shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5, width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
+  card: { borderRadius: 22, marginBottom: 16, backgroundColor: "#1a0610", borderWidth: 1, borderColor: "rgba(157,42,75,0.25)", overflow: "hidden", shadowColor: "#9D2A4B", shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5, width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
   cardAccent: { height: 3 },
   cardInner: { padding: 16 },
   rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
@@ -503,20 +512,20 @@ const styles = StyleSheet.create({
   reviewBtnGrad: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingHorizontal: 14, paddingVertical: 9 },
   reviewBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
   fabricImage: { width: "100%", height: 160, borderRadius: 14, marginVertical: 10 },
-  addImagePlaceholder: { width: "100%", height: 120, borderRadius: 14, marginVertical: 10, backgroundColor: "rgba(26, 6, 16, 0.45)", borderWidth: 2, borderColor: "rgba(157,42,75,0.2)", borderStyle: "dashed", justifyContent: "center", alignItems: "center", gap: 8 },
+  addImagePlaceholder: { width: "100%", height: 120, borderRadius: 14, marginVertical: 10, backgroundColor: "#130509", borderWidth: 2, borderColor: "rgba(157,42,75,0.2)", borderStyle: "dashed", justifyContent: "center", alignItems: "center", gap: 8 },
   addImageText: { fontSize: 14, fontWeight: "600", color: "#E6B0B0" },
-  expandBox: { marginTop: 14, backgroundColor: "rgba(26, 6, 16, 0.3)", borderRadius: 16, padding: 14, borderWidth: 1, borderColor: "rgba(157,42,75,0.15)" },
+  expandBox: { marginTop: 14, backgroundColor: "#130509", borderRadius: 16, padding: 14, borderWidth: 1, borderColor: "rgba(157,42,75,0.15)" },
   detailTitle: { fontWeight: "800", marginBottom: 8, color: "#fff", fontSize: 13, letterSpacing: 0.5 },
   quantityDisplay: { fontSize: 20, fontWeight: "800", color: "#fff", marginBottom: 14 },
   quantityEditRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 12, marginBottom: 14 },
   qtyDecBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: "rgba(239, 68, 68, 1)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(239,68,68,0.4)" },
   qtyIncBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: "#4CAF50", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(16,185,129,0.4)" },
   qtyBtnText: { fontSize: 20, fontWeight: "800", color: "#fff" },
-  qtyDisplayEdit: { minWidth: 64, height: 42, borderRadius: 12, backgroundColor: "rgba(26, 6, 16, 0.6)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(157,42,75,0.3)" },
+  qtyDisplayEdit: { minWidth: 64, height: 42, borderRadius: 12, backgroundColor: "#130509", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(157,42,75,0.3)" },
   qtyDisplayText: { fontSize: 18, fontWeight: "800", color: "#fff" },
   measureItem: { marginBottom: 10 },
   measureKey: { fontWeight: "700", marginBottom: 4, color: "#E6B0B0", fontSize: 12, letterSpacing: 0.5 },
-  measureInput: { backgroundColor: "rgba(26, 6, 16, 0.5)", borderRadius: 10, padding: 10, borderWidth: 1, borderColor: "rgba(157,42,75,0.3)", color: "#fff", fontSize: 14 },
+  measureInput: { backgroundColor: "#130509", borderRadius: 10, padding: 10, borderWidth: 1, borderColor: "rgba(157,42,75,0.3)", color: "#fff", fontSize: 14 },
   measureInputReadonly: { borderColor: "rgba(157,42,75,0.15)", color: "#E6B0B0" },
   editBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(157,42,75,0.15)", padding: 12, borderRadius: 12, marginTop: 10, borderWidth: 1, borderColor: "rgba(157,42,75,0.3)" },
   saveBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#4CAF50", padding: 12, borderRadius: 12 },
@@ -530,7 +539,7 @@ const styles = StyleSheet.create({
   modalSubtitle: { fontSize: 12, fontWeight: "700", color: "#E6B0B0", marginTop: 4, marginBottom: 12 },
   starRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 12 },
   starButton: { padding: 6 },
-  reviewInput: { minHeight: 90, borderRadius: 12, borderWidth: 1, borderColor: "rgba(157,42,75,0.25)", backgroundColor: "rgba(26, 6, 16, 0.5)", color: "#fff", padding: 12, textAlignVertical: "top" },
+  reviewInput: { minHeight: 90, borderRadius: 12, borderWidth: 1, borderColor: "rgba(157,42,75,0.25)", backgroundColor: "#130509", color: "#fff", padding: 12, textAlignVertical: "top" },
   modalActions: { flexDirection: "row", gap: 10, marginTop: 14 },
   modalCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(239, 68, 68, 1)", backgroundColor: "rgba(239,68,68,0.2)", alignItems: "center" },
   modalCancelText: { color: "#ffffff", fontWeight: "700" },

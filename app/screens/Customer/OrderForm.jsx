@@ -1,26 +1,26 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from "axios";
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from '../../api.js';
 
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  Image,
-  Keyboard,
-  Modal,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+    Alert,
+    Animated,
+    Dimensions,
+    Image,
+    Keyboard,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from "react-native";
 import { PinchGestureHandler, State } from "react-native-gesture-handler";
 
@@ -363,7 +363,7 @@ export default function OrderForm({ route, navigation }) {
 
       const token = await AsyncStorage.getItem('userToken');
       const response = await fetch(
-        "https://tailorconnect-production.up.railway.app/orders/place-order",
+        `${API_BASE_URL}/orders/place-order`,
         {
           method: "POST",
           body: formData,
@@ -429,7 +429,7 @@ export default function OrderForm({ route, navigation }) {
 
       const token = await AsyncStorage.getItem('userToken');
       const response = await fetch(
-        "https://tailorconnect-production.up.railway.app/orders/place-order",
+        `${API_BASE_URL}/orders/place-order`,
         {
           method: "POST",
           body: formData,
@@ -654,7 +654,18 @@ export default function OrderForm({ route, navigation }) {
                         setBuyModalVisible(true);
                       }}
                     >
-                      <View style={{ flex: 1 }}>
+                      {item.image ? (
+                        <Image
+                          source={item.image}
+                          style={styles.cartItemImage}
+                          resizeMode="contain"
+                        />
+                      ) : (
+                        <View style={styles.cartItemImagePlaceholder}>
+                          <Ionicons name="shirt-outline" size={24} color="#E6B0B0" />
+                        </View>
+                      )}
+                      <View style={{ flex: 1, marginLeft: 10 }}>
                         <Text style={{ fontWeight: '700', fontSize: 15, color: '#fff' }}>{item.serviceType}</Text>
                         <Text style={{ color: '#E6B0B0', fontSize: 13 }}>Rs. {item.price}</Text>
                         <Text style={{ color: '#E6B0B0', fontSize: 12 }}>{item.tailorName}</Text>
@@ -1040,7 +1051,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 15,
     color: "#fff",
-    backgroundColor: "rgba(26, 6, 16, 0.5)",
+    backgroundColor: "#130509",
   },
   inputError: {
     borderColor: "red",
@@ -1053,7 +1064,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   quantitySection: {
-    backgroundColor: "rgba(26, 6, 16, 0.5)",
+    backgroundColor: "#1a0610",
     borderRadius: 10,
     padding: 14,
     marginBottom: 12,
@@ -1106,7 +1117,7 @@ const styles = StyleSheet.create({
     minWidth: 50,
     height: 42,
     borderRadius: 8,
-    backgroundColor: "rgba(26, 6, 16, 0.6)",
+    backgroundColor: "#130509",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
@@ -1118,7 +1129,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   descriptionCard: {
-    backgroundColor: "rgba(26, 6, 16, 0.45)",
+    backgroundColor: "#1a0610",
     borderRadius: 10,
     padding: 14,
     marginTop: 20,
@@ -1294,7 +1305,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: "100%",
     alignSelf: "center",
-    backgroundColor: "rgba(26, 6, 16, 0.7)",
+    backgroundColor: "#1a0610",
   },
 
   fabricUploadBox: {
@@ -1304,7 +1315,7 @@ const styles = StyleSheet.create({
     height: 120,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(26, 6, 16, 0.5)",
+    backgroundColor: "#130509",
     marginBottom: 16,
   },
   fabricImage: {
@@ -1365,6 +1376,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(157,42,75,0.15)',
+  },
+  cartItemImage: {
+    width: 56,
+    height: 64,
+    borderRadius: 10,
+    backgroundColor: '#130509',
+    borderWidth: 1,
+    borderColor: 'rgba(157,42,75,0.25)',
+  },
+  cartItemImagePlaceholder: {
+    width: 56,
+    height: 64,
+    borderRadius: 10,
+    backgroundColor: '#130509',
+    borderWidth: 1,
+    borderColor: 'rgba(157,42,75,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cartMeasurementBox: {
     backgroundColor: 'rgba(157, 42, 75, 0.15)',
@@ -1443,7 +1472,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "rgba(26, 6, 16, 0.7)",
+    backgroundColor: "#1a0610",
   },
   dropdownButtonText: {
     fontSize: 14,
@@ -1455,7 +1484,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(157, 42, 75, 0.3)",
     borderRadius: 8,
-    backgroundColor: "rgba(26, 6, 16, 0.95)",
+    backgroundColor: "#1a0610",
     marginTop: 4,
     overflow: "hidden",
   },

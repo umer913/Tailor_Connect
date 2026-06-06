@@ -1,4 +1,4 @@
-// Central API base URL — change this one value to point to your backend
+// Production backend on Railway
 export const API_BASE_URL = "https://tailorconnect-production.up.railway.app";
 
 export const resolveImageUrl = (url) => {
@@ -9,3 +9,4 @@ export const resolveImageUrl = (url) => {
   const cleanUrl = url.startsWith("/") ? url : `/${url}`;
   return `${API_BASE_URL}${cleanUrl}`;
 };
+

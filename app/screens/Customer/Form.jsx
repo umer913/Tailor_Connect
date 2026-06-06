@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import axios from "axios";
+import { API_BASE_URL } from "../../api";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from "react";
@@ -66,7 +67,7 @@ export default function Form({ route, navigation }) {
       successScale.setValue(0.6);
       successOpacity.setValue(0);
       setPercent(0);
-      setStatusText("Preparing order...");
+      setStatusText("Looking into your order...");
     }
   }, [stage]);
 
@@ -88,7 +89,7 @@ export default function Form({ route, navigation }) {
       }, 50);
 
       const t1 = setTimeout(() => setStatusText("Securing order details..."), 800);
-      const t2 = setTimeout(() => setStatusText("Dispatched to courier..."), 1600);
+      const t2 = setTimeout(() => setStatusText("Preparing your order..."), 1600);
 
       Animated.timing(truckX, {
         toValue: 190,
@@ -150,7 +151,7 @@ export default function Form({ route, navigation }) {
   const autofillProfile = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("https://tailorconnect-production.up.railway.app/profiles/get-profile2", { params: { email: CustomerEmail } });
+      const { data } = await axios.get(`${API_BASE_URL}/profiles/get-profile2`, { params: { email: CustomerEmail } });
       const p = data.user;
       setFullName(p.full_name || "");
       setAddress(p.location || "");
@@ -163,7 +164,7 @@ export default function Form({ route, navigation }) {
     if (!fullName || !address || !phone) { Alert.alert("Validation Error", "Fill all fields"); return; }
     try {
       setSubmitting(true);
-      const response = await axios.post("https://tailorconnect-production.up.railway.app/orders/place-order2", { full_name: fullName, address, phone, CustomerEmail, tailorEmail, orderId });
+      const response = await axios.post(`${API_BASE_URL}/orders/place-order2`, { full_name: fullName, address, phone, CustomerEmail, tailorEmail, orderId });
       if (response?.data?.email_warnings?.length) {
         console.warn("Order saved, but some notification emails failed:", response.data.email_warnings);
       }

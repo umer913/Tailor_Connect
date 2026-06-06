@@ -16,7 +16,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { resolveImageUrl } from '../../api.js';
+import { API_BASE_URL, resolveImageUrl } from '../../api.js';
 
 const SCREEN_W = Dimensions.get('window').width;
 const IS_WEB = Platform.OS === 'web';
@@ -29,6 +29,8 @@ export default function MyOrders({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const tailorEmail = route?.params?.email || 'tailor@example.com';
 
   const completedCount = orders.filter(o => String(o.status || '').toLowerCase() === 'completed').length;
@@ -70,6 +72,34 @@ export default function MyOrders({ route, navigation }) {
     return Object.fromEntries(Object.entries(options).filter(([key]) => !String(key).startsWith('__')));
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const FILTER_OPTIONS = [
+    { label: 'All Orders', value: 'all', icon: 'list-outline', color: '#60A5FA' },
+    { label: 'New Orders', value: 'accepted', icon: 'sparkles-outline', color: '#34D399' },
+    { label: 'Pending', value: 'pending', icon: 'time-outline', color: '#FBBF24' },
+    { label: 'In Progress', value: 'in_progress', icon: 'play-circle-outline', color: '#818CF8' },
+    { label: 'Paid', value: 'paid', icon: 'card-outline', color: '#10B981' },
+  ];
+
+  const activeFilterOption = FILTER_OPTIONS.find(f => f.value === statusFilter) || FILTER_OPTIONS[0];
+
+  const displayedOrders = orders
+    .filter(o => {
+      if (statusFilter === 'all') return true;
+      return (o.status || '').toLowerCase() === statusFilter;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.created_at || a.createdAt || 0);
+      const dateB = new Date(b.created_at || b.createdAt || 0);
+      return dateB - dateA;
+    });
+
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -77,7 +107,7 @@ export default function MyOrders({ route, navigation }) {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('https://tailorconnect-production.up.railway.app/orders/tailor-orders', {
+      const res = await axios.get(`${API_BASE_URL}/orders/tailor-orders`, {
         params: { email: tailorEmail },
       });
       setOrders(res.data.orders || []);
@@ -108,7 +138,7 @@ export default function MyOrders({ route, navigation }) {
             }
             try {
               setUpdating(orderId);
-              await axios.put('https://tailorconnect-production.up.railway.app/orders/update-order-status', {
+              await axios.put(`${API_BASE_URL}/orders/update-order-status`, {
                 id: orderId,
                 status: newStatus,
                 description: description.trim(),
@@ -138,7 +168,7 @@ export default function MyOrders({ route, navigation }) {
   const handleDelete = async (orderId) => {
     try {
       setUpdating(orderId);
-      await axios.delete(`https://tailorconnect-production.up.railway.app/orders/delete-order/${orderId}`);
+      await axios.delete(`${API_BASE_URL}/orders/delete-order/${orderId}`);
       setOrders(prev => prev.filter(o => o.id !== orderId));
       Alert.alert('Success', 'Order deleted');
     } catch (err) {
@@ -175,7 +205,7 @@ export default function MyOrders({ route, navigation }) {
         <View style={styles.headerContainer}>
           <View style={styles.headerTop}>
             <View>
-              
+
               <Text style={styles.headerTitle}>My Orders</Text>
             </View>
             <View style={styles.badge}>
@@ -188,7 +218,54 @@ export default function MyOrders({ route, navigation }) {
           </LinearGradient>
         </View>
 
-        {orders.length === 0 ? (
+        {/* ── DROPDOWN FILTER ── */}
+        <View style={styles.filterWrapper}>
+          <TouchableOpacity
+            style={styles.filterDropdown}
+            onPress={() => setDropdownOpen(!dropdownOpen)}
+            activeOpacity={0.85}
+          >
+            <View style={styles.filterDropdownLeft}>
+              <View style={[styles.filterDot, { backgroundColor: activeFilterOption.color }]} />
+              <Text style={styles.filterDropdownText}>{activeFilterOption.label}</Text>
+            </View>
+            <View style={styles.filterCountWrap}>
+              <Text style={styles.filterCountText}>{displayedOrders.length}</Text>
+            </View>
+            <Ionicons
+              name={dropdownOpen ? 'chevron-up' : 'chevron-down'}
+              size={18}
+              color="#94a3b8"
+            />
+          </TouchableOpacity>
+
+          {dropdownOpen && (
+            <View style={styles.filterDropdownMenu}>
+              {FILTER_OPTIONS.map((opt) => {
+                const isActive = statusFilter === opt.value;
+                const count = opt.value === 'all'
+                  ? orders.length
+                  : orders.filter(o => (o.status || '').toLowerCase() === opt.value).length;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.filterMenuItem, isActive && styles.filterMenuItemActive]}
+                    onPress={() => { setStatusFilter(opt.value); setDropdownOpen(false); }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name={opt.icon} size={16} color={isActive ? opt.color : '#64748b'} />
+                    <Text style={[styles.filterMenuText, isActive && { color: opt.color }]}>{opt.label}</Text>
+                    <View style={[styles.filterMenuCount, isActive && { backgroundColor: `${opt.color}20`, borderColor: `${opt.color}40` }]}>
+                      <Text style={[styles.filterMenuCountText, isActive && { color: opt.color }]}>{count}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        {displayedOrders.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconBox}>
               <Ionicons name="basket-outline" size={80} color="#94a3b8" />
@@ -198,7 +275,7 @@ export default function MyOrders({ route, navigation }) {
           </View>
         ) : (
           <View style={styles.list}>
-            {orders.map(order => {
+            {displayedOrders.map(order => {
               const pricing = getOrderPricing(order);
               const statusLower = String(order.status || '').toLowerCase();
               const canRemoveOrder = statusLower === 'paid';
@@ -259,6 +336,14 @@ export default function MyOrders({ route, navigation }) {
                         <Ionicons name={getStatusIcon(order.status)} size={14} color="#fff" />
                         <Text style={styles.statusText}>{order.status?.toUpperCase()}</Text>
                       </LinearGradient>
+                    </View>
+
+                    {/* Placed-on date label */}
+                    <View style={styles.placedOnRow}>
+                      <Ionicons name="calendar-outline" size={14} color="#64748b" />
+                      <Text style={styles.placedOnText}>
+                        Placed on {formatDate(order.created_at || order.createdAt)}
+                      </Text>
                     </View>
 
                     {/* Order Details */}
@@ -607,6 +692,106 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 14,
+  },
+
+  // ── Dropdown filter ──
+  filterWrapper: {
+    marginBottom: 16,
+    zIndex: 10,
+  },
+  filterDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15,23,42,0.65)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.2)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  filterDropdownLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 10,
+  },
+  filterDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  filterDropdownText: {
+    color: '#e2e8f0',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  filterCountWrap: {
+    backgroundColor: 'rgba(59,130,246,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginRight: 4,
+  },
+  filterCountText: {
+    color: '#60A5FA',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  filterDropdownMenu: {
+    backgroundColor: '#0f172a',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.2)',
+    marginTop: 6,
+    overflow: 'hidden',
+  },
+  filterMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(59,130,246,0.08)',
+  },
+  filterMenuItemActive: {
+    backgroundColor: 'rgba(59,130,246,0.08)',
+  },
+  filterMenuText: {
+    color: '#94a3b8',
+    fontSize: 13,
+    fontWeight: '700',
+    flex: 1,
+  },
+  filterMenuCount: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  filterMenuCountText: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  // ── Placed on label ──
+  placedOnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+  placedOnText: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',

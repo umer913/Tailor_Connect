@@ -3,15 +3,15 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { resolveImageUrl } from "../../api.js";
+import { API_BASE_URL, resolveImageUrl } from "../../api.js";
 
 export default function ManageOrders() {
   const [orders, setOrders] = useState([]);
@@ -23,7 +23,7 @@ export default function ManageOrders() {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("https://tailorconnect-production.up.railway.app/orders/get-orders");
+      const res = await axios.get(`${API_BASE_URL}/orders/get-orders`);
       setOrders(res.data.orders || []);
     } catch (err) {
       console.log(err);
@@ -38,7 +38,7 @@ export default function ManageOrders() {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete(`https://tailorconnect-production.up.railway.app/admin/remove-order/${id}`);
+            await axios.delete(`${API_BASE_URL}/admin/remove-order/${id}`);
             setOrders((prev) => prev.filter((o) => o.id !== id));
           } catch (err) {
             console.log(err);

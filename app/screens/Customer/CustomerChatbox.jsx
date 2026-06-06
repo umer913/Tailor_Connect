@@ -18,9 +18,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { resolveImageUrl } from "../../api.js";
+import { API_BASE_URL, resolveImageUrl } from "../../api.js";
 
-const API_BASE_URL = "https://tailorconnect-production.up.railway.app";
 const CUSTOMER_ROLE = "customer";
 const SCREEN_W = Dimensions.get("window").width;
 const IS_TABLET = SCREEN_W >= 768;

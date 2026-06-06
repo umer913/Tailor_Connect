@@ -157,9 +157,14 @@ const Start = ({ navigation }) => {
     return { transform: [{ translateY }], opacity };
   };
   // Auto-navigate to Login after 3 seconds
-  const timer = setTimeout(() => {
-    navigation.navigate('Login');
-  }, 3000);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (navigation && typeof navigation.navigate === 'function') {
+        navigation.navigate('Login');
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [navigation]);
 
   return (
     <LinearGradient
@@ -245,7 +250,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#1a0610',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,

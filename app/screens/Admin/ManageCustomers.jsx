@@ -3,13 +3,14 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import { API_BASE_URL } from "../../api.js";
 
 export default function ManageCustomers() {
   const [customers, setCustomers] = useState([]);
@@ -21,7 +22,7 @@ export default function ManageCustomers() {
 
   const fetchCustomers = async () => {
     try {
-      const res = await axios.get("https://tailorconnect-production.up.railway.app/admin/get-customers");
+      const res = await axios.get(`${API_BASE_URL}/admin/get-customers`);
       setCustomers(res.data.customers || []);
     } catch (err) {
       console.log(err);
@@ -36,7 +37,7 @@ export default function ManageCustomers() {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete("https://tailorconnect-production.up.railway.app/admin/remove-customer", {
+            await axios.delete(`${API_BASE_URL}/admin/remove-customer`, {
               data: { email },
             });
             setCustomers((prev) => prev.filter((c) => c.email !== email));

@@ -4,16 +4,17 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-  Alert,
-  Dimensions,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Dimensions,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import { API_BASE_URL } from "../../api.js";
 
 const timeSlots = [
   "10:00 AM", "11:00 AM", "12:00 PM",
@@ -58,7 +59,7 @@ export default function BookAppointment({ route, navigation }) {
     setLoading(true);
     const payload = { tailor_email, customer_email, datetime: combinedDateTime.toISOString(), tailor_name };
     try {
-      const response = await axios.post("https://tailorconnect-production.up.railway.app/appointments/book-appointment", payload);
+      const response = await axios.post(`${API_BASE_URL}/appointments/book-appointment`, payload);
       if (response.data.success) {
         Alert.alert("Success", "Appointment booked successfully!");
         navigation.goBack();
@@ -110,7 +111,7 @@ export default function BookAppointment({ route, navigation }) {
           </TouchableOpacity>
           {showPicker && (
             <DateTimePicker
-            style={{ backgroundColor: "#D6406A", borderRadius: 12, marginTop: 12 }}
+              style={{ backgroundColor: "#D6406A", borderRadius: 12, marginTop: 12 }}
               value={date}
               mode="date"
               minimumDate={new Date()}

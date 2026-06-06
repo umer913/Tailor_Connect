@@ -20,6 +20,7 @@ const orderSchema = new mongoose.Schema(
     address: { type: String },
     phone: { type: String },
     description: { type: String },
+    is_deleted: { type: Boolean, default: false, index: true },
   },
   baseSchemaOptions
 );
