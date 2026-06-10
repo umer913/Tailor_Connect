@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from "axios";
-import { API_BASE_URL } from "../../api";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from "react";
@@ -21,6 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { API_BASE_URL } from "../../api";
 
 const StyledField = ({ label, icon, children }) => (
   <View style={styles.fieldWrap}>
@@ -164,7 +165,12 @@ export default function Form({ route, navigation }) {
     if (!fullName || !address || !phone) { Alert.alert("Validation Error", "Fill all fields"); return; }
     try {
       setSubmitting(true);
-      const response = await axios.post(`${API_BASE_URL}/orders/place-order2`, { full_name: fullName, address, phone, CustomerEmail, tailorEmail, orderId });
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await axios.post(
+        `${API_BASE_URL}/orders/place-order2`,
+        { full_name: fullName, address, phone, CustomerEmail, tailorEmail, orderId },
+        { headers: { Authorization: token ? `Bearer ${token}` : "" } }
+      );
       if (response?.data?.email_warnings?.length) {
         console.warn("Order saved, but some notification emails failed:", response.data.email_warnings);
       }

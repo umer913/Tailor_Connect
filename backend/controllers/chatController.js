@@ -160,7 +160,7 @@ export const createChatController = ({
 
         transporter
           .sendMail({
-            from: `"TailorX" <${process.env.EMAIL_USER}>`,
+            from: `"TailorX" <${process.env.BREVO_FROM}>`,
             to: recipientEmail,
             subject: `New message from ${normalizedSenderRole}: ${senderName}`,
             text:
