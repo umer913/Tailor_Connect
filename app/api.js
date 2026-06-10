@@ -1,4 +1,4 @@
-// Production backend on Railway
+// Production backend on Railways
 export const API_BASE_URL = "https://tailorconnect-production.up.railway.app";
 
 export const resolveImageUrl = (url) => {
