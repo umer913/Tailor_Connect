@@ -142,12 +142,19 @@ function generateOTP() {
   return Math.floor(Math.random() * 900000).toString();
 }
 
+// Brevo (formerly Sendinblue) SMTP relay — works on Railway (port 587 is not blocked)
+// Required env vars: BREVO_USER (your Brevo account email), BREVO_SMTP_KEY (SMTP key from Brevo dashboard)
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false, // STARTTLS
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.BREVO_USER,
+    pass: process.env.BREVO_SMTP_KEY,
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 const upload = multer({ storage: multer.memoryStorage() });

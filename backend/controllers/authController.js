@@ -33,7 +33,7 @@ export const createAuthController = ({
         });
 
         await transporter.sendMail({
-          from: `"TailorX" <${process.env.EMAIL_USER}>`,
+          from: `"TailorX" <${process.env.BREVO_FROM}>`,
           to: email,
           subject: "Your OTP Verification Code",
           text: `Hello ${full_name}, your OTP is: ${otp}`,
@@ -128,7 +128,7 @@ export const createAuthController = ({
         await Profile.updateOne({ email }, { otp });
 
         await transporter.sendMail({
-          from: `"TailorX" <${process.env.EMAIL_USER}>`,
+          from: `"TailorX" <${process.env.BREVO_FROM}>`,
           to: email,
           subject: "Password Reset OTP",
           text: `Hello ${user.full_name}, your password reset OTP is: ${otp}`,

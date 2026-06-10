@@ -106,14 +106,14 @@ export const createOrderController = ({
 
         // Fire emails in background (non-blocking)
         transporter.sendMail({
-          from: `"TailorX" <${process.env.EMAIL_USER}>`,
+          from: `"TailorX" <${process.env.BREVO_FROM}>`,
           to: CustomerEmail,
           subject: "Order Confirmation - TailorX",
           text: `Hello ${full_name},\n\nYour order has been successfully placed.\nThank you for choosing TailorX!`,
         }).catch((err) => console.error("[EMAIL] Customer notification failed:", err.message));
 
         transporter.sendMail({
-          from: `"TailorX" <${process.env.EMAIL_USER}>`,
+          from: `"TailorX" <${process.env.BREVO_FROM}>`,
           to: tailorEmail,
           subject: "New Order Received - TailorX",
           text: "Hello,\n\nYou have received a new order.",
@@ -161,7 +161,7 @@ export const createOrderController = ({
 
         try {
           await transporter.sendMail({
-            from: `"TailorX" <${process.env.EMAIL_USER}>`,
+            from: `"TailorX" <${process.env.BREVO_FROM}>`,
             to: customerEmail,
             subject: "Order Cancelled - TailorX",
             text: `Hello,\n\nYour order for ${serviceType} has been Canceled .\n\nBest regards,\nTailorX Team`,
@@ -257,7 +257,7 @@ export const createOrderController = ({
 
           try {
             await transporter.sendMail({
-              from: `"TailorX" <${process.env.EMAIL_USER}>`,
+              from: `"TailorX" <${process.env.BREVO_FROM}>`,
               to: customerEmail,
               subject: `Your Order Has Been ${normalized.toUpperCase()} - TailorX`,
               text: `Hello,\n\nYour order for ${serviceType} has been ${normalized} by ${tailorName}.\n\nReason: ${description}\n\nWe appreciate your understanding.\n\nBest regards,\nTailorX Team`,
@@ -299,7 +299,7 @@ export const createOrderController = ({
 
         try {
           await transporter.sendMail({
-            from: `"TailorX" <${process.env.EMAIL_USER}>`,
+            from: `"TailorX" <${process.env.BREVO_FROM}>`,
             to: customerEmail,
             subject: `Order Update: ${status.toUpperCase()} - TailorX`,
             text: `Hello,\n\n${message}\n\nTailor: ${tailorName}\nService: ${serviceType}\n\nThank you for choosing TailorX!\n\nBest regards,\nTailorX Team`,
