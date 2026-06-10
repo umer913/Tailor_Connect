@@ -2,25 +2,26 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { API_BASE_URL } from '../../api.js';
 
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    Image,
-    Keyboard,
-    Modal,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  Keyboard,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
 } from "react-native";
 import { PinchGestureHandler, State } from "react-native-gesture-handler";
 
@@ -157,13 +158,9 @@ const serviceOptionsGrouped = {
 };
 
 export default function OrderForm({ route, navigation }) {
-  const { CustomerEmail, tailorEmail, price, serviceType, gender, images: passedImages, description, name } = route.params || {};
-
-  console.log("Customer Email:", CustomerEmail);
-  console.log("Tailor=", tailorEmail)
+  const { CustomerEmail, tailorEmail, price, serviceType, gender, images: passedImages, description, name, measurements_required, is_custom } = route.params || {};
 
   const images = Array.isArray(passedImages) ? passedImages : [];
-  const [openGroup, setOpenGroup] = useState(null);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [zoomVisible, setZoomVisible] = useState(false);
@@ -181,6 +178,7 @@ export default function OrderForm({ route, navigation }) {
   const [activeCartItem, setActiveCartItem] = useState(null);
 
   const [scale] = useState(new Animated.Value(1));
+  const flatListRef = useRef(null);
 
   // Load cart from AsyncStorage on mount
   useEffect(() => {
@@ -239,28 +237,29 @@ export default function OrderForm({ route, navigation }) {
   const activeUnitPrice = parseNumericPrice(activeCartItem ? activeCartItem.price : price);
   const activeTotalPrice = Number((activeUnitPrice * orderQuantity).toFixed(2));
 
-  const fields = measurementFields[activeServiceType]?.[activeEffectiveGender] || [];
-  const optionsGroups = serviceOptionsGrouped[activeEffectiveGender]?.[activeServiceType] || {};
+  const fields = is_custom && measurements_required?.length
+    ? measurements_required   // custom service — use tailor-defined fields
+    : (measurementFields[activeServiceType]?.[activeEffectiveGender] || []);
+  const optionsGroups = is_custom ? {} : (serviceOptionsGrouped[activeEffectiveGender]?.[activeServiceType] || {});
 
 
   // Image moving controls
   const handleNext = () => {
     if (currentIndex < images.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      const next = currentIndex + 1;
+      setCurrentIndex(next);
+      flatListRef.current?.scrollToIndex({ index: next, animated: true });
       scale.setValue(1);
     }
   };
   const handlePrev = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+      const prev = currentIndex - 1;
+      setCurrentIndex(prev);
+      flatListRef.current?.scrollToIndex({ index: prev, animated: true });
       scale.setValue(1);
     }
   };
-  console.log("selectedFormGender:", selectedFormGender);
-  console.log("gender prop:", gender);
-  console.log("effectiveGender:", effectiveGender);
-  console.log("fields:", fields);
-
   // Pick fabric image from gallery
   const pickFabricImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -271,11 +270,6 @@ export default function OrderForm({ route, navigation }) {
     if (!result.canceled) {
       setFabricImage(result.assets[0].uri);
     }
-  };
-
-  // Open the buy modal
-  const openBuyModal = () => {
-    setBuyModalVisible(true);
   };
 
   const setField = (genderKey, key, value) => {
@@ -301,8 +295,20 @@ export default function OrderForm({ route, navigation }) {
 
   const isFormValid = () => {
     const svcType = activeCartItem ? activeCartItem.serviceType : serviceType;
-    if (!selectedFormGender || !svcType || !measurementFields[svcType]) return false;
+    if (!selectedFormGender) return false;
+
+    // Custom service — validate against measurements_required list
+    if (is_custom && measurements_required?.length) {
+      return measurements_required.every((field) => {
+        const key = field.toLowerCase().replace(/\s+/g, "");
+        return measurements[selectedFormGender]?.[key]?.trim();
+      });
+    }
+
+    // Catalogue service
+    if (!svcType || !measurementFields[svcType]) return false;
     const requiredFields = measurementFields[svcType][selectedFormGender];
+    if (!requiredFields) return false;
     const allMeasurementsFilled = requiredFields.every((field) => {
       const key = field.toLowerCase().replace(/\s+/g, "");
       return measurements[selectedFormGender][key] && measurements[selectedFormGender][key].trim() !== "";
@@ -508,32 +514,73 @@ export default function OrderForm({ route, navigation }) {
         {/* Image Slider */}
         {images.length > 0 ? (
           <View style={styles.imageWrapper}>
+            {/* Hidden preload layer — keeps all images in memory */}
+            <View style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+              {images.map((src, i) => (
+                <Image key={i} source={src} style={{ width: 1, height: 1 }} />
+              ))}
+            </View>
+
+            {/* Left arrow */}
             <TouchableOpacity
               style={styles.leftArrow}
               onPress={handlePrev}
               disabled={currentIndex === 0}
             >
-              <Text style={styles.arrowText}>{"<"}</Text>
+              <Text style={[styles.arrowText, currentIndex === 0 && { opacity: 0.25 }]}>{"<"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => setZoomVisible(true)}
+            {/* Paged FlatList — all images already in memory, scroll is instant */}
+            <FlatList
+              ref={flatListRef}
+              data={images}
+              keyExtractor={(_, i) => String(i)}
+              horizontal
+              pagingEnabled
+              scrollEnabled={false}
+              showsHorizontalScrollIndicator={false}
+              initialScrollIndex={0}
+              getItemLayout={(_, index) => ({
+                length: SCREEN_W - PAGE_GUTTER * 2,
+                offset: (SCREEN_W - PAGE_GUTTER * 2) * index,
+                index,
+              })}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => setZoomVisible(true)}
+                  style={{ width: SCREEN_W - PAGE_GUTTER * 2 }}
+                >
+                  <Image
+                    style={styles.mainImage}
+                    source={item}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              )}
               style={{ flex: 1 }}
-            >
-              <Image
-                style={styles.mainImage}
-                source={images[currentIndex]}
-              />
-            </TouchableOpacity>
+            />
 
+            {/* Right arrow */}
             <TouchableOpacity
               style={styles.rightArrow}
               onPress={handleNext}
               disabled={currentIndex === images.length - 1}
             >
-              <Text style={styles.arrowText}>{">"}</Text>
+              <Text style={[styles.arrowText, currentIndex === images.length - 1 && { opacity: 0.25 }]}>{">"}</Text>
             </TouchableOpacity>
+
+            {/* Dot indicators */}
+            {images.length > 1 && (
+              <View style={styles.dotRow}>
+                {images.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[styles.dot, i === currentIndex && styles.dotActive]}
+                  />
+                ))}
+              </View>
+            )}
           </View>
         ) : (
           <Text style={{ textAlign: "center", marginVertical: 20 }}>
@@ -777,7 +824,7 @@ export default function OrderForm({ route, navigation }) {
 
                         return (
                           <View key={key} style={{ marginBottom: 8 }}>
-                            <Text style={{ fontWeight: "700", marginBottom: 4 }}>{field}</Text>
+                            <Text style={{ fontWeight: "700", marginBottom: 4, color: "#fff" }}>{field}</Text>
                             <TextInput
                               placeholder={`${field} (${measurementRanges[field] || "inches"} in)`}
                               placeholderTextColor="#777"
@@ -820,7 +867,7 @@ export default function OrderForm({ route, navigation }) {
                       {Object.entries(optionsGroups).map(
                         ([groupName, options]) => (
                           <View key={groupName} style={{ marginBottom: 16 }}>
-                            <Text style={{ fontWeight: "700", marginBottom: 8, fontSize: 14 }}>
+                            <Text style={{ fontWeight: "700", marginBottom: 8, fontSize: 14, color: "#fff" }}>
                               {groupName}
                             </Text>
 
@@ -889,7 +936,7 @@ export default function OrderForm({ route, navigation }) {
 
                 {/* Fabric Upload */}
                 <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                  <Text style={{ fontWeight: "700", marginBottom: 6, color: "#fff" }}>
                     Upload Fabric Picture
                   </Text>
 
@@ -1007,6 +1054,27 @@ const styles = StyleSheet.create({
     height: 350,
     resizeMode: "contain",
     borderRadius: 12,
+  },
+  dotRow: {
+    position: "absolute",
+    bottom: 8,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.35)",
+  },
+  dotActive: {
+    width: 18,
+    backgroundColor: "#E6B0B0",
+    borderRadius: 3,
   },
 
   arrowBase: {
@@ -1220,33 +1288,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
     marginVertical: 12,
   },
-  imageWrapper: {
-    position: "relative",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  leftArrow: {
-    position: "absolute",
-    left: 5,
-    backgroundColor: "#00000050",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 50,
-    zIndex: 10,
-  },
-
-  rightArrow: {
-    position: "absolute",
-    right: 5,
-    backgroundColor: "#00000050",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 50,
-    zIndex: 10,
-  },
-
   selectorBtnActive: {
     backgroundColor: "#9D2A4B",
     borderColor: "#9D2A4B",
@@ -1336,22 +1377,6 @@ const styles = StyleSheet.create({
   addToCartText: {
     color: '#fff',
     fontSize: 17,
-    fontWeight: '700',
-  },
-  closeButton: {
-    marginTop: 10,
-    backgroundColor: '#fff',
-    paddingVertical: 14,
-    borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#d92323',
-  },
-  closeButtonText: {
-    color: '#d92323',
-    fontSize: 27,
     fontWeight: '700',
   },
   cartBadge: {

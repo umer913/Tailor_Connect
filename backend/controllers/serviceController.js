@@ -1,4 +1,4 @@
-export const createServiceController = ({ Service }) => {
+export const createServiceController = ({ Service, uploadBufferToCloudinary }) => {
   return {
     addServices: async (req, res) => {
       const { email, services } = req.body;
@@ -6,10 +6,14 @@ export const createServiceController = ({ Service }) => {
       try {
         const insertData = services.map((s) => ({
           tailor_email: email,
-          service_types: s.service_types,
+          service_types: s.service_types || [],
           gender: s.gender,
           description: s.description,
           price_range: s.price_range,
+          is_custom: s.is_custom || false,
+          custom_name: s.custom_name || null,
+          custom_images: s.custom_images || [],
+          measurements_required: s.measurements_required || [],
         }));
 
         await Service.insertMany(insertData);
@@ -33,13 +37,23 @@ export const createServiceController = ({ Service }) => {
     },
 
     updateService: async (req, res) => {
-      const { email, id, service_types, gender, description, price_range } =
-        req.body;
+      const {
+        email, id, service_types, gender, description, price_range,
+        custom_name, custom_images, measurements_required,
+      } = req.body;
 
       try {
         const updated = await Service.findOneAndUpdate(
           { _id: id, tailor_email: email },
-          { service_types, gender, description, price_range },
+          {
+            service_types: service_types || [],
+            gender,
+            description,
+            price_range,
+            ...(custom_name !== undefined && { custom_name }),
+            ...(custom_images !== undefined && { custom_images }),
+            ...(measurements_required !== undefined && { measurements_required }),
+          },
           { new: true }
         );
 
@@ -76,6 +90,26 @@ export const createServiceController = ({ Service }) => {
       } catch (err) {
         console.log(err);
         res.status(500).json({ error: "Failed to fetch tailor services" });
+      }
+    },
+
+    uploadCustomServiceImages: async (req, res) => {
+      try {
+        if (!req.files || req.files.length === 0) {
+          return res.status(400).json({ error: "No images provided" });
+        }
+
+        const uploadPromises = req.files.map((file) =>
+          uploadBufferToCloudinary(file.buffer, { folder: "custom_services" }, req)
+        );
+
+        const results = await Promise.all(uploadPromises);
+        const urls = results.map((r) => r.secure_url);
+
+        res.json({ urls });
+      } catch (err) {
+        console.error("Image upload error:", err);
+        res.status(500).json({ error: "Failed to upload images" });
       }
     },
   };

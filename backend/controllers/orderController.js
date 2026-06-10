@@ -186,9 +186,22 @@ export const createOrderController = ({
       try {
         const data = await Order.find({ tailor_email: email, is_deleted: { $ne: true } })
           .sort({ created_at: -1 })
+          .lean()
           .exec();
 
-        res.json({ orders: data || [] });
+        // Batch-fetch customer names from Profile
+        const emails = [...new Set(data.map(o => o.customer_email).filter(Boolean))];
+        const profiles = await Profile.find({ email: { $in: emails } }, 'email full_name').lean().exec();
+        const nameMap = {};
+        for (const p of profiles) nameMap[p.email] = p.full_name || null;
+
+        const orders = data.map(o => ({
+          ...o,
+          id: o._id,
+          customer_name: nameMap[o.customer_email] || null,
+        }));
+
+        res.json({ orders });
       } catch (err) {
         console.error("Error fetching tailor orders:", err);
         res.status(500).json({ error: "Internal Server Error" });

@@ -234,7 +234,7 @@ const authRouter = createAuthRouter({
   generateOTP,
 });
 const profileRouter = createProfileRouter({ Profile, hashPassword, upload, uploadBufferToCloudinary });
-const serviceRouter = createServiceRouter({ Service });
+const serviceRouter = createServiceRouter({ Service, upload, uploadBufferToCloudinary });
 const tailorRouter = createTailorRouter({ Profile, Service });
 const reviewRouter = createReviewRouter({ TailorReview, Order, toSafeRating });
 const chatRouter = createChatRouter({

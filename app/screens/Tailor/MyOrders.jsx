@@ -13,6 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
@@ -31,6 +32,7 @@ export default function MyOrders({ route, navigation }) {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const tailorEmail = route?.params?.email || 'tailor@example.com';
 
   const completedCount = orders.filter(o => String(o.status || '').toLowerCase() === 'completed').length;
@@ -91,8 +93,14 @@ export default function MyOrders({ route, navigation }) {
 
   const displayedOrders = orders
     .filter(o => {
-      if (statusFilter === 'all') return true;
-      return (o.status || '').toLowerCase() === statusFilter;
+      if (statusFilter !== 'all' && (o.status || '').toLowerCase() !== statusFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const emailMatch = (o.customer_email || '').toLowerCase().includes(q);
+        const nameMatch = (o.customer_name || '').toLowerCase().includes(q);
+        return emailMatch || nameMatch;
+      }
+      return true;
     })
     .sort((a, b) => {
       const dateA = new Date(a.created_at || a.createdAt || 0);
@@ -216,6 +224,26 @@ export default function MyOrders({ route, navigation }) {
             <Ionicons name="checkmark-done-circle-outline" size={24} color="#fff" />
             <Text style={styles.headerStats}>{completedCount} Completed • {paidCount} Paid</Text>
           </LinearGradient>
+        </View>
+
+        {/* ── SEARCH BAR ── */}
+        <View style={styles.searchBar}>
+          <Ionicons name="search-outline" size={18} color="#64748b" style={{ marginRight: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by customer name or email…"
+            placeholderTextColor="#475569"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={18} color="#64748b" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* ── DROPDOWN FILTER ── */}
@@ -354,7 +382,10 @@ export default function MyOrders({ route, navigation }) {
                           <Ionicons name="person-circle-outline" size={20} color="#F59E0B" />
                           <View style={styles.infoText}>
                             <Text style={styles.infoLabel}>Customer</Text>
-                            <Text style={styles.infoValue} numberOfLines={1}>{order.customer_email}</Text>
+                            {order.customer_name ? (
+                              <Text style={styles.infoValue} numberOfLines={1}>{order.customer_name}</Text>
+                            ) : null}
+                            <Text style={[styles.infoValue, styles.infoValueMuted]} numberOfLines={1}>{order.customer_email}</Text>
                           </View>
                         </View>
 
@@ -431,14 +462,16 @@ export default function MyOrders({ route, navigation }) {
                       {!['paid', 'completed', 'cancelled', 'rejected'].includes(statusLower) && (
                         <View style={styles.actionsContainer}>
                           <View style={styles.actionsRow}>
-                            <TouchableOpacity
-                              style={[styles.actionButton, styles.acceptBtn]}
-                              onPress={() => handleChangeStatus(order.id, 'accepted')}
-                              disabled={updating === order.id}
-                            >
-                              <Ionicons name="checkmark" size={16} color="#fff" />
-                              <Text style={styles.actionText}>Accept</Text>
-                            </TouchableOpacity>
+                            {statusLower !== 'accepted' && (
+                              <TouchableOpacity
+                                style={[styles.actionButton, styles.acceptBtn]}
+                                onPress={() => handleChangeStatus(order.id, 'accepted')}
+                                disabled={updating === order.id}
+                              >
+                                <Ionicons name="checkmark" size={16} color="#fff" />
+                                <Text style={styles.actionText}>Accept</Text>
+                              </TouchableOpacity>
+                            )}
 
                             <TouchableOpacity
                               style={[styles.actionButton, styles.inprogressBtn]}
@@ -694,6 +727,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+  // ── Search bar ──
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15,23,42,0.65)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.2)',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#e2e8f0',
+    fontSize: 14,
+    fontWeight: '500',
+    padding: 0,
+  },
+
   // ── Dropdown filter ──
   filterWrapper: {
     marginBottom: 16,
@@ -924,6 +977,12 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '700',
     marginTop: 2,
+  },
+  infoValueMuted: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontWeight: '500',
+    marginTop: 1,
   },
   deleteButton: {
     position: 'absolute',

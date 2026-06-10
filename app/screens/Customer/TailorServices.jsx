@@ -3,16 +3,16 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { API_BASE_URL } from "../../api.js";
 
@@ -21,6 +21,75 @@ const SCREEN_W = Dimensions.get("window").width;
 const IS_TABLET = SCREEN_W >= 768;
 const CONTENT_MAX_WIDTH = SCREEN_W >= 1024 ? 920 : IS_TABLET ? 760 : SCREEN_W;
 const PAGE_GUTTER = IS_TABLET ? 28 : 20;
+
+// ── Static image maps (outside component — never re-created on render) ──
+const serviceImagesMale = {
+  "Shalwar Kameez": require("../../../assets/images/shalwar.png"),
+  "Kurta": require("../../../assets/images/Kurta.png"),
+  "Sherwani": require("../../../assets/images/sherwani.png"),
+  "Blazers": require("../../../assets/images/blazer.png"),
+  "Dress Pants": require("../../../assets/images/pant.png"),
+  "2 Piece Suits": require("../../../assets/images/2Peice.png"),
+  "3 Piece Suits": require("../../../assets/images/3Peice.png"),
+  "Pyjama": require("../../../assets/images/pyj.png"),
+  "Waistcoats": require("../../../assets/images/coat.png"),
+  "Shirts": require("../../../assets/images/shirt.png"),
+  "Shalwar": require("../../../assets/images/shalwer.png"),
+  "Pico": require("../../../assets/images/pico.png"),
+  "Overlock": require("../../../assets/images/overlock.png"),
+  "Button Hole": require("../../../assets/images/buttonhole.png"),
+};
+
+const serviceImagesFemale = {
+  "Shalwar Kameez": require("../../../assets/images/Fshalwar.png"),
+  "Kurta": require("../../../assets/images/FKurta.png"),
+  "Sherwani": require("../../../assets/images/Fsherwani.png"),
+  "Blazers": require("../../../assets/images/Fblazers.png"),
+  "Dress Pants": require("../../../assets/images/Fpant.png"),
+  "2 Piece Suits": require("../../../assets/images/F2Peice.png"),
+  "3 Piece Suits": require("../../../assets/images/F3Peice.png"),
+  "Pyjama": require("../../../assets/images/Fpyj.png"),
+  "Waistcoats": require("../../../assets/images/Fcoat.png"),
+  "Shirts": require("../../../assets/images/Fshirt.png"),
+  "Shalwar": require("../../../assets/images/Fshalwer.png"),
+  "Pico": require("../../../assets/images/pico.png"),
+  "Overlock": require("../../../assets/images/overlock.png"),
+  "Button Hole": require("../../../assets/images/buttonhole.png"),
+};
+
+const serviceTypeImagesMale = {
+  "Shalwar Kameez": [require("../../../assets/images/shalwar.png"), require("../../../assets/images/shalwer1.png"), require("../../../assets/images/shalwer2.png")],
+  "Kurta": [require("../../../assets/images/Kurta.png"), require("../../../assets/images/Kurta1.png")],
+  "Sherwani": [require("../../../assets/images/sherwani.png"), require("../../../assets/images/sherwani1.png")],
+  "Blazers": [require("../../../assets/images/blazer.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png")],
+  "Dress Pants": [require("../../../assets/images/pant.png"), require("../../../assets/images/2Peice4.png")],
+  "2 Piece Suits": [require("../../../assets/images/2Peice.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png"), require("../../../assets/images/2Peice4.png")],
+  "3 Piece Suits": [require("../../../assets/images/3Peice.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png"), require("../../../assets/images/2Peice4.png"), require("../../../assets/images/3Peice2.png")],
+  "Pyjama": [require("../../../assets/images/pyj.png"), require("../../../assets/images/pyj1.png")],
+  "Waistcoats": [require("../../../assets/images/coat.png"), require("../../../assets/images/coat1.png")],
+  "Shirts": [require("../../../assets/images/shirt.png"), require("../../../assets/images/shirt1.png")],
+  "Shalwar": [require("../../../assets/images/shalwer.png"), require("../../../assets/images/shalwer2.png")],
+  "Pico": [require("../../../assets/images/pico.png")],
+  "Overlock": [require("../../../assets/images/overlock.png")],
+  "Button Hole": [require("../../../assets/images/buttonhole.png")],
+};
+
+const serviceTypeImagesFemale = {
+  "Shalwar Kameez": [require("../../../assets/images/Fshalwar.png"), require("../../../assets/images/shalwer1.png"), require("../../../assets/images/shalwer2.png")],
+  "Kurta": [require("../../../assets/images/FKurta.png"), require("../../../assets/images/Kurta1.png")],
+  "Sherwani": [require("../../../assets/images/Fsherwani.png"), require("../../../assets/images/sherwani1.png")],
+  "Blazers": [require("../../../assets/images/Fblazers.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png")],
+  "Dress Pants": [require("../../../assets/images/Fpant.png"), require("../../../assets/images/2Peice4.png")],
+  "2 Piece Suits": [require("../../../assets/images/F2Peice.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png"), require("../../../assets/images/2Peice4.png")],
+  "3 Piece Suits": [require("../../../assets/images/F3Peice.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png"), require("../../../assets/images/2Peice4.png"), require("../../../assets/images/3Peice2.png")],
+  "Pyjama": [require("../../../assets/images/Fpyj.png"), require("../../../assets/images/pyj1.png")],
+  "Waistcoats": [require("../../../assets/images/Fcoat.png"), require("../../../assets/images/coat1.png")],
+  "Shirts": [require("../../../assets/images/Fshirt.png"), require("../../../assets/images/shirt1.png")],
+  "Shalwar": [require("../../../assets/images/Fshalwer.png"), require("../../../assets/images/shalwer2.png")],
+  "Pico": [require("../../../assets/images/pico.png")],
+  "Overlock": [require("../../../assets/images/overlock.png")],
+  "Button Hole": [require("../../../assets/images/buttonhole.png")],
+};
 
 export default function TailorServices({ route, navigation }) {
   const {
@@ -66,74 +135,6 @@ export default function TailorServices({ route, navigation }) {
     });
   }, [services, isPriceFilterActive, hasValidSelectedRange, selectedRangeMin, selectedRangeMax, hasSelectedServiceFilter, selectedServiceTypeSet]);
 
-  const serviceImagesMale = {
-    "Shalwar Kameez": require("../../../assets/images/shalwar.png"),
-    "Kurta": require("../../../assets/images/Kurta.png"),
-    "Sherwani": require("../../../assets/images/sherwani.png"),
-    "Blazers": require("../../../assets/images/blazer.png"),
-    "Dress Pants": require("../../../assets/images/pant.png"),
-    "2 Piece Suits": require("../../../assets/images/2Peice.png"),
-    "3 Piece Suits": require("../../../assets/images/3Peice.png"),
-    "Pyjama": require("../../../assets/images/pyj.png"),
-    "Waistcoats": require("../../../assets/images/coat.png"),
-    "Shirts": require("../../../assets/images/shirt.png"),
-    "Shalwar": require("../../../assets/images/shalwer.png"),
-    "Pico": require("../../../assets/images/pico.png"),
-    "Overlock": require("../../../assets/images/overlock.png"),
-    "Button Hole": require("../../../assets/images/buttonhole.png"),
-  };
-
-  const serviceImagesFemale = {
-    "Shalwar Kameez": require("../../../assets/images/Fshalwar.png"),
-    "Kurta": require("../../../assets/images/FKurta.png"),
-    "Sherwani": require("../../../assets/images/Fsherwani.png"),
-    "Blazers": require("../../../assets/images/Fblazers.png"),
-    "Dress Pants": require("../../../assets/images/Fpant.png"),
-    "2 Piece Suits": require("../../../assets/images/F2Peice.png"),
-    "3 Piece Suits": require("../../../assets/images/F3Peice.png"),
-    "Pyjama": require("../../../assets/images/Fpyj.png"),
-    "Waistcoats": require("../../../assets/images/Fcoat.png"),
-    "Shirts": require("../../../assets/images/Fshirt.png"),
-    "Shalwar": require("../../../assets/images/Fshalwer.png"),
-    "Pico": require("../../../assets/images/pico.png"),
-    "Overlock": require("../../../assets/images/overlock.png"),
-    "Button Hole": require("../../../assets/images/buttonhole.png"),
-  };
-
-  const serviceTypeImagesMale = {
-    "Shalwar Kameez": [require("../../../assets/images/shalwar.png"), require("../../../assets/images/shalwer1.png"), require("../../../assets/images/shalwer2.png")],
-    "Kurta": [require("../../../assets/images/Kurta.png"), require("../../../assets/images/Kurta1.png")],
-    "Sherwani": [require("../../../assets/images/sherwani.png"), require("../../../assets/images/sherwani1.png")],
-    "Blazers": [require("../../../assets/images/blazer.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png")],
-    "Dress Pants": [require("../../../assets/images/pant.png"), require("../../../assets/images/2Peice4.png")],
-    "2 Piece Suits": [require("../../../assets/images/2Peice.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png"), require("../../../assets/images/2Peice4.png")],
-    "3 Piece Suits": [require("../../../assets/images/3Peice.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png"), require("../../../assets/images/2Peice4.png"), require("../../../assets/images/3Peice2.png")],
-    "Pyjama": [require("../../../assets/images/pyj.png"), require("../../../assets/images/pyj1.png")],
-    "Waistcoats": [require("../../../assets/images/coat.png"), require("../../../assets/images/coat1.png")],
-    "Shirts": [require("../../../assets/images/shirt.png"), require("../../../assets/images/shirt1.png")],
-    "Shalwar": [require("../../../assets/images/shalwer.png"), require("../../../assets/images/shalwer2.png")],
-    "Pico": [require("../../../assets/images/pico.png")],
-    "Overlock": [require("../../../assets/images/overlock.png")],
-    "Button Hole": [require("../../../assets/images/buttonhole.png")],
-  };
-
-  const serviceTypeImagesFemale = {
-    "Shalwar Kameez": [require("../../../assets/images/Fshalwar.png"), require("../../../assets/images/shalwer1.png"), require("../../../assets/images/shalwer2.png")],
-    "Kurta": [require("../../../assets/images/FKurta.png"), require("../../../assets/images/Kurta1.png")],
-    "Sherwani": [require("../../../assets/images/Fsherwani.png"), require("../../../assets/images/sherwani1.png")],
-    "Blazers": [require("../../../assets/images/Fblazers.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png")],
-    "Dress Pants": [require("../../../assets/images/Fpant.png"), require("../../../assets/images/2Peice4.png")],
-    "2 Piece Suits": [require("../../../assets/images/F2Peice.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png"), require("../../../assets/images/2Peice4.png")],
-    "3 Piece Suits": [require("../../../assets/images/F3Peice.png"), require("../../../assets/images/2Peice1.png"), require("../../../assets/images/2Peice2.png"), require("../../../assets/images/2Peice3.png"), require("../../../assets/images/2Peice4.png"), require("../../../assets/images/3Peice2.png")],
-    "Pyjama": [require("../../../assets/images/Fpyj.png"), require("../../../assets/images/pyj1.png")],
-    "Waistcoats": [require("../../../assets/images/Fcoat.png"), require("../../../assets/images/coat1.png")],
-    "Shirts": [require("../../../assets/images/Fshirt.png"), require("../../../assets/images/shirt1.png")],
-    "Shalwar": [require("../../../assets/images/Fshalwer.png"), require("../../../assets/images/shalwer2.png")],
-    "Pico": [require("../../../assets/images/pico.png")],
-    "Overlock": [require("../../../assets/images/overlock.png")],
-    "Button Hole": [require("../../../assets/images/buttonhole.png")],
-  };
-
   const fetchServices = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/services/get-tailor-services`, { params: { email } });
@@ -176,8 +177,58 @@ export default function TailorServices({ route, navigation }) {
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {filteredServices.length > 0 ? (
-            filteredServices.map((service) =>
-              (service.service_types || [])
+            filteredServices.map((service) => {
+              // ── Custom service → same card style as catalogue services ──
+              if (service.is_custom) {
+                if (hasSelectedServiceFilter) {
+                  const matches = (service.service_types || []).some(t => selectedServiceTypeSet.has(normalizeType(t)));
+                  if (!matches) return null;
+                }
+                const gStyle = getGenderStyle(service.gender);
+                const iconImage = service.custom_images?.[0]
+                  ? { uri: service.custom_images[0].startsWith('http') ? service.custom_images[0] : `${API_BASE_URL}${service.custom_images[0]}` }
+                  : defaultImage;
+                const allCustomImages = service.custom_images?.length
+                  ? service.custom_images.map(img => ({ uri: img.startsWith('http') ? img : `${API_BASE_URL}${img}` }))
+                  : [defaultImage];
+
+                return (
+                  <TouchableOpacity
+                    key={service.id}
+                    activeOpacity={0.85}
+                    style={styles.card}
+                    onPress={() => navigation.navigate("OrderForm", {
+                      CustomerEmail, tailorEmail: email, name,
+                      serviceType: service.custom_name || service.service_types?.[0],
+                      price: service.price_range,
+                      gender: service.gender,
+                      images: allCustomImages,
+                      description: service.description || "",
+                      measurements_required: service.measurements_required || [],
+                      is_custom: true,
+                    })}
+                  >
+                    <View style={styles.cardRow}>
+                      <View style={styles.imageWrap}>
+                        <Image source={iconImage} style={styles.image} resizeMode="cover" />
+                      </View>
+                      <View style={styles.cardInfo}>
+                        <Text style={styles.serviceText}>{service.custom_name || service.service_types?.[0]}</Text>
+                        <View style={styles.priceRow}>
+                          <Ionicons name="pricetag-outline" size={12} color="#fcd34d" />
+                          <Text style={styles.priceText}>{service.price_range || "Price not added"}</Text>
+                        </View>
+                        <View style={[styles.genderBadge, { backgroundColor: gStyle.bg, borderColor: gStyle.border }]}>
+                          <Text style={[styles.genderText, { color: gStyle.color }]}>{service.gender || "All"}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }
+
+              // ── Catalogue service → original rendering ──
+              return (service.service_types || [])
                 .filter((type) => !hasSelectedServiceFilter || selectedServiceTypeSet.has(normalizeType(type)))
                 .map((type, index) => {
                   const gender = (service.gender || "").toLowerCase();
@@ -200,12 +251,9 @@ export default function TailorServices({ route, navigation }) {
                       onPress={() => navigation.navigate("OrderForm", { CustomerEmail, tailorEmail: email, name, serviceType: type, price: service.price_range, gender: service.gender, images: imagesToPass, description: service.description || "" })}
                     >
                       <View style={styles.cardRow}>
-                        {/* Image */}
                         <View style={styles.imageWrap}>
                           <Image source={iconImage} style={styles.image} />
                         </View>
-
-                        {/* Info */}
                         <View style={styles.cardInfo}>
                           <Text style={styles.serviceText}>{type}</Text>
                           <View style={styles.priceRow}>
@@ -213,17 +261,14 @@ export default function TailorServices({ route, navigation }) {
                             <Text style={styles.priceText}>{service.price_range || "Price not added"}</Text>
                           </View>
                           <View style={[styles.genderBadge, { backgroundColor: gStyle.bg, borderColor: gStyle.border }]}>
-
                             <Text style={[styles.genderText, { color: gStyle.color }]}>{service.gender || "All"}</Text>
                           </View>
                         </View>
-
-
                       </View>
                     </TouchableOpacity>
                   );
-                })
-            )
+                });
+            })
           ) : (
             <View style={styles.emptyWrap}>
               <LinearGradient colors={["rgba(157,42,75,0.25)", "rgba(214,64,106,0.1)"]} style={styles.emptyIconBg}>

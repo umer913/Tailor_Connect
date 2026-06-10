@@ -9,6 +9,11 @@ const serviceSchema = new mongoose.Schema(
     gender: { type: String },
     description: { type: String },
     price_range: { type: String },
+    // Custom service fields
+    is_custom: { type: Boolean, default: false },
+    custom_name: { type: String },
+    custom_images: { type: [String], default: [] },
+    measurements_required: { type: [String], default: [] },
   },
   baseSchemaOptions
 );
