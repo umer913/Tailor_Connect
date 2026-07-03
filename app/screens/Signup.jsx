@@ -3,15 +3,15 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { API_BASE_URL } from "../api.js";
@@ -34,7 +34,6 @@ const Signup = ({ navigation }) => {
       setError("All fields are required");
       return;
     }
-
     if (!email.includes("@")) {
       setError("Please enter a valid email address");
       return;
@@ -48,19 +47,14 @@ const Signup = ({ navigation }) => {
       return;
     }
 
+    // Save record in background — don't wait, navigate immediately
+    axios.post(
+      `${API_BASE_URL}/auth/signup`,
+      { full_name, email, password, cnic, role },
+      { headers: { "Content-Type": "application/json" } }
+    ).catch((err) => console.warn("Signup save failed:", err.message));
 
-
-    try {
-      await axios.post(
-        `${API_BASE_URL}/auth/signup`,
-        { full_name, email, password, cnic, role },
-        { headers: { "Content-Type": "application/json" } }
-      );
-      alert("OTP sent to your email!");
-      setShowOtp(true);
-    } catch (err) {
-      setError(err.response?.data?.error || "Signup failed");
-    }
+    navigation.navigate("VerifyOtp", { email });
   };
 
   const handleVerifyOtp = async () => {

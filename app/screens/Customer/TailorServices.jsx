@@ -3,16 +3,16 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Dimensions,
-  Image,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { API_BASE_URL } from "../../api.js";
 
@@ -100,6 +100,7 @@ export default function TailorServices({ route, navigation }) {
     selectedRangeMin,
     selectedRangeMax,
     selectedServiceTypes = [],
+    preloadedServices = [],
   } = route.params || {};
 
   const [services, setServices] = useState([]);
@@ -138,8 +139,14 @@ export default function TailorServices({ route, navigation }) {
   const fetchServices = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/services/get-tailor-services`, { params: { email } });
-      setServices(res.data.services || []);
-    } catch (error) { console.log(error); }
+      const fetched = res.data.services || [];
+      // If API has no services for this tailor (e.g. dummy/offline), use preloaded ones
+      setServices(fetched.length > 0 ? fetched : preloadedServices);
+    } catch (error) {
+      console.log(error);
+      // Fall back to services passed from BrowseTailors (dummy data)
+      setServices(preloadedServices);
+    }
     setLoading(false);
   };
 

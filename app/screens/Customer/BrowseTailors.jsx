@@ -5,21 +5,21 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    Easing,
-    Image,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { API_BASE_URL, resolveImageUrl } from "../../api.js";
 
@@ -88,6 +88,142 @@ const calculateDistanceKm = (latitudeA, longitudeA, latitudeB, longitudeB) => {
 
 const toSelectedRange = (min, max) => ({ min: Math.min(min, max), max: Math.max(min, max) });
 
+// ── Dummy tailors — always shown (merged with real ones) ─────────────────
+const DUMMY_TAILORS = [
+  {
+    id: "dummy-1",
+    email: "ahmed.tailor@demo.com",
+    full_name: "Ahmed Tailors",
+    location: "Lahore, Punjab, Pakistan",
+    phone_number: "0300-1234567",
+    profile_image: null,
+    profile_image_local: require("../../../assets/images/Tailor.png"),
+    fake_reviews: [
+      { id: "r1-1", rating: 5, description: "Absolutely amazing work! The Shalwar Kameez fit perfectly and the stitching quality was top-notch.", customer_id: "ali.raza@gmail.com" },
+      { id: "r1-2", rating: 4, description: "Very professional tailor. Delivered on time and the fabric finishing was excellent.", customer_id: "hamza.malik@gmail.com" },
+      { id: "r1-3", rating: 5, description: "Best tailor in Lahore! My sherwani looked stunning at the wedding. Highly recommend.", customer_id: "usman.k@gmail.com" },
+      { id: "r1-4", rating: 4, description: "Good work overall. Minor adjustment was needed but he fixed it quickly without any fuss.", customer_id: "bilal.ch@yahoo.com" },
+    ],
+    services: [
+      {
+        id: "ds-1",
+        service_types: ["Shalwar Kameez", "Kurta"],
+        price_range: "Rs. 1500 – 3000",
+        gender: "Male",
+        description: "Classic hand-stitched Shalwar Kameez and Kurta with premium fabric finishing.",
+        is_custom: false,
+      },
+      {
+        id: "ds-2",
+        service_types: ["2 Piece Suits", "3 Piece Suits"],
+        price_range: "Rs. 5000 – 12000",
+        gender: "Male",
+        description: "Formal 2 and 3 piece suits tailored for weddings and events.",
+        is_custom: false,
+      },
+    ],
+  },
+  {
+    id: "dummy-2",
+    email: "fatima.boutique@demo.com",
+    full_name: "Fatima Boutique",
+    location: "Karachi, Sindh, Pakistan",
+    phone_number: "0321-9876543",
+    profile_image: null,
+    profile_image_local: require("../../../assets/images/imTailor.png"),
+    fake_reviews: [
+      { id: "r2-1", rating: 5, description: "Fatima's designs are elegant and modern. My bridal dress was absolutely gorgeous!", customer_id: "ayesha.khan@gmail.com" },
+      { id: "r2-2", rating: 5, description: "Excellent craftsmanship! She understood exactly what I wanted and delivered beyond expectations.", customer_id: "sara.ali@hotmail.com" },
+      { id: "r2-3", rating: 4, description: "Beautiful stitching and attention to detail. Only slight delay in delivery but worth the wait.", customer_id: "maira.siddiqui@yahoo.com" },
+    ],
+    services: [
+      {
+        id: "ds-3",
+        service_types: ["Shalwar Kameez", "Sherwani"],
+        price_range: "Rs. 2000 – 6000",
+        gender: "Female",
+        description: "Elegant Shalwar Kameez and Sherwani designs for women.",
+        is_custom: false,
+      },
+      {
+        id: "ds-4",
+        service_types: ["Pyjama", "Shirts"],
+        price_range: "Rs. 800 – 2500",
+        gender: "Female",
+        description: "Comfortable everyday wear including pyjamas and casual shirts.",
+        is_custom: false,
+      },
+    ],
+  },
+  {
+    id: "dummy-3",
+    email: "hassan.stitch@demo.com",
+    full_name: "Hassan Stitching Works",
+    location: "Islamabad, Pakistan",
+    phone_number: "0333-5556677",
+    profile_image: null,
+    profile_image_local: require("../../../assets/images/TailorX.png"),
+    fake_reviews: [
+      { id: "r3-1", rating: 4, description: "Great suit stitching. The blazer fit was perfect for my office meetings.", customer_id: "kashif.mehmood@gmail.com" },
+      { id: "r3-2", rating: 5, description: "Hassan is a true professional. My 3-piece suit was stitched to perfection. Will definitely return.", customer_id: "farhan.qureshi@gmail.com" },
+      { id: "r3-3", rating: 3, description: "Decent work but the trousers needed minor alterations. Customer service was responsive though.", customer_id: "adnan.butt@yahoo.com" },
+      { id: "r3-4", rating: 5, description: "Very skilled at formal wear. The waistcoat stitching was immaculate. Highly satisfied.", customer_id: "zain.haider@gmail.com" },
+    ],
+    services: [
+      {
+        id: "ds-5",
+        service_types: ["Blazers", "Waistcoats", "Dress Pants"],
+        price_range: "Rs. 4000 – 10000",
+        gender: "Male",
+        description: "Premium blazers, waistcoats and dress pants for professionals.",
+        is_custom: false,
+      },
+      {
+        id: "ds-6",
+        service_types: ["Pico", "Overlock", "Button Hole"],
+        price_range: "Rs. 200 – 600",
+        gender: "Male",
+        description: "Quick alteration and finishing services.",
+        is_custom: false,
+      },
+    ],
+  },
+  {
+    id: "dummy-4",
+    email: "zara.designs@demo.com",
+    full_name: "Zara Designer Studio",
+    location: "Faisalabad, Punjab, Pakistan",
+    phone_number: "0345-7778899",
+    profile_image: null,
+    profile_image_local: require("../../../assets/images/tailor.jpeg"),
+    fake_reviews: [
+      { id: "r4-1", rating: 5, description: "Zara's studio is amazing! My wedding outfit was stitched beautifully with intricate embroidery details.", customer_id: "hina.baig@gmail.com" },
+      { id: "r4-2", rating: 4, description: "Lovely designs and excellent fabric sense. The 2-piece suit was very well tailored.", customer_id: "nadia.rashid@gmail.com" },
+      { id: "r4-3", rating: 5, description: "Absolutely loved the work! She has a great eye for style and the kurta was stunning.", customer_id: "saba.tariq@hotmail.com" },
+      { id: "r4-4", rating: 4, description: "Professional service and great communication throughout. My sherwani turned out fantastic.", customer_id: "waqas.javed@yahoo.com" },
+      { id: "r4-5", rating: 5, description: "Best designer in Faisalabad without a doubt. Every stitch was perfect. 100% recommended!", customer_id: "arooj.fatima@gmail.com" },
+    ],
+    services: [
+      {
+        id: "ds-7",
+        service_types: ["Shalwar Kameez", "Kurta", "Sherwani"],
+        price_range: "Rs. 3000 – 8000",
+        gender: "Female",
+        description: "Designer Shalwar Kameez and ethnic wear for all occasions.",
+        is_custom: false,
+      },
+      {
+        id: "ds-8",
+        service_types: ["2 Piece Suits", "3 Piece Suits"],
+        price_range: "Rs. 6000 – 15000",
+        gender: "Both",
+        description: "Formal suits for men and women, customized to fit perfectly.",
+        is_custom: false,
+      },
+    ],
+  },
+];
+
 const BrowseTailors = ({ navigation, route }) => {
   const customerEmail = route?.params?.CustomerEmail || route?.params?.email || "";
   const [tailors, setTailors] = useState([]);
@@ -138,17 +274,23 @@ const BrowseTailors = ({ navigation, route }) => {
   const fetchTailors = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/tailors/get-tailors-with-services`);
-      setTailors(response.data.tailors || []);
+      const fetched = response.data.tailors || [];
+      // Always show dummies alongside real tailors
+      setTailors([...fetched, ...DUMMY_TAILORS]);
       return;
     } catch {
       try {
         const fallbackResponse = await axios.get(`${API_BASE_URL}/tailors/get-tailors`);
         const fallbackTailors = fallbackResponse.data.tailors || [];
-        const tailorsWithServices = await addServicesToTailors(fallbackTailors);
-        setTailors(tailorsWithServices);
+        if (fallbackTailors.length > 0) {
+          const tailorsWithServices = await addServicesToTailors(fallbackTailors);
+          setTailors([...tailorsWithServices, ...DUMMY_TAILORS]);
+        } else {
+          setTailors(DUMMY_TAILORS);
+        }
       } catch (error) {
-        console.log("Error fetching tailors:", error);
-        setTailors([]);
+        console.log("Error fetching tailors — using dummy data:", error);
+        setTailors(DUMMY_TAILORS);
       }
     }
   };
@@ -165,13 +307,23 @@ const BrowseTailors = ({ navigation, route }) => {
         return;
       }
 
+      // Build fake summary for dummy tailors upfront
+      const fakeSummary = {};
+      for (const t of DUMMY_TAILORS) {
+        if (t.fake_reviews?.length) {
+          const avg = (t.fake_reviews.reduce((sum, r) => sum + r.rating, 0) / t.fake_reviews.length).toFixed(1);
+          fakeSummary[t.email] = { avg: Number(avg), count: t.fake_reviews.length };
+        }
+      }
+
       try {
         const response = await axios.get(`${API_BASE_URL}/reviews/tailor-reviews/summary`, {
           params: { tailor_ids: ids.join(",") },
         });
-        setReviewSummary(response?.data?.summary || {});
+        // Merge: real data takes priority, dummies fill the gaps
+        setReviewSummary({ ...fakeSummary, ...(response?.data?.summary || {}) });
       } catch {
-        setReviewSummary({});
+        setReviewSummary(fakeSummary);
       }
     };
 
@@ -492,6 +644,9 @@ const BrowseTailors = ({ navigation, route }) => {
       selectedRangeMin: selectedRange.min,
       selectedRangeMax: selectedRange.max,
       selectedServiceTypes,
+      // Pass inline services for offline/dummy tailors so TailorServices
+      // can fall back to them when the API has no data for this tailor.
+      preloadedServices: tailor.services || [],
     });
   };
 
@@ -538,9 +693,11 @@ const BrowseTailors = ({ navigation, route }) => {
       const response = await axios.get(`${API_BASE_URL}/reviews/tailor-reviews`, {
         params: { tailor_id: tailor.email },
       });
-      setReviewList(response?.data?.reviews || []);
+      const fetched = response?.data?.reviews || [];
+      // Fall back to inline fake reviews for dummy tailors
+      setReviewList(fetched.length > 0 ? fetched : (tailor.fake_reviews || []));
     } catch {
-      setReviewList([]);
+      setReviewList(tailor.fake_reviews || []);
     } finally {
       setIsReviewLoading(false);
     }
@@ -677,6 +834,12 @@ const BrowseTailors = ({ navigation, route }) => {
                   {tailor.profile_image ? (
                     <Image
                       source={{ uri: resolveImageUrl(tailor.profile_image) }}
+                      style={styles.image}
+                      resizeMode="cover"
+                    />
+                  ) : tailor.profile_image_local ? (
+                    <Image
+                      source={tailor.profile_image_local}
                       style={styles.image}
                       resizeMode="cover"
                     />

@@ -33,7 +33,7 @@ import MyOrders from '../screens/Tailor/MyOrders';
 import TailorChatbox from '../screens/Tailor/TailorChatbox';
 import TailorComplainbox from '../screens/Tailor/TailorComplainbox';
 import TailorDashboard from '../screens/Tailor/TailorDashboard';
-
+import VerifyOtp from '../screens/VerifyOtp';
 // Global request interceptor to attach JWT token
 axios.interceptors.request.use(
   async (config) => {
@@ -302,6 +302,7 @@ const App = () => {
         <Stack.Screen options={{ headerShown: false }} name="Start" component={Start} />
         <Stack.Screen options={{ headerShown: false }} name="Login" component={Login} />
         <Stack.Screen options={{ headerShown: false }} name="Signup" component={Signup} />
+        <Stack.Screen options={{ headerShown: false }} name="VerifyOtp" component={VerifyOtp} />
         <Stack.Screen options={{ headerShown: false }} name="Forgot" component={Forgot} />
         <Stack.Screen options={{ headerShown: false }} name="CustomerDrawer" component={CustomerDrawer} />
         <Stack.Screen options={{ headerShown: false }} name="TailorDrawer" component={TailorDrawer} />
