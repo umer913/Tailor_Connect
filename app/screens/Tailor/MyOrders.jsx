@@ -4,18 +4,18 @@ import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  Image,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Image,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { API_BASE_URL, resolveImageUrl } from '../../api.js';
 
@@ -33,6 +33,10 @@ export default function MyOrders({ route, navigation }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // Cross-platform description prompt (replaces Alert.prompt which is iOS-only)
+  const [descModalVisible, setDescModalVisible] = useState(false);
+  const [descModalText, setDescModalText] = useState('');
+  const [pendingStatusChange, setPendingStatusChange] = useState(null); // { orderId, newStatus }
   const tailorEmail = route?.params?.email || 'tailor@example.com';
 
   const completedCount = orders.filter(o => String(o.status || '').toLowerCase() === 'completed').length;
@@ -127,50 +131,48 @@ export default function MyOrders({ route, navigation }) {
     }
   };
 
-  const handleChangeStatus = async (orderId, newStatus) => {
-    // Prompt for description
-    Alert.prompt(
-      'Add Description',
-      'Please enter a message/description for this status change:',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'OK',
-          onPress: async (description) => {
-            if (!description || !description.trim()) {
-              Alert.alert('Description Required', 'You must enter a description to change the status.');
-              return;
-            }
-            try {
-              setUpdating(orderId);
-              await axios.put(`${API_BASE_URL}/orders/update-order-status`, {
-                id: orderId,
-                status: newStatus,
-                description: description.trim(),
-              });
+  const handleChangeStatus = (orderId, newStatus) => {
+    // Store pending change and open the description modal (Alert.prompt is iOS-only)
+    setPendingStatusChange({ orderId, newStatus });
+    setDescModalText('');
+    setDescModalVisible(true);
+  };
 
-              // If backend deleted the order for cancelled/rejected, remove locally
-              if (String(newStatus).toLowerCase() === 'cancelled' || String(newStatus).toLowerCase() === 'rejected') {
-                setOrders(prev => prev.filter(o => o.id !== orderId));
-                Alert.alert('Success', 'Order removed');
-              } else {
-                setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: newStatus, description: description.trim() } : o)));
-                Alert.alert('Success', `Order status set to ${newStatus}`);
-              }
-            } catch (err) {
-              console.error('Error updating status:', err);
-              Alert.alert('Error', 'Failed to update order status');
-            } finally {
-              setUpdating(null);
-            }
-          },
-        },
-      ],
-      'plain-text'
-    );
+  const confirmStatusChange = async () => {
+    if (!descModalText.trim()) {
+      Alert.alert('Description Required', 'Please enter a message for this status change.');
+      return;
+    }
+    if (!pendingStatusChange) return;
+
+    const { orderId, newStatus } = pendingStatusChange;
+    setDescModalVisible(false);
+    setPendingStatusChange(null);
+
+    try {
+      setUpdating(orderId);
+      await axios.put(`${API_BASE_URL}/orders/update-order-status`, {
+        id: orderId,
+        status: newStatus,
+        description: descModalText.trim(),
+      });
+
+      if (String(newStatus).toLowerCase() === 'cancelled' || String(newStatus).toLowerCase() === 'rejected') {
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+        Alert.alert('Success', 'Order removed');
+      } else {
+        setOrders(prev => prev.map(o =>
+          o.id === orderId ? { ...o, status: newStatus, description: descModalText.trim() } : o
+        ));
+        Alert.alert('Success', `Order status set to ${newStatus}`);
+      }
+    } catch (err) {
+      console.error('Error updating status:', err);
+      Alert.alert('Error', 'Failed to update order status');
+    } finally {
+      setUpdating(null);
+      setDescModalText('');
+    }
   };
 
   const handleDelete = async (orderId) => {
@@ -578,6 +580,47 @@ export default function MyOrders({ route, navigation }) {
                 </ScrollView>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Description prompt modal (cross-platform replacement for Alert.prompt) ── */}
+      <Modal visible={descModalVisible} transparent animationType="fade" onRequestClose={() => { setDescModalVisible(false); setPendingStatusChange(null); }}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { paddingBottom: 20 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Status Update</Text>
+              <TouchableOpacity onPress={() => { setDescModalVisible(false); setPendingStatusChange(null); }}>
+                <Ionicons name="close-circle" size={28} color="#F59E0B" />
+              </TouchableOpacity>
+            </View>
+            <Text style={{ color: '#94a3b8', fontSize: 13, marginBottom: 12 }}>
+              Enter a message / description for this status change:
+            </Text>
+            <TextInput
+              style={[styles.searchInput, { borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)', borderRadius: 10, padding: 10, minHeight: 70, textAlignVertical: 'top', color: '#fff', backgroundColor: 'rgba(15,23,42,0.8)', marginBottom: 16 }]}
+              placeholder="e.g. Stitching started, will be ready in 3 days..."
+              placeholderTextColor="#475569"
+              value={descModalText}
+              onChangeText={setDescModalText}
+              multiline
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.cancelBtn, { flex: 1, justifyContent: 'center' }]}
+                onPress={() => { setDescModalVisible(false); setPendingStatusChange(null); setDescModalText(''); }}
+              >
+                <Text style={styles.actionText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.acceptBtn, { flex: 1, justifyContent: 'center' }]}
+                onPress={confirmStatusChange}
+              >
+                <Ionicons name="checkmark" size={16} color="#fff" />
+                <Text style={styles.actionText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
