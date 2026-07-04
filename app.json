@@ -13,7 +13,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "fypapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.umer913.tailorx"
