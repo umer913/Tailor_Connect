@@ -5,21 +5,21 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Dimensions,
-  Easing,
-  Image,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Dimensions,
+    Easing,
+    Image,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { API_BASE_URL, resolveImageUrl } from "../../api.js";
 
@@ -195,7 +195,7 @@ const DUMMY_TAILORS = [
     location: "Faisalabad, Punjab, Pakistan",
     phone_number: "0345-7778899",
     profile_image: null,
-    profile_image_local: require("../../../assets/images/tailor.jpeg"),
+    profile_image_local: require("../../../assets/images/MyLogo.png"),
     fake_reviews: [
       { id: "r4-1", rating: 5, description: "Zara's studio is amazing! My wedding outfit was stitched beautifully with intricate embroidery details.", customer_id: "hina.baig@gmail.com" },
       { id: "r4-2", rating: 4, description: "Lovely designs and excellent fabric sense. The 2-piece suit was very well tailored.", customer_id: "nadia.rashid@gmail.com" },
